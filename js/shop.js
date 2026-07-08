@@ -21,6 +21,14 @@ document.addEventListener("DOMContentLoaded", function(){
   let activeCollection = "All";
   let cart = loadCart();
 
+  function t(key){ return window.raicesT ? window.raicesT(key) : key; }
+  function currentLang(){ return window.raicesLang || localStorage.getItem('raices_lang') || 'es'; }
+  function categoryLabel(cat){
+    if(cat === 'All') return t('all_filter');
+    const item = categories[cat] || {};
+    return currentLang() === 'es' ? (item.spanish || item.title || cat) : (item.title || cat);
+  }
+
   function money(value){
     return "$" + Number(value || 0).toFixed(2);
   }
@@ -43,18 +51,20 @@ document.addEventListener("DOMContentLoaded", function(){
       return `<a class="door-card" href="#shop" data-category-door="${cat}">
         <span class="door-bg" style="background-image:url('${item.image}')"></span>
         <span class="door-content">
-          <span class="eyebrow">${item.spanish}</span>
-          <h3>${item.title}</h3>
+          <span class="eyebrow">${categoryLabel(cat)}</span>
+          <h3>${currentLang()==='es' ? (item.spanish || item.title) : item.title}</h3>
           <p>${item.tagline}</p>
         </span>
       </a>`;
     }).join("");
     categoryDoors.querySelectorAll("[data-category-door]").forEach(card => {
-      card.addEventListener("click", function(){
+      card.addEventListener("click", function(e){
+        e.preventDefault();
         activeCategory = this.dataset.categoryDoor;
         activeCollection = "All";
         renderFilters();
         renderProducts();
+        document.getElementById('shop')?.scrollIntoView({behavior:'smooth', block:'start'});
       });
     });
   }
@@ -63,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(!categoryFilters) return;
     const cats = ["All","Kitchen","Herbal","Desserts","Home","Wellness"];
     categoryFilters.innerHTML = cats.map(cat => {
-      const label = cat === "All" ? "Todas" : categories[cat].title;
+      const label = categoryLabel(cat);
       return `<button class="filter-btn ${activeCategory===cat ? "active":""}" data-cat="${cat}">${label}</button>`;
     }).join("");
     categoryFilters.querySelectorAll("button").forEach(btn => {
@@ -80,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(!collectionSelect) return;
     const collectionNames = ["All", ...Array.from(new Set(list.map(p => p.collection)))];
     collectionSelect.innerHTML = collectionNames.map(c => {
-      const label = c === "All" ? "Todas las colecciones" : (collections[c]?.title || c);
+      const label = c === 'All' ? t('collection_select_all') : (collections[c]?.title || c);
       return `<option value="${c}" ${activeCollection===c ? "selected":""}>${label}</option>`;
     }).join("");
   }
@@ -107,13 +117,13 @@ document.addEventListener("DOMContentLoaded", function(){
     if(activeCollection !== "All") list = list.filter(p => p.collection === activeCollection);
 
     if(activeCategory === "All"){
-      activeEyebrow.textContent = "Raíces Store";
-      activeTitle.textContent = "Todas las colecciones";
-      activeDescription.textContent = "Una tienda organizada por Kitchen, Herbal, Desserts, Home y Wellness.";
+      activeEyebrow.textContent = t('store');
+      activeTitle.textContent = t('all_collections');
+      activeDescription.textContent = t('all_description');
     } else {
       const c = categories[activeCategory];
-      activeEyebrow.textContent = c.spanish;
-      activeTitle.textContent = c.title;
+      activeEyebrow.textContent = categoryLabel(activeCategory);
+      activeTitle.textContent = currentLang()==='es' ? (c.spanish || c.title) : c.title;
       activeDescription.textContent = c.description;
     }
 
@@ -136,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function(){
         </div>
         <div class="product-bottom">
           <span class="price">${money(p.price)}</span>
-          <button class="btn add-btn" data-add="${p.sku}">Agregar</button>
+          <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>
         </div>
       </div>
     </article>`).join("");
@@ -173,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
     if(!cartItems) return;
     if(enriched.length === 0){
-      cartItems.innerHTML = `<p class="cart-empty">Tu carrito está vacío.</p>`;
+      cartItems.innerHTML = `<p class="cart-empty">${t('cart_empty')}</p>`;
       return;
     }
     cartItems.innerHTML = enriched.map(item => `<div class="cart-item">
@@ -198,6 +208,28 @@ document.addEventListener("DOMContentLoaded", function(){
 
   if(openCart) openCart.addEventListener("click", function(){ cartDrawer.classList.add("open"); });
   if(closeCart) closeCart.addEventListener("click", function(){ cartDrawer.classList.remove("open"); });
+
+  document.querySelectorAll('[data-category-nav]').forEach(link => {
+    link.addEventListener('click', function(e){
+      e.preventDefault();
+      activeCategory = this.dataset.categoryNav;
+      activeCollection = 'All';
+      renderFilters();
+      renderProducts();
+      document.getElementById('shop')?.scrollIntoView({behavior:'smooth', block:'start'});
+      const drawer = document.getElementById('drawer');
+      const backdrop = document.getElementById('backdrop');
+      if(drawer) drawer.classList.remove('open');
+      if(backdrop) backdrop.classList.remove('show');
+    });
+  });
+
+  window.addEventListener('raices:languageChanged', function(){
+    renderDoors();
+    renderFilters();
+    renderProducts();
+    renderCart();
+  });
 
   renderDoors();
   renderFilters();
