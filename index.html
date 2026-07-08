@@ -156,7 +156,7 @@
             <span data-i18n="newsletter_benefit_3">Beneficios exclusivos</span>
           </div>
         </div>
-        <form class="newsletter-form" id="newsletterForm" name="newsletter" novalidate>
+        <form class="newsletter-form" id="newsletterForm" name="newsletter" method="post" action="javascript:void(0)" onsubmit="return false;" novalidate>
           <label>
             <span data-i18n="newsletter_name_label">Nombre</span>
             <input id="newsletterName" type="text" name="name" autocomplete="name" placeholder="Tu nombre"/>
@@ -169,7 +169,7 @@
             <input id="newsletterConsent" type="checkbox" required/>
             <span data-i18n="newsletter_consent">Acepto recibir comunicaciones de Raíces sobre lanzamientos, productos, recetas y novedades.</span>
           </label>
-          <button type="submit" data-i18n="subscribe">Suscribirme</button>
+          <button type="button" id="newsletterSubmit" data-i18n="subscribe">Suscribirme</button>
           <p id="newsletterMessage" class="newsletter-message" aria-live="polite"></p>
         </form>
       </div>
@@ -249,7 +249,7 @@
       <p class="eyebrow" data-i18n="waitlist_checkout_eyebrow">Pedidos próximamente</p>
       <h2 id="waitlistTitle" data-i18n="waitlist_checkout_title">Estamos preparando la apertura oficial.</h2>
       <p class="waitlist-copy" data-i18n="waitlist_checkout_text">Aún no estamos aceptando pedidos porque estamos terminando empaques y detalles de lanzamiento. Déjanos tu correo y te avisaremos cuando abramos la tienda.</p>
-      <form id="waitlistCheckoutForm" class="waitlist-form">
+      <form id="waitlistCheckoutForm" class="waitlist-form" method="post" action="javascript:void(0)" onsubmit="return false;">
         <label>
           <span data-i18n="waitlist_name_label">Nombre</span>
           <input id="waitlistName" type="text" autocomplete="name" placeholder="Tu nombre"/>
@@ -262,7 +262,7 @@
           <input id="waitlistConsent" type="checkbox" required/>
           <span data-i18n="waitlist_consent">Acepto recibir comunicaciones de Raíces sobre lanzamientos, productos y novedades.</span>
         </label>
-        <button class="btn waitlist-submit" type="submit" data-i18n="waitlist_submit">Avisarme cuando abran pedidos</button>
+        <button class="btn waitlist-submit" id="waitlistSubmit" type="button" data-i18n="waitlist_submit">Avisarme cuando abran pedidos</button>
         <p id="waitlistMessage" class="waitlist-message"></p>
       </form>
     </div>
@@ -341,5 +341,92 @@
   <script src="js/shop.js"></script>
   <script src="js/analytics.js"></script>
   <script src="js/auth.js"></script>
+
+  <script>
+  // v90: robust Brevo submit handlers - never navigate away from the page
+  (function(){
+    function getLang(){ return window.raicesLang || localStorage.getItem('raices_lang') || 'es'; }
+    function txt(es, en){ return getLang()==='es' ? es : en; }
+    function validEmail(email){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||'').trim()); }
+    async function subscribe(payload){
+      const res = await fetch('/.netlify/functions/brevo-subscribe', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok){ throw new Error('Brevo subscribe failed'); }
+      return res;
+    }
+    function setupNewsletter(){
+      const form = document.getElementById('newsletterForm');
+      const btn = document.getElementById('newsletterSubmit');
+      const name = document.getElementById('newsletterName');
+      const email = document.getElementById('emailInput');
+      const consent = document.getElementById('newsletterConsent');
+      const msg = document.getElementById('newsletterMessage');
+      if(!form || !btn || !email) return;
+      function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
+      async function handle(e){
+        if(e){ e.preventDefault(); e.stopPropagation(); }
+        const emailValue = email.value.trim();
+        const nameValue = name ? name.value.trim() : '';
+        if(!validEmail(emailValue)){ setMsg('error', txt('Escribe un correo válido.', 'Enter a valid email.')); return false; }
+        if(consent && !consent.checked){ setMsg('error', txt('Debes aceptar recibir comunicaciones de Raíces.', 'Please accept receiving Raíces communications.')); return false; }
+        btn.disabled = true;
+        setMsg('idle', txt('Enviando...', 'Sending...'));
+        try{
+          await subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter_section', consent:true });
+          localStorage.setItem('raices_newsletter_email', emailValue);
+          form.reset();
+          setMsg('ok', txt('Gracias por unirte a Raíces. Te enviaremos novedades pronto.', 'Thank you for joining Raíces. We will send updates soon.'));
+        }catch(err){
+          setMsg('error', txt('No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.', 'We could not save your email. Try again or message us on WhatsApp.'));
+        }finally{
+          btn.disabled = false;
+        }
+        return false;
+      }
+      form.addEventListener('submit', handle, true);
+      btn.addEventListener('click', handle);
+    }
+    function setupWaitlist(){
+      const form = document.getElementById('waitlistCheckoutForm');
+      const btn = document.getElementById('waitlistSubmit');
+      const name = document.getElementById('waitlistName');
+      const email = document.getElementById('waitlistEmail');
+      const consent = document.getElementById('waitlistConsent');
+      const msg = document.getElementById('waitlistMessage');
+      if(!form || !btn || !email) return;
+      function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
+      async function handle(e){
+        if(e){ e.preventDefault(); e.stopPropagation(); }
+        const emailValue = email.value.trim();
+        const nameValue = name ? name.value.trim() : '';
+        if(!validEmail(emailValue)){ setMsg('error', txt('Escribe un correo válido.', 'Enter a valid email.')); return false; }
+        if(consent && !consent.checked){ setMsg('error', txt('Debes aceptar recibir comunicaciones de Raíces.', 'Please accept receiving Raíces communications.')); return false; }
+        btn.disabled = true;
+        setMsg('idle', txt('Enviando...', 'Sending...'));
+        try{
+          await subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'checkout_waitlist', consent:true, cart: window.RAICES_CART_SUMMARY || null });
+          localStorage.setItem('raices_waitlist_email', emailValue);
+          form.reset();
+          setMsg('ok', txt('Listo. Te avisaremos cuando abramos pedidos.', 'Done. We will notify you when ordering opens.'));
+        }catch(err){
+          setMsg('error', txt('No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.', 'We could not save your email. Try again or message us on WhatsApp.'));
+        }finally{
+          btn.disabled = false;
+        }
+        return false;
+      }
+      form.addEventListener('submit', handle, true);
+      btn.addEventListener('click', handle);
+    }
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', function(){ setupNewsletter(); setupWaitlist(); });
+    }else{
+      setupNewsletter(); setupWaitlist();
+    }
+  })();
+  </script>
 </body>
 </html>
