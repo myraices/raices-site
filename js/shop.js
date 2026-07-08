@@ -819,12 +819,18 @@ document.addEventListener("DOMContentLoaded", function(){
         return;
       }
       try{
-        const response = await fetch('/.netlify/functions/brevo-subscribe', {
+        const cartSummary = window.RAICES_CART_SUMMARY || null;
+        const saveResponse = await fetch('/.netlify/functions/save-interest', {
           method:'POST',
           headers:{'content-type':'application/json'},
-          body: JSON.stringify({ email, name, source:'checkout_waitlist', cart: window.RAICES_CART_SUMMARY || null })
+          body: JSON.stringify({ email, name, source:'checkout_waitlist', consent:true, cart: cartSummary, language: currentLang() })
         });
-        if(!response.ok) throw new Error('Subscribe failed');
+        if(!saveResponse.ok) throw new Error('Save interest failed');
+        fetch('/.netlify/functions/brevo-subscribe', {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body: JSON.stringify({ email, name, source:'checkout_waitlist', consent:true, cart: cartSummary, language: currentLang() })
+        }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
         localStorage.setItem('raices_waitlist_email', email);
         if(waitlistMessage){ waitlistMessage.dataset.state='ok'; waitlistMessage.textContent = currentLang()==='es' ? 'Listo. Te avisaremos cuando abramos pedidos.' : 'Done. We will notify you when ordering opens.'; }
         if(waitlistForm) waitlistForm.reset();

@@ -1,6 +1,14 @@
 exports.handler = async function(event) {
+  const corsHeaders = {
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "content-type",
+    "access-control-allow-methods": "POST, OPTIONS"
+  };
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: corsHeaders, body: "" };
+  }
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ message: "Method not allowed" }) };
+    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ message: "Method not allowed" }) };
   }
 
   try {
@@ -18,7 +26,7 @@ exports.handler = async function(event) {
       return { statusCode: 400, body: JSON.stringify({ message: "Email inválido." }) };
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL || "https://tqtnffinhqbyesjdollk.supabase.co";
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://tqtnffinhqbyesjdollk.supabase.co";
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!serviceRoleKey) {

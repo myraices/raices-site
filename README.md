@@ -102,3 +102,11 @@ Se guardan en Supabase:
 - Carrito, delivery, datos de entrega, subtotal y total cuando existen.
 
 Brevo sigue siendo la fuente para newsletters y campañas. Supabase queda como base operativa de clientes/intereses/pedidos futuros.
+
+
+## v92 Supabase Fase 1
+- El formulario de newsletter y el modal de lista de espera guardan primero en Supabase (`raices_interests`).
+- Brevo se intenta después en segundo plano, para que un problema de Brevo no impida guardar el lead.
+- `save-interest` acepta `VITE_SUPABASE_URL` o `SUPABASE_URL` y usa `SUPABASE_SERVICE_ROLE_KEY`.
+
+Prueba: agregar producto + ZIP + datos de entrega + Join waitlist. Luego revisar Supabase > Table Editor > `raices_interests`.
