@@ -78,3 +78,10 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - Compacta el carrito lateral para dar más espacio a los productos.
 - Entrega y datos de entrega ahora están en bloques colapsables.
 - Resumen de subtotal/delivery/total queda fijo y compacto al final.
+
+
+## v88 Checkout en modo lista de espera
+- No se aceptan pagos ni pedidos reales.
+- El botón del carrito abre una lista de espera.
+- La lista usa la función existente de Brevo para guardar el email.
+- El carrito, delivery y datos se conservan para futuras fases de Square.

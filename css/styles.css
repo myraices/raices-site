@@ -614,3 +614,24 @@ body.cart-open{overflow:hidden}
   .delivery-fields-grid input,.delivery-fields-grid textarea{height:36px !important;font-size:.76rem !important;}
   .delivery-fields-grid textarea{min-height:40px !important;}
 }
+
+
+/* v88: waitlist checkout mode */
+.waitlist-modal{position:fixed;inset:0;z-index:820;display:none}
+.waitlist-modal.open{display:block}
+.waitlist-backdrop{position:absolute;inset:0;background:rgba(23,38,21,.46);backdrop-filter:blur(8px)}
+.waitlist-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--cream);border:1px solid var(--line);border-radius:28px;box-shadow:0 36px 120px rgba(23,38,21,.34);padding:34px;color:var(--deep)}
+.waitlist-close{position:absolute;right:18px;top:18px;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--forest);font-size:1.45rem;cursor:pointer;display:grid;place-items:center}
+.waitlist-card h2{font-size:clamp(2rem,4vw,3.35rem);line-height:.95;margin:8px 42px 14px 0;color:var(--forest)}
+.waitlist-copy{color:var(--muted);line-height:1.65;margin-bottom:22px}
+.waitlist-form{display:grid;gap:13px}
+.waitlist-form label{display:grid;gap:7px;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:var(--forest)}
+.waitlist-form input[type="text"],.waitlist-form input[type="email"]{min-height:48px;border:1px solid var(--line);border-radius:999px;background:var(--paper);padding:0 16px;color:var(--deep);outline:none;font-size:.96rem}
+.waitlist-consent{display:flex!important;grid-template-columns:auto 1fr!important;align-items:flex-start;gap:10px!important;text-transform:none!important;letter-spacing:0!important;font-size:.84rem!important;font-weight:600!important;line-height:1.4;color:var(--muted)!important}
+.waitlist-consent input{margin-top:3px;accent-color:var(--forest)}
+.waitlist-submit{border:0;cursor:pointer;width:100%;margin-top:4px}
+.waitlist-message{min-height:20px;font-size:.9rem;margin-top:2px;color:var(--muted)}
+.waitlist-message[data-state="ok"]{color:var(--forest);font-weight:800}
+.waitlist-message[data-state="error"]{color:#8a3b2c;font-weight:800}
+.checkout-btn:not(.disabled){opacity:1!important;cursor:pointer!important;background:var(--forest)!important}
+@media(max-width:640px){.waitlist-card{padding:28px 20px 22px;border-radius:24px}.waitlist-card h2{font-size:2.25rem}.waitlist-copy{font-size:.94rem}}

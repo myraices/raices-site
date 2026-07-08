@@ -655,17 +655,15 @@ document.addEventListener("DOMContentLoaded", function(){
     if(cartTotal) cartTotal.textContent = money(total);
     const checkoutBtn = document.getElementById('checkoutSoon');
     if(checkoutBtn){
-      checkoutBtn.classList.toggle('disabled', !canCheckout);
-      checkoutBtn.disabled = !canCheckout;
-      checkoutBtn.textContent = canCheckout
-        ? (currentLang()==='es' ? 'Continuar al checkout' : 'Continue to checkout')
-        : (currentLang()==='es' ? 'Completa carrito, ZIP y datos' : 'Complete cart, ZIP and details');
+      checkoutBtn.classList.remove('disabled');
+      checkoutBtn.disabled = false;
+      checkoutBtn.textContent = currentLang()==='es' ? 'Avisarme cuando abran pedidos' : 'Notify me when orders open';
     }
     const cartNote = document.querySelector('.cart-note');
     if(cartNote){
-      cartNote.textContent = canCheckout
-        ? (currentLang()==='es' ? 'Delivery agregado al total. Square Checkout se activará en la siguiente fase.' : 'Delivery added to the total. Square Checkout will be activated in the next phase.')
-        : (currentLang()==='es' ? 'Agrega productos, un ZIP válido y tus datos de entrega para calcular el total final.' : 'Add products, a valid ZIP and delivery details to calculate the final total.');
+      cartNote.textContent = currentLang()==='es'
+        ? 'Todavía no estamos aceptando pedidos. Únete a la lista para avisarte cuando abramos oficialmente.'
+        : 'We are not accepting orders yet. Join the list and we will notify you when ordering opens.';
     }
     if(deliveryZip && document.activeElement !== deliveryZip) deliveryZip.value = zip;
     updateDeliveryUI(zip, deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null, count);
@@ -769,6 +767,72 @@ document.addEventListener("DOMContentLoaded", function(){
       if(backdrop) backdrop.classList.remove('show');
     });
   });
+
+
+
+  const waitlistModal = document.getElementById('waitlistModal');
+  const waitlistBackdrop = document.getElementById('waitlistBackdrop');
+  const waitlistClose = document.getElementById('waitlistClose');
+  const waitlistForm = document.getElementById('waitlistCheckoutForm');
+  const waitlistEmail = document.getElementById('waitlistEmail');
+  const waitlistName = document.getElementById('waitlistName');
+  const waitlistConsent = document.getElementById('waitlistConsent');
+  const waitlistMessage = document.getElementById('waitlistMessage');
+
+  function openWaitlistModal(){
+    if(waitlistEmail){
+      const savedEmail = (localStorage.getItem('raices_waitlist_email') || '').trim();
+      if(savedEmail) waitlistEmail.value = savedEmail;
+    }
+    if(waitlistModal){
+      waitlistModal.classList.add('open');
+      waitlistModal.setAttribute('aria-hidden','false');
+      setTimeout(()=>{ if(waitlistEmail) waitlistEmail.focus(); }, 80);
+    }
+  }
+  function closeWaitlistModal(){
+    if(waitlistModal){
+      waitlistModal.classList.remove('open');
+      waitlistModal.setAttribute('aria-hidden','true');
+    }
+  }
+  const checkoutWaitBtn = document.getElementById('checkoutSoon');
+  if(checkoutWaitBtn) checkoutWaitBtn.addEventListener('click', function(e){
+    e.preventDefault();
+    openWaitlistModal();
+  });
+  if(waitlistBackdrop) waitlistBackdrop.addEventListener('click', closeWaitlistModal);
+  if(waitlistClose) waitlistClose.addEventListener('click', closeWaitlistModal);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeWaitlistModal(); });
+  if(waitlistForm){
+    waitlistForm.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const email = waitlistEmail ? waitlistEmail.value.trim() : '';
+      const name = waitlistName ? waitlistName.value.trim() : '';
+      if(waitlistMessage){ waitlistMessage.dataset.state='idle'; waitlistMessage.textContent = currentLang()==='es' ? 'Enviando...' : 'Sending...'; }
+      if(!email || !email.includes('@')){
+        if(waitlistMessage){ waitlistMessage.dataset.state='error'; waitlistMessage.textContent = currentLang()==='es' ? 'Escribe un correo válido.' : 'Enter a valid email.'; }
+        return;
+      }
+      if(waitlistConsent && !waitlistConsent.checked){
+        if(waitlistMessage){ waitlistMessage.dataset.state='error'; waitlistMessage.textContent = currentLang()==='es' ? 'Debes aceptar recibir comunicaciones de Raíces.' : 'Please accept receiving Raíces communications.'; }
+        return;
+      }
+      try{
+        const response = await fetch('/.netlify/functions/brevo-subscribe', {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body: JSON.stringify({ email, name, source:'checkout_waitlist', cart: window.RAICES_CART_SUMMARY || null })
+        });
+        if(!response.ok) throw new Error('Subscribe failed');
+        localStorage.setItem('raices_waitlist_email', email);
+        if(waitlistMessage){ waitlistMessage.dataset.state='ok'; waitlistMessage.textContent = currentLang()==='es' ? 'Listo. Te avisaremos cuando abramos pedidos.' : 'Done. We will notify you when ordering opens.'; }
+        if(waitlistForm) waitlistForm.reset();
+      } catch(err){
+        if(waitlistMessage){ waitlistMessage.dataset.state='error'; waitlistMessage.textContent = currentLang()==='es' ? 'No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.' : 'We could not save your email. Try again or message us on WhatsApp.'; }
+      }
+    });
+  }
 
   window.addEventListener('raices:languageChanged', function(){
     renderDoors();

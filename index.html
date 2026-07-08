@@ -226,6 +226,33 @@
   </aside>
 
 
+  <div class="waitlist-modal" id="waitlistModal" aria-hidden="true">
+    <div class="waitlist-backdrop" id="waitlistBackdrop"></div>
+    <div class="waitlist-card" role="dialog" aria-modal="true" aria-labelledby="waitlistTitle">
+      <button class="waitlist-close" id="waitlistClose" aria-label="Cerrar">×</button>
+      <p class="eyebrow" data-i18n="waitlist_checkout_eyebrow">Pedidos próximamente</p>
+      <h2 id="waitlistTitle" data-i18n="waitlist_checkout_title">Estamos preparando la apertura oficial.</h2>
+      <p class="waitlist-copy" data-i18n="waitlist_checkout_text">Aún no estamos aceptando pedidos porque estamos terminando empaques y detalles de lanzamiento. Déjanos tu correo y te avisaremos cuando abramos la tienda.</p>
+      <form id="waitlistCheckoutForm" class="waitlist-form">
+        <label>
+          <span data-i18n="waitlist_name_label">Nombre</span>
+          <input id="waitlistName" type="text" autocomplete="name" placeholder="Tu nombre"/>
+        </label>
+        <label>
+          <span>Email</span>
+          <input id="waitlistEmail" type="email" autocomplete="email" placeholder="tu@email.com" required/>
+        </label>
+        <label class="waitlist-consent">
+          <input id="waitlistConsent" type="checkbox" required/>
+          <span data-i18n="waitlist_consent">Acepto recibir comunicaciones de Raíces sobre lanzamientos, productos y novedades.</span>
+        </label>
+        <button class="btn waitlist-submit" type="submit" data-i18n="waitlist_submit">Avisarme cuando abran pedidos</button>
+        <p id="waitlistMessage" class="waitlist-message"></p>
+      </form>
+    </div>
+  </div>
+
+
 
   <aside class="product-modal" id="productModal" aria-hidden="true">
     <div class="product-modal-backdrop" id="productModalBackdrop"></div>
