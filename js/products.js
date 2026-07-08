@@ -644,6 +644,34 @@ window.RAICES_PRODUCTS = [
     "relatedHint": "Completa tu ritual"
   },
   {
+    "sku": "RA-TM-004",
+    "category": "Herbal",
+    "collection": "Three Moments",
+    "subcategory": "Herbal",
+    "name": "Gut Harmony",
+    "slug": "gut-harmony",
+    "description": "Mezcla herbal Gut Harmony creada para acompañar la digestión ligera y el bienestar desde adentro.",
+    "longDescription": "Gut Harmony forma parte del universo Herbal de Raíces: una infusión pensada para acompañar momentos de equilibrio, ligereza y conexión con el cuerpo.",
+    "unit": "Unidad",
+    "unitsPerPackage": 1,
+    "unitWeight": "60 g (2.11 oz)",
+    "netWeight": "60 g (2.11 oz)",
+    "price": 19.0,
+    "image": "assets/products/herbal/te-gut-harmony.jpg",
+    "available": true,
+    "taxable": null,
+    "benefits": [
+      "Mezcla herbal natural",
+      "Apoya un ritual digestivo ligero",
+      "Ideal para después de comer o cerrar el día"
+    ],
+    "ingredients": "Mezcla herbal con ingredientes botánicos como menta, jengibre y notas cítricas según formulación.",
+    "conservation": "Conservar en lugar fresco y seco. Mantener cerrado después de abrir.",
+    "preparation": "Infusionar en agua caliente de 5 a 8 minutos. Ajustar intensidad al gusto.",
+    "moment": "Después de comer, pausa de tarde o ritual de bienestar digestivo.",
+    "relatedHint": "Completa tu ritual"
+  },
+  {
     "sku": "RA-RC-001",
     "category": "Herbal",
     "collection": "Ritual Collection",

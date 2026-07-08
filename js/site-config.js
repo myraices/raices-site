@@ -11,8 +11,8 @@ window.RAICES_CATEGORIES = {
   "Herbal": {
     title: "Herbal",
     spanish: "Herbal",
-    tagline: "Tres momentos. Una misma raíz.",
-    tagline_en: "Three moments. One same root.",
+    tagline: "Rituales herbales. Una misma raíz.",
+    tagline_en: "Herbal rituals. One same root.",
     description: "Infusiones y rituales herbales creados para acompañar tus momentos de energía, equilibrio y calma.",
     description_en: "Herbal infusions and rituals created to accompany moments of energy, balance and calm.",
     image: "assets/categories/category-herbal.jpg"
@@ -50,7 +50,7 @@ window.RAICES_COLLECTIONS = {
   "Signature Arepas": { title: "Signature Arepas Collection", description: "Tradición reinventada con yuca, vegetales y sabores naturales.", image: "assets/arepas-board.jpg" },
   "Signature Empanadas": { title: "Signature Empanadas Collection", description: "Masa artesanal, rellenos honestos y colores que nacen de la raíz.", image: "assets/empanadas-signature-board.jpg" },
   "Protein Craft Collection": { title: "Protein Craft Collection", description: "Proteínas cocinadas lentamente y listas para disfrutar.", image: "assets/proteinas-board.jpg" },
-  "Three Moments": { title: "Three Moments", description: "Slim & Drain, Golden Fit y Dream & Calm: tres momentos para acompañar tu día.", image: "assets/categories/category-herbal.jpg" },
+  "Three Moments": { title: "Herbal Rituals", description: "Slim & Drain, Golden Fit, Dream & Calm y Gut Harmony: rituales herbales para acompañar tu día.", image: "assets/categories/category-herbal.jpg" },
   "Ritual Collection": { title: "Ritual Collection", description: "Los tres tés insignia de Raíces para acompañar cada momento del día.", image: "assets/products/herbal/herbal-ritual-collection.jpg" },
   "Ritual Box": { title: "Ritual Box", description: "Caja premium con té a elección, mug, difusor y tarjeta ritual.", image: "assets/products/herbal/herbal-ritual-box-dream-calm.jpg" },
   "Signature Desserts": { title: "Signature Desserts", description: "Lo dulce también puede sentirse natural, cuidado y especial.", image: "assets/categories/category-desserts.jpg" },
