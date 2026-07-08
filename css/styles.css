@@ -126,3 +126,17 @@ body{padding-top:92px}.hero{min-height:calc(100vh - 92px);display:grid;place-ite
   .add-btn{min-height:32px !important;font-size:.58rem !important;padding:0 8px !important;}
   .text-product-link{font-size:.58rem !important;}
 }
+
+
+/* v72: collection cards premium lifestyle images */
+.door-grid{gap:18px !important;}
+.door-card{min-height:430px !important;border-radius:24px !important;box-shadow:0 22px 58px rgba(31,47,29,.10) !important;}
+.door-card:before{background:linear-gradient(to top,rgba(23,38,21,.78),rgba(23,38,21,.22) 52%,rgba(23,38,21,.04)) !important;}
+.door-card .door-bg{background-size:cover !important;background-position:center !important;}
+.door-content{padding:26px !important;}
+.door-content .eyebrow{font-size:.68rem;letter-spacing:.14em;color:#d6a36e !important;}
+.door-content h3{font-size:2.25rem !important;line-height:.95 !important;text-shadow:0 10px 28px rgba(0,0,0,.26);}
+.door-content p{font-size:.88rem !important;line-height:1.45 !important;text-shadow:0 8px 18px rgba(0,0,0,.25);}
+@media(max-width:1100px){.door-grid{grid-template-columns:repeat(3,1fr) !important}.door-card{min-height:390px !important}}
+@media(max-width:900px){.door-grid{grid-template-columns:repeat(2,1fr) !important}.door-card{min-height:360px !important}}
+@media(max-width:640px){.door-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}.door-card{min-height:260px !important;border-radius:18px !important}.door-content{padding:16px !important}.door-content h3{font-size:1.55rem !important}.door-content p{font-size:.72rem !important}}
