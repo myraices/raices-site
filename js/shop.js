@@ -335,9 +335,15 @@ document.addEventListener("DOMContentLoaded", function(){
     });
 
     if(!productGrid) return;
-    productGrid.innerHTML = list.map(p => `<article class="product-card-shop">
+    productGrid.innerHTML = list.map(p => {
+      const isRitualBox = p.slug === 'ritual-box';
+      const primaryAction = isRitualBox
+        ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Personalizar Ritual Box' : 'Customize Ritual Box'}</button>`
+        : `<button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
+           <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>`;
+      return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''}">
       <div class="product-media" style="background-image:url('${p.image}')">
-        <span class="product-badge">${p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory)}</span>
+        <span class="product-badge">${isRitualBox ? (currentLang()==='es' ? 'Personalizable' : 'Customizable') : (p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory))}</span>
       </div>
       <div class="product-body">
         <div>
@@ -352,14 +358,14 @@ document.addEventListener("DOMContentLoaded", function(){
           <span>🔥 ${productPreparation(p)}</span>
         </div>
         <div class="product-bottom premium-actions">
-          <span class="price">${money(p.price)}</span>
-          <div class="action-stack">
-            <button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
-            <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>
+          ${isRitualBox ? '' : `<span class="price">${money(p.price)}</span>`}
+          <div class="action-stack ${isRitualBox ? 'single-action' : ''}">
+            ${primaryAction}
           </div>
         </div>
       </div>
-    </article>`).join("");
+    </article>`;
+    }).join("");
     productGrid.querySelectorAll("[data-add]").forEach(btn => {
       btn.addEventListener("click", function(){
         addToCart(this.dataset.add);

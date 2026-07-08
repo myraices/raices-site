@@ -148,3 +148,33 @@ body{padding-top:92px}.hero{min-height:calc(100vh - 92px);display:grid;place-ite
 .variant-option{border:1px solid var(--line);background:var(--cream);color:var(--forest);border-radius:999px;padding:10px 14px;font-weight:800;font-size:.78rem;cursor:pointer;transition:.22s}
 .variant-option.active,.variant-option:hover{background:var(--forest);color:#fff;border-color:var(--forest)}
 .variant-box p{margin-top:10px;color:var(--muted);font-size:.9rem}
+
+/* v76: Ritual Box customization flow */
+.product-card-shop.is-ritual-box .product-media{
+  background-size:92% auto !important;
+  background-repeat:no-repeat !important;
+  background-position:center !important;
+  background-color:#f8f0e6 !important;
+}
+.product-card-shop.is-ritual-box .product-bottom{
+  display:block !important;
+}
+.product-card-shop.is-ritual-box .action-stack.single-action{
+  width:100%;
+  align-items:stretch;
+}
+.product-card-shop.is-ritual-box .personalize-btn{
+  width:100%;
+  min-height:42px;
+  padding:0 14px;
+}
+.product-modal-image{
+  background-size:contain !important;
+  background-repeat:no-repeat !important;
+  background-position:center !important;
+  background-color:#f8f0e6 !important;
+}
+@media(max-width:640px){
+  .product-card-shop.is-ritual-box .product-media{background-size:94% auto !important;}
+  .product-card-shop.is-ritual-box .personalize-btn{font-size:.55rem !important;letter-spacing:.07em;min-height:34px;}
+}
