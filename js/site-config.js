@@ -42,7 +42,7 @@ window.RAICES_CATEGORIES = {
     tagline_en: "Knowledge that nourishes body and mind.",
     description: "Guías digitales para cultivar hábitos, cocina consciente, calma y bienestar desde lo esencial.",
     description_en: "Digital guides to cultivate habits, conscious cooking, calm and wellbeing from the essential.",
-    image: "assets/botanicos-product.jpg"
+    image: "assets/wellness-library-board.jpg"
   }
 };
 
@@ -55,5 +55,5 @@ window.RAICES_COLLECTIONS = {
   "Ritual Box": { title: "Ritual Box", description: "Una experiencia completa para regalar o comenzar tu propio ritual.", image: "assets/herbal-board.jpg" },
   "Signature Desserts": { title: "Signature Desserts", description: "Lo dulce también puede sentirse natural, cuidado y especial.", image: "assets/desserts-board.jpg" },
   "Home Rituals": { title: "Home Rituals", description: "Piezas sencillas para preparar, servir y disfrutar con intención.", image: "assets/home-board.jpg" },
-  "The Library": { title: "The Library", description: "Guías digitales para volver a lo esencial y cultivar bienestar.", image: "assets/botanicos-product.jpg" }
+  "The Library": { title: "The Library", description: "Guías digitales para volver a lo esencial y cultivar bienestar.", image: "assets/wellness-library-board.jpg" }
 };

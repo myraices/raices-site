@@ -298,7 +298,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(!productGrid) return;
     productGrid.innerHTML = list.map(p => `<article class="product-card-shop">
       <div class="product-media" style="background-image:url('${p.image}')">
-        <span class="product-badge">${translateSubcategory(p.subcategory)}</span>
+        <span class="product-badge">${p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory)}</span>
       </div>
       <div class="product-body">
         <div>
@@ -315,7 +315,7 @@ document.addEventListener("DOMContentLoaded", function(){
         <div class="product-bottom premium-actions">
           <span class="price">${money(p.price)}</span>
           <div class="action-stack">
-            <button class="text-product-link" data-view="${p.sku}">${t('view_product')}</button>
+            <button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
             <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>
           </div>
         </div>

@@ -937,7 +937,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 20.0,
-    "image": "assets/botanicos-product.jpg",
+    "image": "assets/guide-volver-esencial.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -965,7 +965,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 30.0,
-    "image": "assets/botanicos-product.jpg",
+    "image": "assets/guide-21-dias.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -993,7 +993,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 25.0,
-    "image": "assets/botanicos-product.jpg",
+    "image": "assets/guide-cocina-raiz.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -1021,7 +1021,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 25.0,
-    "image": "assets/botanicos-product.jpg",
+    "image": "assets/guide-rituales.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
