@@ -110,3 +110,19 @@ Brevo sigue siendo la fuente para newsletters y campañas. Supabase queda como b
 - `save-interest` acepta `VITE_SUPABASE_URL` o `SUPABASE_URL` y usa `SUPABASE_SERVICE_ROLE_KEY`.
 
 Prueba: agregar producto + ZIP + datos de entrega + Join waitlist. Luego revisar Supabase > Table Editor > `raices_interests`.
+
+## v93 - Emails automáticos Brevo
+
+Esta versión mantiene el guardado en Supabase y mejora `netlify/functions/brevo-subscribe.js` para que, además de crear/actualizar el contacto en Brevo, envíe un correo transaccional automático:
+
+- Newsletter: email de bienvenida.
+- Checkout waitlist: email de confirmación con resumen del carrito si existe.
+
+Variables recomendadas en Netlify:
+
+- `BREVO_API_KEY` obligatoria.
+- `BREVO_LIST_ID` obligatoria.
+- `BREVO_SENDER_EMAIL` recomendada. Ejemplo: `info@myraices.com`.
+- `BREVO_SENDER_NAME` opcional. Ejemplo: `Raíces`.
+
+Importante: el sender email debe estar verificado/autorizado en Brevo para que los correos transaccionales salgan correctamente.
