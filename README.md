@@ -62,3 +62,9 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - Delivery validates immediately when the 5-digit ZIP is entered.
 - Apply button now forces update even when cart is empty.
 - Valid ZIP shows zone and cost clearly before checkout.
+
+## v84 — Delivery integrado al carrito
+- El ZIP genera un estado de delivery persistente en `localStorage`.
+- El costo de delivery se suma al total del carrito cuando hay productos y ZIP válido.
+- Se guarda un resumen en `raices_cart_summary` para la próxima fase de checkout/Square.
+- Checkout queda preparado, pero el pago real se activará en la siguiente fase.

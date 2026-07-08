@@ -92,13 +92,31 @@ document.addEventListener("DOMContentLoaded", function(){
   }
 
   const deliveryZones = [
-    { name:'Katy / Cinco Ranch', cost:5, zips:['77494','77450','77493'] },
+    { name:'Katy / Cinco Ranch', cost:5, zips:['77449','77450','77491','77493','77494'] },
     { name:'Fulshear', cost:8, zips:['77441'] },
     { name:'Richmond', cost:8, zips:['77406','77407','77469'] },
     { name:'Sugar Land', cost:15, zips:['77478','77479','77498'] },
     { name:'Cypress', cost:15, zips:['77429','77433'] },
     { name:'Houston', cost:15, prefix:['770'] }
   ];
+
+  function buildDeliveryState(zip){
+    const clean = normalizeZip(zip);
+    const zone = findDeliveryZone(clean);
+    const state = {
+      zip: clean,
+      valid: clean.length === 5 && !!zone,
+      zone: zone ? zone.name : '',
+      cost: zone ? Number(zone.cost || 0) : 0,
+      unsupported: clean.length === 5 && !zone
+    };
+    localStorage.setItem('raices_delivery_state', JSON.stringify(state));
+    return state;
+  }
+
+  function getDeliveryState(){
+    return buildDeliveryState(getDeliveryZip());
+  }
 
   function findDeliveryZone(zip){
     const clean = normalizeZip(zip);
@@ -113,7 +131,11 @@ document.addEventListener("DOMContentLoaded", function(){
   function setDeliveryZip(zip){
     const clean = normalizeZip(zip);
     if(clean) localStorage.setItem('raices_delivery_zip', clean);
-    else localStorage.removeItem('raices_delivery_zip');
+    else {
+      localStorage.removeItem('raices_delivery_zip');
+      localStorage.removeItem('raices_delivery_state');
+    }
+    if(clean) buildDeliveryState(clean);
     return clean;
   }
 
@@ -132,8 +154,8 @@ document.addEventListener("DOMContentLoaded", function(){
   function deliveryPromptText(zip, zone, hasItems){
     if(zip.length === 5 && zone){
       return currentLang()==='es'
-        ? `${zone.name}: delivery ${money(zone.cost)}${hasItems ? '' : '. Agrega productos para ver el total.'}`
-        : `${zone.name}: delivery ${money(zone.cost)}${hasItems ? '' : '. Add products to see the total.'}`;
+        ? `${zone.name}: se agregará ${money(zone.cost)} de delivery al total${hasItems ? '.' : '. Agrega productos para ver el total.'}`
+        : `${zone.name}: ${money(zone.cost)} delivery will be added to the total${hasItems ? '.' : '. Add products to see the total.'}`;
     }
     if(zip.length === 5 && !zone){
       return unsupportedDeliveryText(zip);
@@ -522,15 +544,40 @@ document.addEventListener("DOMContentLoaded", function(){
     const count = enriched.reduce((sum, item) => sum + item.qty, 0);
     const subtotal = enriched.reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
     const zip = getDeliveryZip();
-    const zone = findDeliveryZone(zip);
-    const deliveryCost = zone ? zone.cost : 0;
-    const total = subtotal + (enriched.length && zone ? deliveryCost : 0);
+    const deliveryState = getDeliveryState();
+    const zone = deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null;
+    const deliveryCost = count > 0 && deliveryState.valid ? deliveryState.cost : 0;
+    const total = subtotal + deliveryCost;
+    const canCheckout = count > 0 && deliveryState.valid;
+    window.RAICES_CART_SUMMARY = {
+      items: enriched.map(item => ({ sku:item.sku, qty:item.qty, variant:item.variant || '', name:item.product.name, price:Number(item.product.price || 0), lineTotal:item.qty * Number(item.product.price || 0) })),
+      subtotal,
+      delivery: deliveryState,
+      deliveryCost,
+      total,
+      canCheckout
+    };
+    localStorage.setItem('raices_cart_summary', JSON.stringify(window.RAICES_CART_SUMMARY));
     if(cartCount) cartCount.textContent = count;
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
-    if(cartDelivery) cartDelivery.textContent = enriched.length ? (zone ? money(deliveryCost) : '—') : '—';
+    if(cartDelivery) cartDelivery.textContent = count ? (deliveryState.valid ? money(deliveryCost) : '—') : '—';
     if(cartTotal) cartTotal.textContent = money(total);
+    const checkoutBtn = document.getElementById('checkoutSoon');
+    if(checkoutBtn){
+      checkoutBtn.classList.toggle('disabled', !canCheckout);
+      checkoutBtn.disabled = !canCheckout;
+      checkoutBtn.textContent = canCheckout
+        ? (currentLang()==='es' ? 'Continuar al checkout' : 'Continue to checkout')
+        : (currentLang()==='es' ? 'Completa el carrito y ZIP' : 'Complete cart and ZIP');
+    }
+    const cartNote = document.querySelector('.cart-note');
+    if(cartNote){
+      cartNote.textContent = canCheckout
+        ? (currentLang()==='es' ? 'Delivery agregado al total. Square Checkout se activará en la siguiente fase.' : 'Delivery added to the total. Square Checkout will be activated in the next phase.')
+        : (currentLang()==='es' ? 'Agrega productos y un ZIP válido para calcular el total final.' : 'Add products and a valid ZIP to calculate the final total.');
+    }
     if(deliveryZip && document.activeElement !== deliveryZip) deliveryZip.value = zip;
-    updateDeliveryUI(zip, zone, enriched.length);
+    updateDeliveryUI(zip, deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null, count);
     if(!cartItems) return;
     if(enriched.length === 0){
       cartItems.innerHTML = `<div class="cart-empty-state">

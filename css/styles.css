@@ -391,3 +391,10 @@ body.cart-open{overflow:hidden}
 .cart-total-line{border-top:1px solid var(--line);padding-top:12px;margin-top:10px}
 .cart-total-line strong{font-size:1.65rem!important;color:var(--forest)}
 @media(max-width:640px){.delivery-box{border-radius:18px;padding:13px}.delivery-input-row button{padding:0 13px}}
+
+/* v84: delivery integrated with cart totals */
+.checkout-btn:not(.disabled){opacity:1;cursor:pointer;background:var(--forest);}
+.checkout-btn.disabled{opacity:.55;cursor:not-allowed;filter:saturate(.65);}
+.cart-total-line{margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:1.18rem;}
+.delivery-message[data-state="ok"]::before{content:"✓ ";}
+.delivery-message[data-state="error"]::before{content:"⚠ ";}
