@@ -25,3 +25,18 @@ Esta versión reorganiza la web alrededor de las líneas principales de Raíces:
 - Guardado de pedidos en Supabase.
 
 Es la base visual y de arquitectura antes de conectar checkout y pedidos.
+
+
+## v80 - Catálogo centralizado
+
+Esta versión agrega `js/catalog.js` como capa única para leer productos, categorías y colecciones.
+
+A partir de esta versión, las próximas fases deben usar `window.RAICES_CATALOG` para:
+
+- Buscar productos por SKU.
+- Generar líneas de carrito.
+- Filtrar por categoría o colección.
+- Preparar checkout con Square.
+- Guardar pedidos en Supabase.
+
+La apariencia visual de la web no cambia en esta versión; el cambio es estructural.

@@ -1,7 +1,8 @@
 document.addEventListener("DOMContentLoaded", function(){
-  const products = window.RAICES_PRODUCTS || [];
-  const categories = window.RAICES_CATEGORIES || {};
-  const collections = window.RAICES_COLLECTIONS || {};
+  const catalog = window.RAICES_CATALOG || {};
+  const products = catalog.products || window.RAICES_PRODUCTS || [];
+  const categories = catalog.categories || window.RAICES_CATEGORIES || {};
+  const collections = catalog.collections || window.RAICES_COLLECTIONS || {};
   const categoryDoors = document.getElementById("categoryDoors");
   const categoryFilters = document.getElementById("categoryFilters");
   const collectionSelect = document.getElementById("collectionSelect");
