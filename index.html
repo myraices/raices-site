@@ -145,16 +145,32 @@
     </section>
 
     <section id="contacto" class="newsletter-section">
-      <div class="container newsletter">
-        <div>
+      <div class="container newsletter newsletter-premium">
+        <div class="newsletter-copy">
           <p class="eyebrow" data-i18n="community_eyebrow">Comunidad Raíces</p>
-          <h2 data-i18n="community_title">Recibe novedades y próximos lanzamientos.</h2>
-          <p data-i18n="community_text">También usaremos esta lista para la futura línea Naturals.</p>
+          <h2 data-i18n="community_title">Únete a la comunidad Raíces.</h2>
+          <p data-i18n="community_text">Recibe lanzamientos, rituales, recetas y beneficios exclusivos antes que nadie.</p>
+          <div class="newsletter-benefits">
+            <span data-i18n="newsletter_benefit_1">Lanzamientos anticipados</span>
+            <span data-i18n="newsletter_benefit_2">Recetas y rituales</span>
+            <span data-i18n="newsletter_benefit_3">Beneficios exclusivos</span>
+          </div>
         </div>
-        <form class="form" name="newsletter" method="POST" data-netlify="true">
-          <input type="hidden" name="form-name" value="newsletter"/>
-          <input id="emailInput" type="email" name="email" placeholder="Tu correo electrónico" required/>
+        <form class="newsletter-form" id="newsletterForm" name="newsletter" novalidate>
+          <label>
+            <span data-i18n="newsletter_name_label">Nombre</span>
+            <input id="newsletterName" type="text" name="name" autocomplete="name" placeholder="Tu nombre"/>
+          </label>
+          <label>
+            <span>Email</span>
+            <input id="emailInput" type="email" name="email" autocomplete="email" placeholder="Tu correo electrónico" required/>
+          </label>
+          <label class="newsletter-consent">
+            <input id="newsletterConsent" type="checkbox" required/>
+            <span data-i18n="newsletter_consent">Acepto recibir comunicaciones de Raíces sobre lanzamientos, productos, recetas y novedades.</span>
+          </label>
           <button type="submit" data-i18n="subscribe">Suscribirme</button>
+          <p id="newsletterMessage" class="newsletter-message" aria-live="polite"></p>
         </form>
       </div>
     </section>

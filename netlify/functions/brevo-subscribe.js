@@ -1,14 +1,21 @@
-
 exports.handler = async function(event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ message: "Method not allowed" }) };
   }
 
   try {
-    const { email } = JSON.parse(event.body || "{}");
+    const payload = JSON.parse(event.body || "{}");
+    const email = String(payload.email || "").trim().toLowerCase();
+    const name = String(payload.name || "").trim();
+    const source = String(payload.source || "website").trim();
+    const language = String(payload.language || "es").trim().slice(0, 8);
+    const consent = Boolean(payload.consent || source === "checkout_waitlist");
 
     if (!email || !email.includes("@")) {
       return { statusCode: 400, body: JSON.stringify({ message: "Email inválido." }) };
+    }
+    if (!consent) {
+      return { statusCode: 400, body: JSON.stringify({ message: "Consentimiento requerido." }) };
     }
 
     const apiKey = process.env.BREVO_API_KEY;
@@ -17,6 +24,11 @@ exports.handler = async function(event) {
     if (!apiKey || !listId) {
       return { statusCode: 500, body: JSON.stringify({ message: "Brevo no está configurado todavía." }) };
     }
+
+    // Keep attributes minimal so the function works even if custom Brevo
+    // attributes like SOURCE or LANGUAGE have not been created yet.
+    const attributes = {};
+    if (name) attributes.FIRSTNAME = name;
 
     const response = await fetch("https://api.brevo.com/v3/contacts", {
       method: "POST",
@@ -29,7 +41,7 @@ exports.handler = async function(event) {
         email,
         listIds: [listId],
         updateEnabled: true,
-        attributes: { SOURCE: "myraices.com" }
+        attributes
       })
     });
 
