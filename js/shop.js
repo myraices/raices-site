@@ -241,16 +241,32 @@ document.addEventListener("DOMContentLoaded", function(){
     return variant ? `${sku}::${variant}` : sku;
   }
 
+  function variantDisplay(v){
+    if(!v) return '';
+    if(currentLang()==='es') return v.labelEs || v.name || '';
+    return v.labelEn || v.name || '';
+  }
+
   function variantLabel(product){
     if(!product || !Array.isArray(product.variants) || !product.variants.length) return '';
-    return currentLang()==='es' ? 'Elige tu té' : 'Choose your tea';
+    if(product.slug === 'ritual-box') return currentLang()==='es' ? 'Elige tu té' : 'Choose your tea';
+    if(product.slug === 'signature-teapot') return currentLang()==='es' ? 'Elige tu modelo' : 'Choose your model';
+    return currentLang()==='es' ? 'Elige una opción' : 'Choose an option';
   }
 
   function variantIntro(product){
     if(!product || !Array.isArray(product.variants) || !product.variants.length) return '';
-    return currentLang()==='es'
-      ? 'Tu Ritual Box incluye el té seleccionado, mug Raíces, difusor dorado y tarjeta de preparación.'
-      : 'Your Ritual Box includes the selected tea, Raíces mug, golden infuser and preparation card.';
+    if(product.slug === 'ritual-box'){
+      return currentLang()==='es'
+        ? 'Tu Ritual Box incluye el té seleccionado, mug Raíces, difusor dorado y tarjeta de preparación.'
+        : 'Your Ritual Box includes the selected tea, Raíces mug, golden infuser and preparation card.';
+    }
+    if(product.slug === 'signature-teapot'){
+      return currentLang()==='es'
+        ? 'Selecciona el modelo de tetera que prefieres para tu ritual.'
+        : 'Select the teapot model you prefer for your ritual.';
+    }
+    return currentLang()==='es' ? 'Selecciona una opción antes de agregar al carrito.' : 'Select an option before adding to cart.';
   }
 
   function openProductModal(sku){
@@ -259,12 +275,12 @@ document.addEventListener("DOMContentLoaded", function(){
     const benefits = benefitList(p).map(b => `<li>${b}</li>`).join('');
     const related = relatedProducts(p).map(r => `<button class="ritual-card" data-related-add="${r.sku}"><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}</em></button>`).join('');
     const hasVariants = Array.isArray(p.variants) && p.variants.length;
-    const selectedVariant = hasVariants ? p.variants[0].name : "";
+    const selectedVariant = hasVariants ? variantDisplay(p.variants[0]) : "";
     const variantBlock = hasVariants ? `
       <div class="variant-box">
         <label>${variantLabel(p)}</label>
         <div class="variant-options">
-          ${p.variants.map((v, idx) => `<button type="button" class="variant-option ${idx===0?'active':''}" data-variant="${v.name}" data-variant-image="${v.image}">${v.name}</button>`).join('')}
+          ${p.variants.map((v, idx) => `<button type="button" class="variant-option ${idx===0?'active':''}" data-variant="${variantDisplay(v)}" data-variant-image="${v.image}">${variantDisplay(v)}</button>`).join('')}
         </div>
         <p>${variantIntro(p)}</p>
       </div>` : '';
@@ -337,9 +353,12 @@ document.addEventListener("DOMContentLoaded", function(){
     if(!productGrid) return;
     productGrid.innerHTML = list.map(p => {
       const isRitualBox = p.slug === 'ritual-box';
+      const isConfigurable = Array.isArray(p.variants) && p.variants.length;
       const primaryAction = isRitualBox
         ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Personalizar Ritual Box' : 'Customize Ritual Box'}</button>`
-        : `<button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
+        : isConfigurable
+          ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Elegir opción' : 'Choose option'}</button>`
+          : `<button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
            <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>`;
       return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''}">
       <div class="product-media" style="background-image:url('${p.image}')">
