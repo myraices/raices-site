@@ -237,7 +237,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-yuca-clasica.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-pollo.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -293,7 +293,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-platano.jpg",
+    "image": "assets/products/empanadas/empanada-platano-pollo.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -321,7 +321,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-remolacha.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-remolacha-carne.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -349,7 +349,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-curcuma.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-curcuma-pollo.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -377,7 +377,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-espinaca.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-espinaca-queso.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -405,7 +405,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-4seeds.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-4-seeds-pavo.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
