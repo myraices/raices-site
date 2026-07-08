@@ -29,6 +29,49 @@ document.addEventListener("DOMContentLoaded", function(){
     return currentLang() === 'es' ? (item.spanish || item.title || cat) : (item.title || cat);
   }
 
+  function localizedCategoryText(cat, field){
+    const item = categories[cat] || {};
+    if(currentLang()==='en' && item[field + '_en']) return item[field + '_en'];
+    return item[field] || '';
+  }
+
+  function productDescription(product){
+    if(currentLang()==='es') return product.longDescription || product.description || '';
+    const map = {
+      'Arepas': `${product.name} is part of Raíces' Signature Arepas Collection: handcrafted root-based arepas made with real ingredients, created to heat, serve and enjoy at home.`,
+      'Empanadas': `${product.name} is part of Raíces' Signature Empanadas Collection: handmade cassava-based empanadas with honest fillings and natural colors inspired by the root.`,
+      'Proteínas': `${product.name} belongs to the Protein Craft Collection: slow-cooked, ready-to-enjoy proteins designed to simplify nourishing meals.`,
+      'Herbal': `${product.name} is a herbal ritual created to accompany your day with intention, balance and calm.`,
+      'Postres': `${product.name} is part of the Signature Desserts Collection: sweetness with a more natural, thoughtful and handcrafted approach.`,
+      'Home': `${product.name} belongs to Home Rituals: simple objects created to turn an everyday pause into a meaningful ritual.`,
+      'Guías': `${product.name} is part of The Library: a digital guide created to support habits, conscious living and everyday wellbeing.`
+    };
+    return map[product.subcategory] || product.longDescription || product.description || '';
+  }
+
+  function productBenefit(product){
+    if(currentLang()==='es') return product.benefits && product.benefits[0] ? product.benefits[0] : 'Ingredientes reales';
+    const map = {Kitchen:'Made with real ingredients',Herbal:'Created for daily rituals',Desserts:'Handcrafted sweetness',Home:'Designed for mindful rituals',Wellness:'Practical digital content'};
+    return map[product.category] || 'Created with intention';
+  }
+
+  function productConservation(product){
+    if(currentLang()==='es') return product.conservation || 'Conservación según etiqueta';
+    if(product.category==='Kitchen') return 'Keep frozen. Heat before serving.';
+    if(product.category==='Wellness') return 'Digital product. No physical storage required.';
+    if(product.category==='Home') return 'Care according to material.';
+    return 'Store according to label instructions.';
+  }
+
+  function productPreparation(product){
+    if(currentLang()==='es') return product.preparation || 'Listo para disfrutar';
+    if(product.category==='Kitchen') return 'Heat in air fryer, pan or oven.';
+    if(product.category==='Herbal') return 'Prepare as a warm or iced ritual.';
+    if(product.category==='Wellness') return 'Download, read and apply at your own pace.';
+    if(product.category==='Home') return 'Use as part of your tea or home ritual.';
+    return 'Ready to enjoy.';
+  }
+
   function money(value){
     return "$" + Number(value || 0).toFixed(2);
   }
@@ -53,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function(){
         <span class="door-content">
           <span class="eyebrow">${categoryLabel(cat)}</span>
           <h3>${currentLang()==='es' ? (item.spanish || item.title) : item.title}</h3>
-          <p>${item.tagline}</p>
+          <p>${localizedCategoryText(cat, 'tagline')}</p>
         </span>
       </a>`;
     }).join("");
@@ -64,7 +107,7 @@ document.addEventListener("DOMContentLoaded", function(){
         activeCollection = "All";
         renderFilters();
         renderProducts();
-        document.getElementById('shop')?.scrollIntoView({behavior:'smooth', block:'start'});
+        document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth', block:'start'});
       });
     });
   }
@@ -124,8 +167,12 @@ document.addEventListener("DOMContentLoaded", function(){
       const c = categories[activeCategory];
       activeEyebrow.textContent = categoryLabel(activeCategory);
       activeTitle.textContent = currentLang()==='es' ? (c.spanish || c.title) : c.title;
-      activeDescription.textContent = c.description;
+      activeDescription.textContent = localizedCategoryText(activeCategory, 'description');
     }
+
+    document.querySelectorAll('[data-category-nav]').forEach(a => {
+      a.classList.toggle('active', activeCategory !== 'All' && a.dataset.categoryNav === activeCategory);
+    });
 
     if(!productGrid) return;
     productGrid.innerHTML = list.map(p => `<article class="product-card-shop">
@@ -137,12 +184,12 @@ document.addEventListener("DOMContentLoaded", function(){
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
           <h3>${p.name}</h3>
         </div>
-        <p>${p.longDescription}</p>
+        <p>${productDescription(p)}</p>
         <div class="product-meta">${productMeta(p)}</div>
         <div class="product-details">
-          <span>🌿 ${p.benefits && p.benefits[0] ? p.benefits[0] : "Ingredientes reales"}</span>
-          <span>❄ ${p.conservation || "Conservación según etiqueta"}</span>
-          <span>🔥 ${p.preparation || "Listo para disfrutar"}</span>
+          <span>🌿 ${productBenefit(p)}</span>
+          <span>❄ ${productConservation(p)}</span>
+          <span>🔥 ${productPreparation(p)}</span>
         </div>
         <div class="product-bottom">
           <span class="price">${money(p.price)}</span>
@@ -216,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function(){
       activeCollection = 'All';
       renderFilters();
       renderProducts();
-      document.getElementById('shop')?.scrollIntoView({behavior:'smooth', block:'start'});
+      document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth', block:'start'});
       const drawer = document.getElementById('drawer');
       const backdrop = document.getElementById('backdrop');
       if(drawer) drawer.classList.remove('open');

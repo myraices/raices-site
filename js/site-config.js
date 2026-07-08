@@ -2,36 +2,46 @@ window.RAICES_CATEGORIES = {
   "Kitchen": {
     title: "Kitchen",
     spanish: "Cocina",
-    tagline: "Handcrafted foods inspired by nature.",
+    tagline: "Alimentos artesanales inspirados en la naturaleza.",
+    tagline_en: "Handcrafted foods inspired by nature.",
     description: "Arepas, empanadas y proteínas al vacío elaboradas con ingredientes reales, pensadas para nutrir sin complicar tu día.",
+    description_en: "Arepas, empanadas and ready-to-enjoy proteins made with real ingredients to nourish your day with ease.",
     image: "assets/arepas-product.jpg"
   },
   "Herbal": {
     title: "Herbal",
     spanish: "Herbal",
-    tagline: "Three moments. One same root.",
+    tagline: "Tres momentos. Una misma raíz.",
+    tagline_en: "Three moments. One same root.",
     description: "Infusiones y rituales herbales creados para acompañar tus momentos de energía, equilibrio y calma.",
+    description_en: "Herbal infusions and rituals created to accompany moments of energy, balance and calm.",
     image: "assets/herbal-board.jpg"
   },
   "Desserts": {
     title: "Desserts",
     spanish: "Dulces",
-    tagline: "Because wellness also deserves sweetness.",
+    tagline: "Porque el bienestar también merece dulzura.",
+    tagline_en: "Because wellness also deserves sweetness.",
     description: "Postres artesanales con ingredientes naturales, porciones generosas y una mirada más consciente hacia lo dulce.",
+    description_en: "Handcrafted desserts with natural ingredients and a more thoughtful way to enjoy sweetness.",
     image: "assets/desserts-board.jpg"
   },
   "Home": {
     title: "Home",
     spanish: "Home",
-    tagline: "Small objects for meaningful rituals.",
+    tagline: "Pequeños objetos para grandes rituales.",
+    tagline_en: "Small objects for meaningful rituals.",
     description: "Objetos y accesorios para transformar una taza, una mesa o una pausa en un pequeño ritual cotidiano.",
+    description_en: "Objects and accessories that turn a cup, a table or a pause into a meaningful everyday ritual.",
     image: "assets/home-board.jpg"
   },
   "Wellness": {
     title: "Wellness",
     spanish: "Wellness",
-    tagline: "Knowledge that nourishes body and mind.",
+    tagline: "Conocimiento que nutre cuerpo y mente.",
+    tagline_en: "Knowledge that nourishes body and mind.",
     description: "Guías digitales para cultivar hábitos, cocina consciente, calma y bienestar desde lo esencial.",
+    description_en: "Digital guides to cultivate habits, conscious cooking, calm and wellbeing from the essential.",
     image: "assets/botanicos-product.jpg"
   }
 };
