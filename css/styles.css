@@ -99,3 +99,30 @@ body{padding-top:92px}.hero{min-height:calc(100vh - 92px);display:grid;place-ite
   .product-body h3{font-size:.94rem;}
   .add-btn{font-size:.58rem;}
 }
+
+/* v70: imágenes completas en tarjetas, sin recorte */
+.product-media{
+  height:auto !important;
+  aspect-ratio:4/3;
+  background-size:contain !important;
+  background-repeat:no-repeat !important;
+  background-position:center !important;
+  background-color:#f8f0e6 !important;
+}
+.product-card-shop:hover .product-media{
+  transform:none !important;
+  filter:saturate(1.02) contrast(1.01);
+}
+.product-card-shop{
+  overflow:hidden;
+}
+@media(max-width:640px){
+  .product-grid-shop{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important;}
+  .product-media{height:auto !important;aspect-ratio:4/3 !important;background-size:contain !important;}
+  .product-body{padding:10px !important;gap:6px !important;}
+  .product-body h3{font-size:.98rem !important;line-height:1.05 !important;}
+  .product-meta .chip:nth-child(n+2),.product-body>p,.product-details{display:none !important;}
+  .price{font-size:1rem !important;}
+  .add-btn{min-height:32px !important;font-size:.58rem !important;padding:0 8px !important;}
+  .text-product-link{font-size:.58rem !important;}
+}
