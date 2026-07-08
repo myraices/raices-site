@@ -73,3 +73,8 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - Se agregaron campos de nombre, teléfono, dirección, ciudad, apt/suite e instrucciones de entrega dentro del carrito.
 - Los datos se guardan localmente para preparar la integración con Supabase y Square.
 - El checkout ahora requiere carrito + ZIP válido + datos obligatorios de entrega.
+
+## v86
+- Compacta el carrito lateral para dar más espacio a los productos.
+- Entrega y datos de entrega ahora están en bloques colapsables.
+- Resumen de subtotal/delivery/total queda fijo y compacto al final.

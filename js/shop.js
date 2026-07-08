@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function(){
   const cartCount = document.getElementById("cartCount");
   const cartSubtotal = document.getElementById("cartSubtotal");
   const cartDelivery = document.getElementById("cartDelivery");
+  const cartDeliverySummary = document.getElementById("cartDeliverySummary");
   const cartTotal = document.getElementById("cartTotal");
   const deliveryZip = document.getElementById("deliveryZip");
   const applyDeliveryZip = document.getElementById("applyDeliveryZip");
@@ -650,6 +651,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(cartCount) cartCount.textContent = count;
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
     if(cartDelivery) cartDelivery.textContent = count ? (deliveryState.valid ? money(deliveryCost) : '—') : '—';
+    if(cartDeliverySummary) cartDeliverySummary.textContent = deliveryState.valid ? money(deliveryState.cost) : '—';
     if(cartTotal) cartTotal.textContent = money(total);
     const checkoutBtn = document.getElementById('checkoutSoon');
     if(checkoutBtn){

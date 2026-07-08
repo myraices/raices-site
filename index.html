@@ -167,51 +167,59 @@
       <button id="closeCart">×</button>
     </div>
     <div id="cartItems" class="cart-items"></div>
-    <div class="cart-footer">
-      <div class="delivery-box">
-        <label for="deliveryZip" data-i18n="delivery_zip_label">ZIP Code para delivery</label>
-        <div class="delivery-input-row">
-          <input id="deliveryZip" type="text" inputmode="numeric" maxlength="5" placeholder="77494"/>
-          <button type="button" id="applyDeliveryZip" data-i18n="delivery_apply">Aplicar</button>
-        </div>
-        <p id="deliveryMessage" class="delivery-message" data-state="idle" data-i18n="delivery_prompt">Ingresa tu ZIP Code para calcular el delivery.</p>
+    <div class="cart-footer compact-cart-footer">
+      <div class="cart-accordion-wrap">
+        <details class="cart-accordion" open>
+          <summary><span data-i18n="delivery_label">Delivery</span><strong id="cartDeliverySummary">—</strong></summary>
+          <div class="delivery-box">
+            <label for="deliveryZip" data-i18n="delivery_zip_label">ZIP Code para delivery</label>
+            <div class="delivery-input-row">
+              <input id="deliveryZip" type="text" inputmode="numeric" maxlength="5" placeholder="77494"/>
+              <button type="button" id="applyDeliveryZip" data-i18n="delivery_apply">Aplicar</button>
+            </div>
+            <p id="deliveryMessage" class="delivery-message" data-state="idle" data-i18n="delivery_prompt">Ingresa tu ZIP Code para calcular el delivery.</p>
+          </div>
+        </details>
+
+        <details class="cart-accordion">
+          <summary><span data-delivery-i18n="delivery_details_title">Datos de entrega</span><em data-delivery-i18n="delivery_required_note">Obligatorio para continuar</em></summary>
+          <div class="delivery-details-box" id="deliveryDetailsBox">
+            <div class="delivery-fields-grid">
+              <label>
+                <span data-delivery-i18n="field_name">Nombre</span>
+                <input id="deliveryName" type="text" autocomplete="name" placeholder="Nombre y apellido"/>
+              </label>
+              <label>
+                <span data-delivery-i18n="field_phone">Teléfono</span>
+                <input id="deliveryPhone" type="tel" autocomplete="tel" placeholder="(000) 000-0000"/>
+              </label>
+              <label class="full">
+                <span data-delivery-i18n="field_address">Dirección</span>
+                <input id="deliveryAddress" type="text" autocomplete="street-address" placeholder="Street address"/>
+              </label>
+              <label>
+                <span data-delivery-i18n="field_apt">Apt / Suite</span>
+                <input id="deliveryApt" type="text" placeholder="Opcional"/>
+              </label>
+              <label>
+                <span data-delivery-i18n="field_city">Ciudad</span>
+                <input id="deliveryCity" type="text" autocomplete="address-level2" placeholder="Katy"/>
+              </label>
+              <label class="full">
+                <span data-delivery-i18n="field_notes">Instrucciones de entrega</span>
+                <textarea id="deliveryNotes" rows="2" placeholder="Gate code, dejar en la puerta, etc."></textarea>
+              </label>
+            </div>
+            <p id="deliveryDetailsMessage" class="delivery-details-message" data-state="idle">Completa tus datos de entrega para continuar.</p>
+          </div>
+        </details>
       </div>
-      <div class="delivery-details-box" id="deliveryDetailsBox">
-        <div class="delivery-details-head">
-          <span data-delivery-i18n="delivery_details_title">Datos de entrega</span>
-          <em data-delivery-i18n="delivery_required_note">Obligatorio para continuar</em>
-        </div>
-        <div class="delivery-fields-grid">
-          <label>
-            <span data-delivery-i18n="field_name">Nombre</span>
-            <input id="deliveryName" type="text" autocomplete="name" placeholder="Nombre y apellido"/>
-          </label>
-          <label>
-            <span data-delivery-i18n="field_phone">Teléfono</span>
-            <input id="deliveryPhone" type="tel" autocomplete="tel" placeholder="(000) 000-0000"/>
-          </label>
-          <label class="full">
-            <span data-delivery-i18n="field_address">Dirección</span>
-            <input id="deliveryAddress" type="text" autocomplete="street-address" placeholder="Street address"/>
-          </label>
-          <label>
-            <span data-delivery-i18n="field_apt">Apt / Suite</span>
-            <input id="deliveryApt" type="text" placeholder="Opcional"/>
-          </label>
-          <label>
-            <span data-delivery-i18n="field_city">Ciudad</span>
-            <input id="deliveryCity" type="text" autocomplete="address-level2" placeholder="Katy"/>
-          </label>
-          <label class="full">
-            <span data-delivery-i18n="field_notes">Instrucciones de entrega</span>
-            <textarea id="deliveryNotes" rows="2" placeholder="Gate code, dejar en la puerta, etc."></textarea>
-          </label>
-        </div>
-        <p id="deliveryDetailsMessage" class="delivery-details-message" data-state="idle">Completa tus datos de entrega para continuar.</p>
+
+      <div class="cart-summary-box">
+        <div class="cart-line"><span data-i18n="subtotal">Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
+        <div class="cart-line"><span data-i18n="delivery_label">Delivery</span><strong id="cartDelivery">—</strong></div>
+        <div class="cart-line cart-total-line"><span data-i18n="total_label">Total</span><strong id="cartTotal">$0.00</strong></div>
       </div>
-      <div class="cart-line"><span data-i18n="subtotal">Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
-      <div class="cart-line"><span data-i18n="delivery_label">Delivery</span><strong id="cartDelivery">—</strong></div>
-      <div class="cart-line cart-total-line"><span data-i18n="total_label">Total</span><strong id="cartTotal">$0.00</strong></div>
       <p class="cart-note" data-i18n="cart_note">Taxes y Square Checkout se activarán en la siguiente fase.</p>
       <button class="btn checkout-btn disabled" type="button" id="checkoutSoon" data-i18n="checkout_soon">Checkout próximamente</button>
     </div>
