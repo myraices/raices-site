@@ -76,6 +76,51 @@ document.addEventListener("DOMContentLoaded", function(){
     return "$" + Number(value || 0).toFixed(2);
   }
 
+  function scrollToShopStart(){
+    const target = document.getElementById('shopResults');
+    if(!target) return;
+    const header = document.querySelector('.site-header');
+    const headerHeight = header ? header.offsetHeight : 0;
+    const extraGap = 18;
+    const top = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - extraGap;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+
+  function translateUnit(unit){
+    if(!unit) return '';
+    if(currentLang() === 'es') return unit;
+    const map = {
+      'Paquete':'Pack',
+      'Bolsa':'Bag',
+      'Unidad':'Unit',
+      'Digital':'Digital',
+      'Lata':'Tin',
+      'Caja':'Box',
+      'Pack':'Pack'
+    };
+    return map[unit] || unit;
+  }
+
+  function translateSubcategory(sub){
+    if(!sub) return '';
+    if(currentLang() === 'es') return sub;
+    const map = {
+      'Arepas':'Arepas',
+      'Empanadas':'Empanadas',
+      'Proteínas':'Proteins',
+      'Herbal':'Herbal',
+      'Postres':'Desserts',
+      'Home':'Home',
+      'Guías':'Guides'
+    };
+    return map[sub] || sub;
+  }
+
+  function unitPiecesLabel(count){
+    if(!count) return '';
+    return currentLang() === 'es' ? `${count} uds` : `${count} pcs`;
+  }
+
   function loadCart(){
     try { return JSON.parse(localStorage.getItem("raices_cart") || "[]"); }
     catch(e){ return []; }
@@ -107,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function(){
         activeCollection = "All";
         renderFilters();
         renderProducts();
-        document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth', block:'start'});
+        setTimeout(scrollToShopStart, 60);
       });
     });
   }
@@ -125,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function(){
         activeCollection = "All";
         renderFilters();
         renderProducts();
+        setTimeout(scrollToShopStart, 60);
       });
     });
   }
@@ -142,15 +188,16 @@ document.addEventListener("DOMContentLoaded", function(){
     collectionSelect.addEventListener("change", function(){
       activeCollection = this.value;
       renderProducts();
+      setTimeout(scrollToShopStart, 60);
     });
   }
 
   function productMeta(product){
     const items = [];
-    if(product.unit) items.push(product.unit);
-    if(product.unitsPerPackage) items.push(product.unitsPerPackage + " uds");
+    if(product.unit) items.push(translateUnit(product.unit));
+    if(product.unitsPerPackage) items.push(unitPiecesLabel(product.unitsPerPackage));
     if(product.netWeight) items.push(product.netWeight);
-    return items.map(x => `<span class="chip">${x}</span>`).join("");
+    return items.filter(Boolean).map(x => `<span class="chip">${x}</span>`).join("");
   }
 
   function renderProducts(){
@@ -177,7 +224,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(!productGrid) return;
     productGrid.innerHTML = list.map(p => `<article class="product-card-shop">
       <div class="product-media" style="background-image:url('${p.image}')">
-        <span class="product-badge">${p.subcategory}</span>
+        <span class="product-badge">${translateSubcategory(p.subcategory)}</span>
       </div>
       <div class="product-body">
         <div>
@@ -237,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function(){
       <div class="cart-item-img" style="background-image:url('${item.product.image}')"></div>
       <div>
         <h4>${item.product.name}</h4>
-        <p>${money(item.product.price)} · ${item.product.unit || ""}</p>
+        <p>${money(item.product.price)} · ${translateUnit(item.product.unit) || ""}</p>
         <div class="qty-controls">
           <button data-qty="${item.sku}" data-delta="-1">−</button>
           <strong>${item.qty}</strong>
@@ -263,7 +310,7 @@ document.addEventListener("DOMContentLoaded", function(){
       activeCollection = 'All';
       renderFilters();
       renderProducts();
-      document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth', block:'start'});
+      setTimeout(scrollToShopStart, 60);
       const drawer = document.getElementById('drawer');
       const backdrop = document.getElementById('backdrop');
       if(drawer) drawer.classList.remove('open');
