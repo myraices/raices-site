@@ -27,6 +27,15 @@ document.addEventListener("DOMContentLoaded", function(){
   const deliveryZip = document.getElementById("deliveryZip");
   const applyDeliveryZip = document.getElementById("applyDeliveryZip");
   const deliveryMessage = document.getElementById("deliveryMessage");
+  const deliveryDetailsMessage = document.getElementById("deliveryDetailsMessage");
+  const deliveryFields = {
+    name: document.getElementById("deliveryName"),
+    phone: document.getElementById("deliveryPhone"),
+    address: document.getElementById("deliveryAddress"),
+    apt: document.getElementById("deliveryApt"),
+    city: document.getElementById("deliveryCity"),
+    notes: document.getElementById("deliveryNotes")
+  };
 
   let activeCategory = "All";
   let activeCollection = "All";
@@ -217,6 +226,83 @@ document.addEventListener("DOMContentLoaded", function(){
       'Guías':'Guides'
     };
     return map[sub] || sub;
+  }
+
+
+  function deliveryI18n(key){
+    const es = {
+      delivery_details_title:'Datos de entrega', delivery_required_note:'Obligatorio para continuar',
+      field_name:'Nombre', field_phone:'Teléfono', field_address:'Dirección', field_apt:'Apt / Suite', field_city:'Ciudad', field_notes:'Instrucciones de entrega',
+      details_prompt:'Completa tus datos de entrega para continuar.', details_ok:'Datos de entrega guardados.', details_missing:'Faltan datos de entrega obligatorios.',
+      name_placeholder:'Nombre y apellido', address_placeholder:'Street address', apt_placeholder:'Opcional', city_placeholder:'Katy', notes_placeholder:'Gate code, dejar en la puerta, etc.'
+    };
+    const en = {
+      delivery_details_title:'Delivery details', delivery_required_note:'Required to continue',
+      field_name:'Name', field_phone:'Phone', field_address:'Address', field_apt:'Apt / Suite', field_city:'City', field_notes:'Delivery instructions',
+      details_prompt:'Complete your delivery details to continue.', details_ok:'Delivery details saved.', details_missing:'Required delivery details are missing.',
+      name_placeholder:'Full name', address_placeholder:'Street address', apt_placeholder:'Optional', city_placeholder:'Katy', notes_placeholder:'Gate code, leave at door, etc.'
+    };
+    return (currentLang()==='es' ? es : en)[key] || key;
+  }
+
+  function loadDeliveryInfo(){
+    try { return JSON.parse(localStorage.getItem('raices_delivery_info') || '{}') || {}; }
+    catch(e){ return {}; }
+  }
+
+  function normalizeDeliveryInfo(info){
+    info = info || {};
+    return {
+      name: String(info.name || '').trim(),
+      phone: String(info.phone || '').trim(),
+      address: String(info.address || '').trim(),
+      apt: String(info.apt || '').trim(),
+      city: String(info.city || '').trim(),
+      notes: String(info.notes || '').trim()
+    };
+  }
+
+  function getDeliveryInfoFromFields(){
+    return normalizeDeliveryInfo({
+      name: deliveryFields.name ? deliveryFields.name.value : '',
+      phone: deliveryFields.phone ? deliveryFields.phone.value : '',
+      address: deliveryFields.address ? deliveryFields.address.value : '',
+      apt: deliveryFields.apt ? deliveryFields.apt.value : '',
+      city: deliveryFields.city ? deliveryFields.city.value : '',
+      notes: deliveryFields.notes ? deliveryFields.notes.value : ''
+    });
+  }
+
+  function saveDeliveryInfo(){
+    const info = getDeliveryInfoFromFields();
+    localStorage.setItem('raices_delivery_info', JSON.stringify(info));
+    return info;
+  }
+
+  function requiredDeliveryInfoComplete(info){
+    info = normalizeDeliveryInfo(info);
+    return !!(info.name && info.phone && info.address && info.city);
+  }
+
+  function hydrateDeliveryFields(){
+    const info = normalizeDeliveryInfo(loadDeliveryInfo());
+    Object.entries(deliveryFields).forEach(([key, el]) => { if(el) el.value = info[key] || ''; });
+  }
+
+  function updateDeliveryDetailsLanguage(){
+    document.querySelectorAll('[data-delivery-i18n]').forEach(el => { el.textContent = deliveryI18n(el.dataset.deliveryI18n); });
+    if(deliveryFields.name) deliveryFields.name.placeholder = deliveryI18n('name_placeholder');
+    if(deliveryFields.address) deliveryFields.address.placeholder = deliveryI18n('address_placeholder');
+    if(deliveryFields.apt) deliveryFields.apt.placeholder = deliveryI18n('apt_placeholder');
+    if(deliveryFields.city) deliveryFields.city.placeholder = deliveryI18n('city_placeholder');
+    if(deliveryFields.notes) deliveryFields.notes.placeholder = deliveryI18n('notes_placeholder');
+  }
+
+  function updateDeliveryDetailsUI(info, hasItems){
+    if(!deliveryDetailsMessage) return;
+    const complete = requiredDeliveryInfoComplete(info);
+    deliveryDetailsMessage.dataset.state = complete ? 'ok' : (hasItems ? 'error' : 'idle');
+    deliveryDetailsMessage.textContent = complete ? deliveryI18n('details_ok') : (hasItems ? deliveryI18n('details_missing') : deliveryI18n('details_prompt'));
   }
 
   function unitPiecesLabel(count){
@@ -548,13 +634,16 @@ document.addEventListener("DOMContentLoaded", function(){
     const zone = deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null;
     const deliveryCost = count > 0 && deliveryState.valid ? deliveryState.cost : 0;
     const total = subtotal + deliveryCost;
-    const canCheckout = count > 0 && deliveryState.valid;
+    const deliveryInfo = normalizeDeliveryInfo(loadDeliveryInfo());
+    const deliveryInfoComplete = requiredDeliveryInfoComplete(deliveryInfo);
+    const canCheckout = count > 0 && deliveryState.valid && deliveryInfoComplete;
     window.RAICES_CART_SUMMARY = {
       items: enriched.map(item => ({ sku:item.sku, qty:item.qty, variant:item.variant || '', name:item.product.name, price:Number(item.product.price || 0), lineTotal:item.qty * Number(item.product.price || 0) })),
       subtotal,
       delivery: deliveryState,
       deliveryCost,
       total,
+      customer: deliveryInfo,
       canCheckout
     };
     localStorage.setItem('raices_cart_summary', JSON.stringify(window.RAICES_CART_SUMMARY));
@@ -568,16 +657,18 @@ document.addEventListener("DOMContentLoaded", function(){
       checkoutBtn.disabled = !canCheckout;
       checkoutBtn.textContent = canCheckout
         ? (currentLang()==='es' ? 'Continuar al checkout' : 'Continue to checkout')
-        : (currentLang()==='es' ? 'Completa el carrito y ZIP' : 'Complete cart and ZIP');
+        : (currentLang()==='es' ? 'Completa carrito, ZIP y datos' : 'Complete cart, ZIP and details');
     }
     const cartNote = document.querySelector('.cart-note');
     if(cartNote){
       cartNote.textContent = canCheckout
         ? (currentLang()==='es' ? 'Delivery agregado al total. Square Checkout se activará en la siguiente fase.' : 'Delivery added to the total. Square Checkout will be activated in the next phase.')
-        : (currentLang()==='es' ? 'Agrega productos y un ZIP válido para calcular el total final.' : 'Add products and a valid ZIP to calculate the final total.');
+        : (currentLang()==='es' ? 'Agrega productos, un ZIP válido y tus datos de entrega para calcular el total final.' : 'Add products, a valid ZIP and delivery details to calculate the final total.');
     }
     if(deliveryZip && document.activeElement !== deliveryZip) deliveryZip.value = zip;
     updateDeliveryUI(zip, deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null, count);
+    updateDeliveryDetailsLanguage();
+    updateDeliveryDetailsUI(deliveryInfo, count > 0);
     if(!cartItems) return;
     if(enriched.length === 0){
       cartItems.innerHTML = `<div class="cart-empty-state">
@@ -645,6 +736,15 @@ document.addEventListener("DOMContentLoaded", function(){
     });
     deliveryZip.addEventListener("blur", function(){ setDeliveryZip(this.value); renderCart(); });
   }
+
+
+  hydrateDeliveryFields();
+  updateDeliveryDetailsLanguage();
+  Object.values(deliveryFields).forEach(el => {
+    if(!el) return;
+    el.addEventListener('input', function(){ saveDeliveryInfo(); renderCart(); });
+    el.addEventListener('blur', function(){ saveDeliveryInfo(); renderCart(); });
+  });
 
   if(openCart) openCart.addEventListener("click", function(e){ e.preventDefault(); openCartDrawer(); });
   if(closeCart) closeCart.addEventListener("click", closeCartDrawer);

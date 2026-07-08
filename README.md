@@ -68,3 +68,8 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - El costo de delivery se suma al total del carrito cuando hay productos y ZIP válido.
 - Se guarda un resumen en `raices_cart_summary` para la próxima fase de checkout/Square.
 - Checkout queda preparado, pero el pago real se activará en la siguiente fase.
+
+## v85 - Datos de entrega
+- Se agregaron campos de nombre, teléfono, dirección, ciudad, apt/suite e instrucciones de entrega dentro del carrito.
+- Los datos se guardan localmente para preparar la integración con Supabase y Square.
+- El checkout ahora requiere carrito + ZIP válido + datos obligatorios de entrega.

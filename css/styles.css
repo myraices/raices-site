@@ -398,3 +398,21 @@ body.cart-open{overflow:hidden}
 .cart-total-line{margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:1.18rem;}
 .delivery-message[data-state="ok"]::before{content:"✓ ";}
 .delivery-message[data-state="error"]::before{content:"⚠ ";}
+
+/* v85: delivery/customer details inside cart */
+.delivery-details-box{border:1px solid var(--line);background:#fff;border-radius:22px;padding:14px 14px 12px;margin-bottom:14px}
+.delivery-details-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.delivery-details-head span{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:var(--forest)}
+.delivery-details-head em{font-size:.68rem;color:var(--muted);font-style:normal;white-space:nowrap}
+.delivery-fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.delivery-fields-grid label{display:grid;gap:5px;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--forest)}
+.delivery-fields-grid label.full{grid-column:1 / -1}
+.delivery-fields-grid input,.delivery-fields-grid textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:10px 12px;color:var(--forest);font:inherit;font-size:.84rem;text-transform:none;letter-spacing:0;font-weight:600;outline:none}
+.delivery-fields-grid textarea{resize:vertical;min-height:52px;line-height:1.35}
+.delivery-fields-grid input:focus,.delivery-fields-grid textarea:focus{border-color:rgba(35,59,32,.38);box-shadow:0 0 0 3px rgba(35,59,32,.08)}
+.delivery-details-message{font-size:.8rem;line-height:1.35;margin:10px 2px 0;color:var(--muted)}
+.delivery-details-message[data-state="ok"]{color:#2d6a3f;font-weight:700}
+.delivery-details-message[data-state="error"]{color:#9b4b32;font-weight:700}
+.delivery-details-message[data-state="ok"]::before{content:"✓ "}
+.delivery-details-message[data-state="error"]::before{content:"⚠ "}
+@media(max-width:640px){.delivery-details-box{border-radius:18px;padding:13px}.delivery-fields-grid{grid-template-columns:1fr}.delivery-details-head{align-items:flex-start;flex-direction:column;gap:3px}.delivery-details-head em{white-space:normal}}
