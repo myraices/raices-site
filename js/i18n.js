@@ -10,7 +10,7 @@ window.RAICES_I18N = {
     community_eyebrow:'Comunidad Raíces', community_title:'Recibe novedades y próximos lanzamientos.', community_text:'También usaremos esta lista para la futura línea Naturals.', subscribe:'Suscribirme',
     cart_title:'Tu carrito', subtotal:'Subtotal', cart_note:'Delivery, taxes y Square Checkout se activarán en la siguiente fase.', checkout_soon:'Checkout próximamente', help:'¿Necesitas ayuda?',
     account_eyebrow:'Cuenta Raíces', account_title:'Mi cuenta', account_intro:'Crea tu cuenta o inicia sesión para guardar tus datos, preparar tu carrito y consultar tus pedidos.', login:'Iniciar sesión', signup:'Crear cuenta', enter:'Entrar', forgot:'Olvidé mi contraseña', confirm_email_note:'Revisa tu email para confirmar el registro.', logout:'Cerrar sesión', footer_love:'Hecho con amor · Para ti y para el planeta',
-    profile:'Perfil', orders:'Pedidos', addresses:'Direcciones', coming:'Próximamente'
+    profile:'Perfil', orders:'Pedidos', addresses:'Direcciones', coming:'Próximamente', view_product:'Ver producto', benefits:'Beneficios', ingredients:'Ingredientes', conservation:'Conservación', preparation:'Preparación', ideal_moment:'Momento ideal', related:'Completa tu ritual', close:'Cerrar', add_to_cart:'Agregar al carrito'
   },
   en: {
     nav_home:'Home', nav_kitchen:'Kitchen', nav_herbal:'Herbal', nav_desserts:'Desserts', nav_home_line:'Home', nav_wellness:'Wellness', nav_about:'About',
@@ -23,7 +23,7 @@ window.RAICES_I18N = {
     community_eyebrow:'Raíces Community', community_title:'Receive updates and upcoming launches.', community_text:'We will also use this list for the future Naturals line.', subscribe:'Subscribe',
     cart_title:'Your cart', subtotal:'Subtotal', cart_note:'Delivery, taxes and Square Checkout will be activated in the next phase.', checkout_soon:'Checkout coming soon', help:'Need help?',
     account_eyebrow:'Raíces Account', account_title:'My account', account_intro:'Create your account or sign in to save your details, prepare your cart and view your orders.', login:'Sign in', signup:'Create account', enter:'Sign in', forgot:'Forgot password', confirm_email_note:'Check your email to confirm registration.', logout:'Sign out', footer_love:'Made with love · For you and for the planet',
-    profile:'Profile', orders:'Orders', addresses:'Addresses', coming:'Coming soon'
+    profile:'Profile', orders:'Orders', addresses:'Addresses', coming:'Coming soon', view_product:'View product', benefits:'Benefits', ingredients:'Ingredients', conservation:'Storage', preparation:'Preparation', ideal_moment:'Ideal moment', related:'Complete your ritual', close:'Close', add_to_cart:'Add to cart'
   }
 };
 

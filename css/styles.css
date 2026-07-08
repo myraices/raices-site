@@ -35,3 +35,24 @@ body{padding-top:92px}.hero{min-height:calc(100vh - 92px);display:grid;place-ite
 @media(max-width:1100px){.door-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){body{padding-top:102px}.site-header{position:fixed}.hero{min-height:calc(100vh - 102px)}.hero:after{inset:16px;border-radius:24px}.door-grid{grid-template-columns:1fr 1fr}.door-card{min-height:380px}}
 @media(max-width:640px){.hero h1,.hero-copy h1{font-size:3.35rem}.hero-copy{padding:54px 26px}.door-grid{grid-template-columns:1fr}.door-card{min-height:340px}.shop-header{padding:22px;border-radius:22px}}
+
+/* v66: fichas de producto premium */
+.premium-actions{align-items:flex-end;gap:16px}
+.action-stack{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.text-product-link{border:0;background:transparent;color:var(--forest);font-size:.72rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;text-decoration:underline;text-underline-offset:5px;cursor:pointer;padding:0}
+.text-product-link:hover{color:var(--clay)}
+.product-modal{position:fixed;inset:0;z-index:650;display:none}
+.product-modal.open{display:block}
+.product-modal-backdrop{position:absolute;inset:0;background:rgba(23,38,21,.48);backdrop-filter:blur(8px)}
+.product-modal-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1120px,calc(100% - 36px));max-height:calc(100vh - 42px);overflow:auto;background:var(--cream);border:1px solid rgba(31,47,29,.16);border-radius:34px;box-shadow:0 35px 120px rgba(23,38,21,.34)}
+.product-modal-close{position:sticky;top:18px;margin:18px 18px 0 auto;z-index:4;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--forest);font-size:1.55rem;cursor:pointer;display:grid;place-items:center}
+.product-modal-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:0;min-height:720px;margin-top:-60px}
+.product-modal-image{min-height:720px;background-size:cover;background-position:center;border-radius:34px 0 0 34px;position:sticky;top:0}
+.product-modal-info{padding:86px 50px 48px;background:linear-gradient(180deg,var(--cream),var(--paper))}
+.product-modal-info h2{font-size:clamp(2.6rem,4vw,4.7rem);margin:10px 0 16px;color:var(--forest)}
+.modal-description{color:var(--muted);font-size:1.02rem;max-width:650px;margin-bottom:18px}
+.modal-meta{margin:16px 0 22px}.modal-meta .chip{background:#fff;border-color:rgba(31,47,29,.14)}
+.modal-price-row{display:flex;justify-content:space-between;align-items:center;gap:20px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:16px 18px;margin:22px 0 28px}.modal-price-row strong{font-size:1.6rem;color:var(--forest)}
+.modal-sections{display:grid;grid-template-columns:1fr 1fr;gap:16px}.modal-sections section{background:rgba(255,255,255,.58);border:1px solid var(--line);border-radius:22px;padding:18px}.modal-sections h3,.ritual-complete h3{font-family:"Helvetica Neue",Arial,sans-serif;font-size:.72rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);margin-bottom:10px}.modal-sections p,.modal-sections li{color:var(--muted);font-size:.92rem}.modal-sections ul{padding-left:18px;display:grid;gap:6px}
+.ritual-complete{margin-top:24px;border-top:1px solid var(--line);padding-top:22px}.ritual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.ritual-card{border:1px solid var(--line);background:#fff;border-radius:18px;overflow:hidden;text-align:left;cursor:pointer;padding:0;transition:.25s}.ritual-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(31,47,29,.1)}.ritual-card span{display:block;height:105px;background-size:cover;background-position:center}.ritual-card strong{display:block;font-family:Georgia,"Times New Roman",serif;color:var(--forest);font-size:1.05rem;padding:12px 12px 2px}.ritual-card em{display:block;color:var(--clay);font-style:normal;font-weight:900;font-size:.82rem;padding:0 12px 12px}
+@media(max-width:900px){.product-modal-grid{grid-template-columns:1fr;margin-top:-54px}.product-modal-image{position:relative;min-height:360px;border-radius:34px 34px 0 0}.product-modal-info{padding:34px 24px 32px}.modal-sections,.ritual-grid{grid-template-columns:1fr}.modal-price-row{flex-direction:column;align-items:flex-start}.action-stack{align-items:flex-start}.premium-actions{align-items:flex-start}}

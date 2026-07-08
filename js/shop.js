@@ -9,6 +9,10 @@ document.addEventListener("DOMContentLoaded", function(){
   const activeEyebrow = document.getElementById("activeEyebrow");
   const activeTitle = document.getElementById("activeTitle");
   const activeDescription = document.getElementById("activeDescription");
+  const productModal = document.getElementById("productModal");
+  const productModalBackdrop = document.getElementById("productModalBackdrop");
+  const productModalClose = document.getElementById("productModalClose");
+  const productModalContent = document.getElementById("productModalContent");
 
   const cartDrawer = document.getElementById("cartDrawer");
   const openCart = document.getElementById("openCart");
@@ -200,6 +204,76 @@ document.addEventListener("DOMContentLoaded", function(){
     return items.filter(Boolean).map(x => `<span class="chip">${x}</span>`).join("");
   }
 
+  function localizedIngredients(product){
+    if(currentLang()==='es') return product.ingredients || 'Ingredientes reales según variedad.';
+    if(product.category==='Kitchen') return 'Root-based dough and filling according to variety.';
+    if(product.category==='Herbal') return 'Herbal blend according to formulation.';
+    if(product.category==='Desserts') return 'Handcrafted ingredients according to flavor.';
+    if(product.category==='Home') return 'Material and care details according to product.';
+    if(product.category==='Wellness') return 'Digital guide content.';
+    return product.ingredients || '';
+  }
+
+  function benefitList(product){
+    if(currentLang()==='es' && Array.isArray(product.benefits) && product.benefits.length) return product.benefits;
+    const byCategory = {
+      Kitchen:['Made with real ingredients','Practical for everyday meals','Created to nourish with simplicity'],
+      Herbal:['Created for daily rituals','A mindful pause for balance','Designed to accompany your routine'],
+      Desserts:['Handcrafted sweetness','Inspired by natural ingredients','A thoughtful way to enjoy dessert'],
+      Home:['Designed for meaningful rituals','Simple objects for everyday use','Created to elevate small moments'],
+      Wellness:['Practical guidance','Designed for self-paced learning','Created to support better habits']
+    };
+    return byCategory[product.category] || ['Created with intention'];
+  }
+
+  function relatedProducts(product){
+    const pool = products.filter(p => p.sku !== product.sku);
+    let related = [];
+    if(product.category==='Herbal') related = pool.filter(p => p.category==='Home' || p.category==='Wellness');
+    else if(product.category==='Home') related = pool.filter(p => p.category==='Herbal' || p.category==='Wellness');
+    else if(product.category==='Kitchen') related = pool.filter(p => p.category==='Desserts' || p.collection===product.collection);
+    else if(product.category==='Wellness') related = pool.filter(p => p.category==='Herbal' || p.category==='Home');
+    else related = pool.filter(p => p.category==='Kitchen' || p.category==='Herbal');
+    return related.slice(0,3);
+  }
+
+  function openProductModal(sku){
+    const p = products.find(item => item.sku === sku);
+    if(!p || !productModal || !productModalContent) return;
+    const benefits = benefitList(p).map(b => `<li>${b}</li>`).join('');
+    const related = relatedProducts(p).map(r => `<button class="ritual-card" data-related-add="${r.sku}"><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}</em></button>`).join('');
+    productModalContent.innerHTML = `
+      <div class="product-modal-grid">
+        <div class="product-modal-image" style="background-image:url('${p.image}')"></div>
+        <div class="product-modal-info">
+          <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
+          <h2>${p.name}</h2>
+          <p class="modal-description">${productDescription(p)}</p>
+          <div class="product-meta modal-meta">${productMeta(p)}</div>
+          <div class="modal-price-row"><strong>${money(p.price)}</strong><button class="btn" data-modal-add="${p.sku}">${t('add_to_cart')}</button></div>
+          <div class="modal-sections">
+            <section><h3>${t('benefits')}</h3><ul>${benefits}</ul></section>
+            <section><h3>${t('ingredients')}</h3><p>${localizedIngredients(p)}</p></section>
+            <section><h3>${t('conservation')}</h3><p>${productConservation(p)}</p></section>
+            <section><h3>${t('preparation')}</h3><p>${productPreparation(p)}</p></section>
+            <section><h3>${t('ideal_moment')}</h3><p>${currentLang()==='es' ? (p.moment || 'Un ritual cotidiano de bienestar.') : 'An everyday wellness ritual.'}</p></section>
+          </div>
+          <div class="ritual-complete"><h3>${t('related')}</h3><div class="ritual-grid">${related}</div></div>
+        </div>
+      </div>`;
+    productModal.classList.add('open');
+    productModal.setAttribute('aria-hidden','false');
+    productModalContent.querySelectorAll('[data-modal-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.modalAdd); }));
+    productModalContent.querySelectorAll('[data-related-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.relatedAdd); }));
+  }
+
+  function closeProductModal(){
+    if(!productModal) return;
+    productModal.classList.remove('open');
+    productModal.setAttribute('aria-hidden','true');
+  }
+
+
   function renderProducts(){
     let list = products.slice();
     if(activeCategory !== "All") list = list.filter(p => p.category === activeCategory);
@@ -238,15 +312,23 @@ document.addEventListener("DOMContentLoaded", function(){
           <span>❄ ${productConservation(p)}</span>
           <span>🔥 ${productPreparation(p)}</span>
         </div>
-        <div class="product-bottom">
+        <div class="product-bottom premium-actions">
           <span class="price">${money(p.price)}</span>
-          <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>
+          <div class="action-stack">
+            <button class="text-product-link" data-view="${p.sku}">${t('view_product')}</button>
+            <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>
+          </div>
         </div>
       </div>
     </article>`).join("");
     productGrid.querySelectorAll("[data-add]").forEach(btn => {
       btn.addEventListener("click", function(){
         addToCart(this.dataset.add);
+      });
+    });
+    productGrid.querySelectorAll("[data-view]").forEach(btn => {
+      btn.addEventListener("click", function(){
+        openProductModal(this.dataset.view);
       });
     });
   }
@@ -302,6 +384,9 @@ document.addEventListener("DOMContentLoaded", function(){
 
   if(openCart) openCart.addEventListener("click", function(){ cartDrawer.classList.add("open"); });
   if(closeCart) closeCart.addEventListener("click", function(){ cartDrawer.classList.remove("open"); });
+  if(productModalClose) productModalClose.addEventListener("click", closeProductModal);
+  if(productModalBackdrop) productModalBackdrop.addEventListener("click", closeProductModal);
+  document.addEventListener("keydown", function(e){ if(e.key === 'Escape') closeProductModal(); });
 
   document.querySelectorAll('[data-category-nav]').forEach(link => {
     link.addEventListener('click', function(e){
