@@ -85,3 +85,20 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - El botón del carrito abre una lista de espera.
 - La lista usa la función existente de Brevo para guardar el email.
 - El carrito, delivery y datos se conservan para futuras fases de Square.
+
+
+## v91 - Supabase intereses y carritos
+
+Esta versión agrega `netlify/functions/save-interest.js` y `docs/supabase-v91-interests.sql`.
+
+Antes de probar en producción:
+1. Ejecutar el SQL de `docs/supabase-v91-interests.sql` en Supabase SQL Editor.
+2. Crear en Netlify la variable `SUPABASE_SERVICE_ROLE_KEY` con la service role key de Supabase.
+3. Verificar que `SUPABASE_URL` exista o usar la URL incluida por defecto.
+
+Se guardan en Supabase:
+- Suscripciones de newsletter (`source = newsletter_section`).
+- Interesados del checkout/lista de espera (`source = checkout_waitlist`).
+- Carrito, delivery, datos de entrega, subtotal y total cuando existen.
+
+Brevo sigue siendo la fuente para newsletters y campañas. Supabase queda como base operativa de clientes/intereses/pedidos futuros.

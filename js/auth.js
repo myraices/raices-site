@@ -1,6 +1,7 @@
 const RAICES_SUPABASE_URL = "https://tqtnffinhqbyesjdollk.supabase.co";
 const RAICES_SUPABASE_KEY = "sb_publishable_UzqAP9ZoPNJVtn1FKpoSNg_oNwvJgKW";
 const raicesSupabase = window.supabase.createClient(RAICES_SUPABASE_URL, RAICES_SUPABASE_KEY);
+window.raicesSupabase = raicesSupabase;
 
 const authModal = document.getElementById("authModal");
 const authBackdrop = document.getElementById("authBackdrop");

@@ -357,6 +357,24 @@
       if(!res.ok){ throw new Error('Brevo subscribe failed'); }
       return res;
     }
+    async function getCurrentUserId(){
+      try{
+        const client = window.raicesSupabase || (typeof raicesSupabase !== 'undefined' ? raicesSupabase : null);
+        if(!client || !client.auth) return null;
+        const { data } = await client.auth.getUser();
+        return data && data.user ? data.user.id : null;
+      }catch(err){ return null; }
+    }
+    async function saveInterest(payload){
+      const userId = await getCurrentUserId();
+      const res = await fetch('/.netlify/functions/save-interest', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ ...payload, user_id:userId, language:getLang() })
+      });
+      if(!res.ok){ throw new Error('Supabase interest save failed'); }
+      return res;
+    }
     function setupNewsletter(){
       const form = document.getElementById('newsletterForm');
       const btn = document.getElementById('newsletterSubmit');
@@ -376,6 +394,7 @@
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
           await subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter_section', consent:true });
+          await saveInterest({ email: emailValue, name: nameValue, source:'newsletter_section', consent:true });
           localStorage.setItem('raices_newsletter_email', emailValue);
           form.reset();
           setMsg('ok', txt('Gracias por unirte a Raíces. Te enviaremos novedades pronto.', 'Thank you for joining Raíces. We will send updates soon.'));
@@ -407,7 +426,9 @@
         btn.disabled = true;
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
-          await subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'checkout_waitlist', consent:true, cart: window.RAICES_CART_SUMMARY || null });
+          const cartSummary = window.RAICES_CART_SUMMARY || null;
+          await subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'checkout_waitlist', consent:true, cart: cartSummary });
+          await saveInterest({ email: emailValue, name:nameValue, source:'checkout_waitlist', consent:true, cart: cartSummary });
           localStorage.setItem('raices_waitlist_email', emailValue);
           form.reset();
           setMsg('ok', txt('Listo. Te avisaremos cuando abramos pedidos.', 'Done. We will notify you when ordering opens.'));
