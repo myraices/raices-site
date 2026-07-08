@@ -56,3 +56,13 @@ body{padding-top:92px}.hero{min-height:calc(100vh - 92px);display:grid;place-ite
 .modal-sections{display:grid;grid-template-columns:1fr 1fr;gap:16px}.modal-sections section{background:rgba(255,255,255,.58);border:1px solid var(--line);border-radius:22px;padding:18px}.modal-sections h3,.ritual-complete h3{font-family:"Helvetica Neue",Arial,sans-serif;font-size:.72rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);margin-bottom:10px}.modal-sections p,.modal-sections li{color:var(--muted);font-size:.92rem}.modal-sections ul{padding-left:18px;display:grid;gap:6px}
 .ritual-complete{margin-top:24px;border-top:1px solid var(--line);padding-top:22px}.ritual-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.ritual-card{border:1px solid var(--line);background:#fff;border-radius:18px;overflow:hidden;text-align:left;cursor:pointer;padding:0;transition:.25s}.ritual-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(31,47,29,.1)}.ritual-card span{display:block;height:105px;background-size:cover;background-position:center}.ritual-card strong{display:block;font-family:Georgia,"Times New Roman",serif;color:var(--forest);font-size:1.05rem;padding:12px 12px 2px}.ritual-card em{display:block;color:var(--clay);font-style:normal;font-weight:900;font-size:.82rem;padding:0 12px 12px}
 @media(max-width:900px){.product-modal-grid{grid-template-columns:1fr;margin-top:-54px}.product-modal-image{position:relative;min-height:360px;border-radius:34px 34px 0 0}.product-modal-info{padding:34px 24px 32px}.modal-sections,.ritual-grid{grid-template-columns:1fr}.modal-price-row{flex-direction:column;align-items:flex-start}.action-stack{align-items:flex-start}.premium-actions{align-items:flex-start}}
+
+/* v67: catálogo visual con fotografía por producto */
+.product-card-shop{transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease}
+.product-card-shop:hover{transform:translateY(-5px);box-shadow:0 24px 70px rgba(31,47,29,.13);border-color:rgba(31,47,29,.18)}
+.product-media{height:330px;background-position:center;background-size:cover;overflow:hidden;transition:transform .45s ease, filter .45s ease}
+.product-card-shop:hover .product-media{filter:saturate(1.03) contrast(1.02)}
+.product-badge{backdrop-filter:blur(8px)}
+.product-modal-image{background-position:center;background-size:cover}
+@media(max-width:1100px){.product-media{height:300px}}
+@media(max-width:640px){.product-media{height:360px}.product-card-shop{border-radius:28px}.product-body{padding:24px}}
