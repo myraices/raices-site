@@ -160,6 +160,7 @@
     </section>
   </main>
 
+  <div class="cart-backdrop" id="cartBackdrop" aria-hidden="true"></div>
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
     <div class="cart-head">
       <div><p class="eyebrow">Raíces Cart</p><h2 data-i18n="cart_title">Tu carrito</h2></div>
@@ -169,7 +170,7 @@
     <div class="cart-footer">
       <div class="cart-line"><span data-i18n="subtotal">Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
       <p class="cart-note" data-i18n="cart_note">Delivery, taxes y Square Checkout se activarán en la siguiente fase.</p>
-      <button class="btn disabled" type="button" data-i18n="checkout_soon">Checkout próximamente</button>
+      <button class="btn checkout-btn disabled" type="button" id="checkoutSoon" data-i18n="checkout_soon">Checkout próximamente</button>
     </div>
   </aside>
 

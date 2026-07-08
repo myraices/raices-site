@@ -40,3 +40,9 @@ A partir de esta versión, las próximas fases deben usar `window.RAICES_CATALOG
 - Guardar pedidos en Supabase.
 
 La apariencia visual de la web no cambia en esta versión; el cambio es estructural.
+
+
+## v81
+- Carrito lateral completo con miniaturas, variantes, cantidades, eliminar producto y subtotal dinámico.
+- Persistencia en localStorage.
+- Checkout queda desactivado para la siguiente fase de delivery/Square.

@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", function(){
   const productModalContent = document.getElementById("productModalContent");
 
   const cartDrawer = document.getElementById("cartDrawer");
+  const cartBackdrop = document.getElementById("cartBackdrop");
   const openCart = document.getElementById("openCart");
   const closeCart = document.getElementById("closeCart");
   const cartItems = document.getElementById("cartItems");
@@ -398,6 +399,30 @@ document.addEventListener("DOMContentLoaded", function(){
     });
   }
 
+  function openCartDrawer(){
+    if(cartDrawer){
+      cartDrawer.classList.add("open");
+      cartDrawer.setAttribute("aria-hidden","false");
+    }
+    if(cartBackdrop){
+      cartBackdrop.classList.add("show");
+      cartBackdrop.setAttribute("aria-hidden","false");
+    }
+    document.body.classList.add("cart-open");
+  }
+
+  function closeCartDrawer(){
+    if(cartDrawer){
+      cartDrawer.classList.remove("open");
+      cartDrawer.setAttribute("aria-hidden","true");
+    }
+    if(cartBackdrop){
+      cartBackdrop.classList.remove("show");
+      cartBackdrop.setAttribute("aria-hidden","true");
+    }
+    document.body.classList.remove("cart-open");
+  }
+
   function addToCart(sku, variant){
     const product = products.find(p => p.sku === sku);
     if(!product) return;
@@ -406,7 +431,7 @@ document.addEventListener("DOMContentLoaded", function(){
     if(existing) existing.qty += 1;
     else cart.push({ sku: product.sku, qty: 1, variant: variant || "" });
     saveCart();
-    if(cartDrawer) cartDrawer.classList.add("open");
+    openCartDrawer();
   }
 
   function updateQty(key, delta){
@@ -425,25 +450,38 @@ document.addEventListener("DOMContentLoaded", function(){
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
     if(!cartItems) return;
     if(enriched.length === 0){
-      cartItems.innerHTML = `<p class="cart-empty">${t('cart_empty')}</p>`;
+      cartItems.innerHTML = `<div class="cart-empty-state">
+        <div class="cart-empty-icon">🛒</div>
+        <h3>${currentLang()==='es' ? 'Tu carrito está vacío' : 'Your cart is empty'}</h3>
+        <p>${currentLang()==='es' ? 'Explora las colecciones de Raíces y agrega tus productos favoritos.' : 'Explore Raíces collections and add your favorite products.'}</p>
+        <button class="btn cart-continue" type="button">${currentLang()==='es' ? 'Explorar tienda' : 'Explore shop'}</button>
+      </div>`;
+      const continueBtn = cartItems.querySelector('.cart-continue');
+      if(continueBtn) continueBtn.addEventListener('click', function(){ closeCartDrawer(); setTimeout(scrollToShopStart, 120); });
       return;
     }
     cartItems.innerHTML = enriched.map(item => {
       const key = cartItemKey(item.sku, item.variant);
-      const variantText = item.variant ? ` · ${item.variant}` : "";
-      const variantImage = item.variant && Array.isArray(item.product.variants) ? (item.product.variants.find(v => v.name === item.variant)?.image || item.product.image) : item.product.image;
+      const variantText = item.variant ? `<span class="cart-variant">${item.variant}</span>` : "";
+      const variantImage = item.variant && Array.isArray(item.product.variants) ? (item.product.variants.find(v => variantDisplay(v) === item.variant || v.name === item.variant)?.image || item.product.image) : item.product.image;
+      const unit = translateUnit(item.product.unit);
       return `<div class="cart-item">
       <div class="cart-item-img" style="background-image:url('${variantImage}')"></div>
-      <div>
-        <h4>${item.product.name}</h4>
-        <p>${money(item.product.price)} · ${translateUnit(item.product.unit) || ""}${variantText}</p>
-        <div class="qty-controls">
-          <button data-qty="${key}" data-delta="-1">−</button>
-          <strong>${item.qty}</strong>
-          <button data-qty="${key}" data-delta="1">+</button>
+      <div class="cart-item-main">
+        <div class="cart-item-title-row">
+          <h4>${item.product.name}</h4>
+          <button class="cart-remove" data-remove="${key}" aria-label="${currentLang()==='es' ? 'Eliminar' : 'Remove'}">×</button>
+        </div>
+        <div class="cart-item-meta">${unit ? `<span>${unit}</span>` : ''}${variantText}</div>
+        <div class="cart-item-bottom">
+          <div class="qty-controls">
+            <button data-qty="${key}" data-delta="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button>
+            <strong>${item.qty}</strong>
+            <button data-qty="${key}" data-delta="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button>
+          </div>
+          <strong class="cart-item-total">${money(item.qty * Number(item.product.price || 0))}</strong>
         </div>
       </div>
-      <strong>${money(item.qty * Number(item.product.price || 0))}</strong>
     </div>`;
     }).join("");
     cartItems.querySelectorAll("[data-qty]").forEach(btn => {
@@ -451,13 +489,20 @@ document.addEventListener("DOMContentLoaded", function(){
         updateQty(this.dataset.qty, Number(this.dataset.delta));
       });
     });
+    cartItems.querySelectorAll("[data-remove]").forEach(btn => {
+      btn.addEventListener("click", function(){
+        cart = cart.filter(i => cartItemKey(i.sku, i.variant) !== this.dataset.remove);
+        saveCart();
+      });
+    });
   }
 
-  if(openCart) openCart.addEventListener("click", function(){ cartDrawer.classList.add("open"); });
-  if(closeCart) closeCart.addEventListener("click", function(){ cartDrawer.classList.remove("open"); });
+  if(openCart) openCart.addEventListener("click", function(e){ e.preventDefault(); openCartDrawer(); });
+  if(closeCart) closeCart.addEventListener("click", closeCartDrawer);
+  if(cartBackdrop) cartBackdrop.addEventListener("click", closeCartDrawer);
   if(productModalClose) productModalClose.addEventListener("click", closeProductModal);
   if(productModalBackdrop) productModalBackdrop.addEventListener("click", closeProductModal);
-  document.addEventListener("keydown", function(e){ if(e.key === 'Escape') closeProductModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key === 'Escape'){ closeProductModal(); closeCartDrawer(); } });
 
   document.querySelectorAll('[data-category-nav]').forEach(link => {
     link.addEventListener('click', function(e){
