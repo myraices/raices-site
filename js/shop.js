@@ -237,20 +237,47 @@ document.addEventListener("DOMContentLoaded", function(){
     return related.slice(0,3);
   }
 
+  function cartItemKey(sku, variant){
+    return variant ? `${sku}::${variant}` : sku;
+  }
+
+  function variantLabel(product){
+    if(!product || !Array.isArray(product.variants) || !product.variants.length) return '';
+    return currentLang()==='es' ? 'Elige tu té' : 'Choose your tea';
+  }
+
+  function variantIntro(product){
+    if(!product || !Array.isArray(product.variants) || !product.variants.length) return '';
+    return currentLang()==='es'
+      ? 'Tu Ritual Box incluye el té seleccionado, mug Raíces, difusor dorado y tarjeta de preparación.'
+      : 'Your Ritual Box includes the selected tea, Raíces mug, golden infuser and preparation card.';
+  }
+
   function openProductModal(sku){
     const p = products.find(item => item.sku === sku);
     if(!p || !productModal || !productModalContent) return;
     const benefits = benefitList(p).map(b => `<li>${b}</li>`).join('');
     const related = relatedProducts(p).map(r => `<button class="ritual-card" data-related-add="${r.sku}"><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}</em></button>`).join('');
+    const hasVariants = Array.isArray(p.variants) && p.variants.length;
+    const selectedVariant = hasVariants ? p.variants[0].name : "";
+    const variantBlock = hasVariants ? `
+      <div class="variant-box">
+        <label>${variantLabel(p)}</label>
+        <div class="variant-options">
+          ${p.variants.map((v, idx) => `<button type="button" class="variant-option ${idx===0?'active':''}" data-variant="${v.name}" data-variant-image="${v.image}">${v.name}</button>`).join('')}
+        </div>
+        <p>${variantIntro(p)}</p>
+      </div>` : '';
     productModalContent.innerHTML = `
       <div class="product-modal-grid">
-        <div class="product-modal-image" style="background-image:url('${p.image}')"></div>
+        <div class="product-modal-image" id="modalProductImage" style="background-image:url('${p.image}')"></div>
         <div class="product-modal-info">
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
           <h2>${p.name}</h2>
           <p class="modal-description">${productDescription(p)}</p>
           <div class="product-meta modal-meta">${productMeta(p)}</div>
-          <div class="modal-price-row"><strong>${money(p.price)}</strong><button class="btn" data-modal-add="${p.sku}">${t('add_to_cart')}</button></div>
+          ${variantBlock}
+          <div class="modal-price-row"><strong>${money(p.price)}</strong><button class="btn" data-modal-add="${p.sku}" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div>
           <div class="modal-sections">
             <section><h3>${t('benefits')}</h3><ul>${benefits}</ul></section>
             <section><h3>${t('ingredients')}</h3><p>${localizedIngredients(p)}</p></section>
@@ -263,7 +290,19 @@ document.addEventListener("DOMContentLoaded", function(){
       </div>`;
     productModal.classList.add('open');
     productModal.setAttribute('aria-hidden','false');
-    productModalContent.querySelectorAll('[data-modal-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.modalAdd); }));
+
+    const modalImage = productModalContent.querySelector('#modalProductImage');
+    const modalAdd = productModalContent.querySelector('[data-modal-add]');
+    productModalContent.querySelectorAll('.variant-option').forEach(btn => {
+      btn.addEventListener('click', function(){
+        productModalContent.querySelectorAll('.variant-option').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        if(modalImage) modalImage.style.backgroundImage = `url('${this.dataset.variantImage}')`;
+        if(modalAdd) modalAdd.dataset.selectedVariant = this.dataset.variant;
+      });
+    });
+
+    productModalContent.querySelectorAll('[data-modal-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.modalAdd, this.dataset.selectedVariant || ""); }));
     productModalContent.querySelectorAll('[data-related-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.relatedAdd); }));
   }
 
@@ -333,21 +372,22 @@ document.addEventListener("DOMContentLoaded", function(){
     });
   }
 
-  function addToCart(sku){
+  function addToCart(sku, variant){
     const product = products.find(p => p.sku === sku);
     if(!product) return;
-    const existing = cart.find(item => item.sku === sku);
+    const key = cartItemKey(sku, variant);
+    const existing = cart.find(item => cartItemKey(item.sku, item.variant) === key);
     if(existing) existing.qty += 1;
-    else cart.push({ sku: product.sku, qty: 1 });
+    else cart.push({ sku: product.sku, qty: 1, variant: variant || "" });
     saveCart();
     if(cartDrawer) cartDrawer.classList.add("open");
   }
 
-  function updateQty(sku, delta){
-    const item = cart.find(i => i.sku === sku);
+  function updateQty(key, delta){
+    const item = cart.find(i => cartItemKey(i.sku, i.variant) === key);
     if(!item) return;
     item.qty += delta;
-    if(item.qty <= 0) cart = cart.filter(i => i.sku !== sku);
+    if(item.qty <= 0) cart = cart.filter(i => cartItemKey(i.sku, i.variant) !== key);
     saveCart();
   }
 
@@ -362,19 +402,24 @@ document.addEventListener("DOMContentLoaded", function(){
       cartItems.innerHTML = `<p class="cart-empty">${t('cart_empty')}</p>`;
       return;
     }
-    cartItems.innerHTML = enriched.map(item => `<div class="cart-item">
-      <div class="cart-item-img" style="background-image:url('${item.product.image}')"></div>
+    cartItems.innerHTML = enriched.map(item => {
+      const key = cartItemKey(item.sku, item.variant);
+      const variantText = item.variant ? ` · ${item.variant}` : "";
+      const variantImage = item.variant && Array.isArray(item.product.variants) ? (item.product.variants.find(v => v.name === item.variant)?.image || item.product.image) : item.product.image;
+      return `<div class="cart-item">
+      <div class="cart-item-img" style="background-image:url('${variantImage}')"></div>
       <div>
         <h4>${item.product.name}</h4>
-        <p>${money(item.product.price)} · ${translateUnit(item.product.unit) || ""}</p>
+        <p>${money(item.product.price)} · ${translateUnit(item.product.unit) || ""}${variantText}</p>
         <div class="qty-controls">
-          <button data-qty="${item.sku}" data-delta="-1">−</button>
+          <button data-qty="${key}" data-delta="-1">−</button>
           <strong>${item.qty}</strong>
-          <button data-qty="${item.sku}" data-delta="1">+</button>
+          <button data-qty="${key}" data-delta="1">+</button>
         </div>
       </div>
       <strong>${money(item.qty * Number(item.product.price || 0))}</strong>
-    </div>`).join("");
+    </div>`;
+    }).join("");
     cartItems.querySelectorAll("[data-qty]").forEach(btn => {
       btn.addEventListener("click", function(){
         updateQty(this.dataset.qty, Number(this.dataset.delta));

@@ -51,8 +51,8 @@ window.RAICES_COLLECTIONS = {
   "Signature Empanadas": { title: "Signature Empanadas Collection", description: "Masa artesanal, rellenos honestos y colores que nacen de la raíz.", image: "assets/empanadas-signature-board.jpg" },
   "Protein Craft Collection": { title: "Protein Craft Collection", description: "Proteínas cocinadas lentamente y listas para disfrutar.", image: "assets/proteinas-board.jpg" },
   "Three Moments": { title: "Three Moments", description: "Slim & Drain, Golden Fit y Dream & Calm: tres momentos para acompañar tu día.", image: "assets/categories/category-herbal.jpg" },
-  "Ritual Collection": { title: "Ritual Collection", description: "Una selección herbal pensada para crear constancia y presencia.", image: "assets/categories/category-herbal.jpg" },
-  "Ritual Box": { title: "Ritual Box", description: "Una experiencia completa para regalar o comenzar tu propio ritual.", image: "assets/categories/category-herbal.jpg" },
+  "Ritual Collection": { title: "Ritual Collection", description: "Los tres tés insignia de Raíces para acompañar cada momento del día.", image: "assets/products/herbal/herbal-ritual-collection.jpg" },
+  "Ritual Box": { title: "Ritual Box", description: "Caja premium con té a elección, mug, difusor y tarjeta ritual.", image: "assets/products/herbal/herbal-ritual-box-dream-calm.jpg" },
   "Signature Desserts": { title: "Signature Desserts", description: "Lo dulce también puede sentirse natural, cuidado y especial.", image: "assets/categories/category-desserts.jpg" },
   "Home Rituals": { title: "Home Rituals", description: "Piezas sencillas para preparar, servir y disfrutar con intención.", image: "assets/categories/category-home.jpg" },
   "The Library": { title: "The Library", description: "Guías digitales para volver a lo esencial y cultivar bienestar.", image: "assets/categories/category-wellness.jpg" }

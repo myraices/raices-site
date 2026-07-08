@@ -265,7 +265,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/emp-yuca-pavo.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-pavo-romero.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -650,25 +650,25 @@ window.RAICES_PRODUCTS = [
     "subcategory": "Herbal",
     "name": "Ritual Collection",
     "slug": "ritual-collection",
-    "description": "Mezcla herbal Ritual Collection creada para acompañar un momento específico de tu día.",
-    "longDescription": "Ritual Collection forma parte del universo Herbal de Raíces: infusiones pensadas como pequeños rituales diarios para reconectar con el cuerpo, la pausa y la intención.",
-    "unit": "Unidad",
-    "unitsPerPackage": 1,
+    "description": "Colección completa con los tres tés insignia de Raíces para acompañar tus momentos de energía, equilibrio y calma.",
+    "longDescription": "Ritual Collection reúne Slim & Drain, Golden Fit y Dream & Calm en una experiencia herbal completa para crear constancia, presencia y pequeños rituales diarios.",
+    "unit": "Caja",
+    "unitsPerPackage": 3,
     "unitWeight": "60 g (2.11 oz)",
     "netWeight": "60 g (2.11 oz)",
     "price": 30.0,
-    "image": "assets/herbal-board.jpg",
+    "image": "assets/products/herbal/herbal-ritual-collection.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
-      "Mezcla herbal natural",
-      "Ritual diario de bienestar",
-      "Empaque pensado para regalar o disfrutar"
+      "Incluye los tres tés Raíces",
+      "Ideal para regalar o comenzar tu ritual",
+      "Una experiencia completa de bienestar herbal"
     ],
-    "ingredients": "Mezcla de hierbas e ingredientes botánicos.",
+    "ingredients": "Slim & Drain, Golden Fit y Dream & Calm.",
     "conservation": "Conservar en lugar fresco y seco. Mantener cerrado después de abrir.",
-    "preparation": "Infusionar en agua caliente de 5 a 8 minutos. Ajustar intensidad al gusto.",
-    "moment": "Mañana, tarde o noche según el ritual elegido.",
+    "preparation": "Elige el té según el momento del día. Infusionar de 5 a 8 minutos y disfrutar con intención.",
+    "moment": "Para acompañar mañana, tarde y noche con un ritual diferente.",
     "relatedHint": "Completa tu ritual"
   },
   {
@@ -678,26 +678,40 @@ window.RAICES_PRODUCTS = [
     "subcategory": "Herbal",
     "name": "Ritual Box",
     "slug": "ritual-box",
-    "description": "Mezcla herbal Ritual Box creada para acompañar un momento específico de tu día.",
-    "longDescription": "Ritual Box forma parte del universo Herbal de Raíces: infusiones pensadas como pequeños rituales diarios para reconectar con el cuerpo, la pausa y la intención.",
-    "unit": "Unidad",
+    "description": "Caja ritual premium con té a elección, mug Raíces, difusor dorado y tarjeta de preparación.",
+    "longDescription": "Ritual Box es una experiencia completa para regalar o regalarte una pausa: elige tu té Raíces favorito y recibe una caja premium con mug, difusor y tarjeta ritual.",
+    "unit": "Caja",
     "unitsPerPackage": 1,
-    "unitWeight": "60 g (2.11 oz)",
-    "netWeight": "60 g (2.11 oz)",
+    "unitWeight": "",
+    "netWeight": "",
     "price": 50.0,
-    "image": "assets/herbal-board.jpg",
+    "image": "assets/products/herbal/herbal-ritual-box-dream-calm.jpg",
     "available": true,
     "taxable": null,
     "benefits": [
-      "Mezcla herbal natural",
-      "Ritual diario de bienestar",
-      "Empaque pensado para regalar o disfrutar"
+      "Incluye té a elección",
+      "Incluye mug, difusor y tarjeta ritual",
+      "Una experiencia lista para regalar"
     ],
-    "ingredients": "Mezcla de hierbas e ingredientes botánicos.",
-    "conservation": "Conservar en lugar fresco y seco. Mantener cerrado después de abrir.",
-    "preparation": "Infusionar en agua caliente de 5 a 8 minutos. Ajustar intensidad al gusto.",
-    "moment": "Mañana, tarde o noche según el ritual elegido.",
-    "relatedHint": "Completa tu ritual"
+    "ingredients": "Caja premium con un té Raíces a elección, mug, difusor dorado y tarjeta ritual.",
+    "conservation": "Conservar el té en lugar fresco y seco. Cuidar mug y difusor según material.",
+    "preparation": "Elige tu té, prepara la infusión con el difusor y sigue la tarjeta ritual incluida.",
+    "moment": "Regalo, pausa nocturna, ritual de mañana o momento de conexión.",
+    "relatedHint": "Completa tu ritual",
+    "variants": [
+      {
+        "name": "Dream & Calm",
+        "image": "assets/products/herbal/herbal-ritual-box-dream-calm.jpg"
+      },
+      {
+        "name": "Golden Fit",
+        "image": "assets/products/herbal/herbal-ritual-box-golden-fit.jpg"
+      },
+      {
+        "name": "Slim & Drain",
+        "image": "assets/products/herbal/herbal-ritual-box-slim-drain.jpg"
+      }
+    ]
   },
   {
     "sku": "RA-DE-001",
