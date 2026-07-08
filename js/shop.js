@@ -22,6 +22,11 @@ document.addEventListener("DOMContentLoaded", function(){
   const cartItems = document.getElementById("cartItems");
   const cartCount = document.getElementById("cartCount");
   const cartSubtotal = document.getElementById("cartSubtotal");
+  const cartDelivery = document.getElementById("cartDelivery");
+  const cartTotal = document.getElementById("cartTotal");
+  const deliveryZip = document.getElementById("deliveryZip");
+  const applyDeliveryZip = document.getElementById("applyDeliveryZip");
+  const deliveryMessage = document.getElementById("deliveryMessage");
 
   let activeCategory = "All";
   let activeCollection = "All";
@@ -80,6 +85,47 @@ document.addEventListener("DOMContentLoaded", function(){
 
   function money(value){
     return "$" + Number(value || 0).toFixed(2);
+  }
+
+  function normalizeZip(value){
+    return String(value || '').replace(/\D/g,'').slice(0,5);
+  }
+
+  const deliveryZones = [
+    { name:'Katy / Cinco Ranch', cost:5, zips:['77494','77450','77493'] },
+    { name:'Fulshear', cost:8, zips:['77441'] },
+    { name:'Richmond', cost:8, zips:['77406','77407','77469'] },
+    { name:'Sugar Land', cost:15, zips:['77478','77479','77498'] },
+    { name:'Cypress', cost:15, zips:['77429','77433'] },
+    { name:'Houston', cost:15, prefix:['770'] }
+  ];
+
+  function findDeliveryZone(zip){
+    const clean = normalizeZip(zip);
+    if(clean.length !== 5) return null;
+    return deliveryZones.find(zone => (zone.zips && zone.zips.includes(clean)) || (zone.prefix && zone.prefix.some(prefix => clean.startsWith(prefix)))) || null;
+  }
+
+  function getDeliveryZip(){
+    return normalizeZip(localStorage.getItem('raices_delivery_zip') || '');
+  }
+
+  function setDeliveryZip(zip){
+    const clean = normalizeZip(zip);
+    if(clean) localStorage.setItem('raices_delivery_zip', clean);
+    else localStorage.removeItem('raices_delivery_zip');
+    return clean;
+  }
+
+  function deliveryText(zone){
+    if(!zone) return currentLang()==='es' ? 'Ingresa tu ZIP Code para calcular el delivery.' : 'Enter your ZIP Code to calculate delivery.';
+    return currentLang()==='es' ? `${zone.name}: delivery ${money(zone.cost)}` : `${zone.name}: delivery ${money(zone.cost)}`;
+  }
+
+  function unsupportedDeliveryText(zip){
+    return currentLang()==='es'
+      ? `El ZIP ${zip} está fuera de nuestra zona de entrega. Contáctanos por WhatsApp para verificar disponibilidad.`
+      : `ZIP ${zip} is outside our delivery area. Contact us on WhatsApp to verify availability.`;
   }
 
   function scrollToShopStart(){
@@ -446,8 +492,30 @@ document.addEventListener("DOMContentLoaded", function(){
     const enriched = cart.map(item => ({...item, product: products.find(p => p.sku === item.sku)})).filter(i => i.product);
     const count = enriched.reduce((sum, item) => sum + item.qty, 0);
     const subtotal = enriched.reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
+    const zip = getDeliveryZip();
+    const zone = findDeliveryZone(zip);
+    const deliveryCost = zone ? zone.cost : 0;
+    const total = subtotal + (enriched.length ? deliveryCost : 0);
     if(cartCount) cartCount.textContent = count;
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
+    if(cartDelivery) cartDelivery.textContent = enriched.length ? (zone ? money(deliveryCost) : '—') : '—';
+    if(cartTotal) cartTotal.textContent = money(total);
+    if(deliveryZip && document.activeElement !== deliveryZip) deliveryZip.value = zip;
+    if(deliveryMessage){
+      if(!enriched.length){
+        deliveryMessage.dataset.state = 'idle';
+        deliveryMessage.textContent = currentLang()==='es' ? 'Agrega productos para calcular el delivery.' : 'Add products to calculate delivery.';
+      } else if(zip.length === 5 && zone){
+        deliveryMessage.dataset.state = 'ok';
+        deliveryMessage.textContent = deliveryText(zone);
+      } else if(zip.length === 5 && !zone){
+        deliveryMessage.dataset.state = 'error';
+        deliveryMessage.textContent = unsupportedDeliveryText(zip);
+      } else {
+        deliveryMessage.dataset.state = 'idle';
+        deliveryMessage.textContent = currentLang()==='es' ? 'Ingresa tu ZIP Code para calcular el delivery.' : 'Enter your ZIP Code to calculate delivery.';
+      }
+    }
     if(!cartItems) return;
     if(enriched.length === 0){
       cartItems.innerHTML = `<div class="cart-empty-state">
@@ -495,6 +563,19 @@ document.addEventListener("DOMContentLoaded", function(){
         saveCart();
       });
     });
+  }
+
+  if(applyDeliveryZip) applyDeliveryZip.addEventListener("click", function(){
+    setDeliveryZip(deliveryZip ? deliveryZip.value : '');
+    renderCart();
+  });
+  if(deliveryZip){
+    deliveryZip.value = getDeliveryZip();
+    deliveryZip.addEventListener("input", function(){ this.value = normalizeZip(this.value); });
+    deliveryZip.addEventListener("keydown", function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); setDeliveryZip(this.value); renderCart(); }
+    });
+    deliveryZip.addEventListener("blur", function(){ setDeliveryZip(this.value); renderCart(); });
   }
 
   if(openCart) openCart.addEventListener("click", function(e){ e.preventDefault(); openCartDrawer(); });

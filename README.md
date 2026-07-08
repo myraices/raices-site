@@ -46,3 +46,13 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - Carrito lateral completo con miniaturas, variantes, cantidades, eliminar producto y subtotal dinámico.
 - Persistencia en localStorage.
 - Checkout queda desactivado para la siguiente fase de delivery/Square.
+
+## v82 - Delivery por ZIP Code
+
+- Agregado cálculo de delivery en el carrito lateral.
+- No hay pickup.
+- Katy / Cinco Ranch: $5.
+- Fulshear / Richmond: $8.
+- Houston / Sugar Land / Cypress: $15.
+- Fuera de zona: mensaje para contactar por WhatsApp.
+- Total del carrito ahora suma subtotal + delivery.

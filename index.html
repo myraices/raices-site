@@ -168,8 +168,18 @@
     </div>
     <div id="cartItems" class="cart-items"></div>
     <div class="cart-footer">
+      <div class="delivery-box">
+        <label for="deliveryZip" data-i18n="delivery_zip_label">ZIP Code para delivery</label>
+        <div class="delivery-input-row">
+          <input id="deliveryZip" type="text" inputmode="numeric" maxlength="5" placeholder="77494"/>
+          <button type="button" id="applyDeliveryZip" data-i18n="delivery_apply">Aplicar</button>
+        </div>
+        <p id="deliveryMessage" class="delivery-message" data-state="idle" data-i18n="delivery_prompt">Ingresa tu ZIP Code para calcular el delivery.</p>
+      </div>
       <div class="cart-line"><span data-i18n="subtotal">Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
-      <p class="cart-note" data-i18n="cart_note">Delivery, taxes y Square Checkout se activarán en la siguiente fase.</p>
+      <div class="cart-line"><span data-i18n="delivery_label">Delivery</span><strong id="cartDelivery">—</strong></div>
+      <div class="cart-line cart-total-line"><span data-i18n="total_label">Total</span><strong id="cartTotal">$0.00</strong></div>
+      <p class="cart-note" data-i18n="cart_note">Taxes y Square Checkout se activarán en la siguiente fase.</p>
       <button class="btn checkout-btn disabled" type="button" id="checkoutSoon" data-i18n="checkout_soon">Checkout próximamente</button>
     </div>
   </aside>
