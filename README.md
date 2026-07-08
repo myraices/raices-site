@@ -56,3 +56,9 @@ La apariencia visual de la web no cambia en esta versión; el cambio es estructu
 - Houston / Sugar Land / Cypress: $15.
 - Fuera de zona: mensaje para contactar por WhatsApp.
 - Total del carrito ahora suma subtotal + delivery.
+
+
+## v83 Delivery ZIP fix
+- Delivery validates immediately when the 5-digit ZIP is entered.
+- Apply button now forces update even when cart is empty.
+- Valid ZIP shows zone and cost clearly before checkout.

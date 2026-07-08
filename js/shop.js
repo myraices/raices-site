@@ -128,6 +128,35 @@ document.addEventListener("DOMContentLoaded", function(){
       : `ZIP ${zip} is outside our delivery area. Contact us on WhatsApp to verify availability.`;
   }
 
+
+  function deliveryPromptText(zip, zone, hasItems){
+    if(zip.length === 5 && zone){
+      return currentLang()==='es'
+        ? `${zone.name}: delivery ${money(zone.cost)}${hasItems ? '' : '. Agrega productos para ver el total.'}`
+        : `${zone.name}: delivery ${money(zone.cost)}${hasItems ? '' : '. Add products to see the total.'}`;
+    }
+    if(zip.length === 5 && !zone){
+      return unsupportedDeliveryText(zip);
+    }
+    if(zip.length > 0 && zip.length < 5){
+      return currentLang()==='es' ? 'Escribe los 5 dígitos del ZIP Code.' : 'Enter the 5 digits of the ZIP Code.';
+    }
+    return currentLang()==='es' ? 'Ingresa tu ZIP Code para calcular el delivery.' : 'Enter your ZIP Code to calculate delivery.';
+  }
+
+  function updateDeliveryUI(zip, zone, itemCount){
+    if(!deliveryMessage) return;
+    const hasItems = itemCount > 0;
+    if(zip.length === 5 && zone){
+      deliveryMessage.dataset.state = 'ok';
+    } else if(zip.length === 5 && !zone){
+      deliveryMessage.dataset.state = 'error';
+    } else {
+      deliveryMessage.dataset.state = 'idle';
+    }
+    deliveryMessage.textContent = deliveryPromptText(zip, zone, hasItems);
+  }
+
   function scrollToShopStart(){
     const target = document.getElementById('shopResults');
     if(!target) return;
@@ -495,27 +524,13 @@ document.addEventListener("DOMContentLoaded", function(){
     const zip = getDeliveryZip();
     const zone = findDeliveryZone(zip);
     const deliveryCost = zone ? zone.cost : 0;
-    const total = subtotal + (enriched.length ? deliveryCost : 0);
+    const total = subtotal + (enriched.length && zone ? deliveryCost : 0);
     if(cartCount) cartCount.textContent = count;
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
     if(cartDelivery) cartDelivery.textContent = enriched.length ? (zone ? money(deliveryCost) : '—') : '—';
     if(cartTotal) cartTotal.textContent = money(total);
     if(deliveryZip && document.activeElement !== deliveryZip) deliveryZip.value = zip;
-    if(deliveryMessage){
-      if(!enriched.length){
-        deliveryMessage.dataset.state = 'idle';
-        deliveryMessage.textContent = currentLang()==='es' ? 'Agrega productos para calcular el delivery.' : 'Add products to calculate delivery.';
-      } else if(zip.length === 5 && zone){
-        deliveryMessage.dataset.state = 'ok';
-        deliveryMessage.textContent = deliveryText(zone);
-      } else if(zip.length === 5 && !zone){
-        deliveryMessage.dataset.state = 'error';
-        deliveryMessage.textContent = unsupportedDeliveryText(zip);
-      } else {
-        deliveryMessage.dataset.state = 'idle';
-        deliveryMessage.textContent = currentLang()==='es' ? 'Ingresa tu ZIP Code para calcular el delivery.' : 'Enter your ZIP Code to calculate delivery.';
-      }
-    }
+    updateDeliveryUI(zip, zone, enriched.length);
     if(!cartItems) return;
     if(enriched.length === 0){
       cartItems.innerHTML = `<div class="cart-empty-state">
@@ -565,13 +580,19 @@ document.addEventListener("DOMContentLoaded", function(){
     });
   }
 
-  if(applyDeliveryZip) applyDeliveryZip.addEventListener("click", function(){
-    setDeliveryZip(deliveryZip ? deliveryZip.value : '');
+  if(applyDeliveryZip) applyDeliveryZip.addEventListener("click", function(e){
+    e.preventDefault();
+    const zip = setDeliveryZip(deliveryZip ? deliveryZip.value : '');
+    if(deliveryZip) deliveryZip.value = zip;
     renderCart();
   });
   if(deliveryZip){
     deliveryZip.value = getDeliveryZip();
-    deliveryZip.addEventListener("input", function(){ this.value = normalizeZip(this.value); });
+    deliveryZip.addEventListener("input", function(){
+      this.value = normalizeZip(this.value);
+      if(this.value.length === 5){ setDeliveryZip(this.value); renderCart(); }
+      else updateDeliveryUI(this.value, null, cart.length);
+    });
     deliveryZip.addEventListener("keydown", function(e){
       if(e.key === 'Enter'){ e.preventDefault(); setDeliveryZip(this.value); renderCart(); }
     });
