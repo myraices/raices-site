@@ -309,6 +309,19 @@
         </form>
         <div class="auth-message" id="authMessage"></div>
       </div>
+      <div class="auth-view hidden" id="authResetPassword">
+        <div class="eyebrow" data-i18n="account_eyebrow">Cuenta Raíces</div>
+        <h2 id="resetPasswordTitle">Crear nueva contraseña</h2>
+        <p class="auth-intro" id="resetPasswordIntro">Escribe una nueva contraseña para tu cuenta. Después podrás iniciar sesión normalmente.</p>
+        <form id="resetPasswordForm" class="auth-form">
+          <label id="resetPasswordLabel">Nueva contraseña</label>
+          <input type="password" id="newPassword" required minlength="6" placeholder="Mínimo 6 caracteres"/>
+          <label id="resetPasswordConfirmLabel">Confirmar contraseña</label>
+          <input type="password" id="confirmNewPassword" required minlength="6" placeholder="Repite la contraseña"/>
+          <button class="btn auth-submit" type="submit" id="resetPasswordSubmit">Guardar contraseña</button>
+        </form>
+        <div class="auth-message" id="resetPasswordMessage"></div>
+      </div>
       <div class="auth-view hidden" id="authLoggedIn">
         <div class="eyebrow" data-i18n="account_eyebrow">Cuenta Raíces</div>
         <h2 id="accountEmail">Bienvenido/a</h2>

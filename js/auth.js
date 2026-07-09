@@ -13,6 +13,9 @@ const signupForm = document.getElementById("signupForm");
 const authMessage = document.getElementById("authMessage");
 const authLoggedOut = document.getElementById("authLoggedOut");
 const authLoggedIn = document.getElementById("authLoggedIn");
+const authResetPassword = document.getElementById("authResetPassword");
+const resetPasswordForm = document.getElementById("resetPasswordForm");
+const resetPasswordMessage = document.getElementById("resetPasswordMessage");
 const accountEmail = document.getElementById("accountEmail");
 const userWrap = document.getElementById("userWrap");
 const userGreeting = document.getElementById("userGreeting");
@@ -20,28 +23,39 @@ const userIconLink = document.getElementById("userIconLink");
 const logoutBtn = document.getElementById("logoutBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 let lastUnconfirmedEmail = "";
+let isPasswordRecoveryMode = false;
 
 function openAuthModal(e) {
   if (e) e.preventDefault();
   authModal.classList.add("open");
   authModal.setAttribute("aria-hidden","false");
-  checkAuthState();
+  if (!isPasswordRecoveryMode) checkAuthState();
 }
 function closeAuthModal() {
+  if (isPasswordRecoveryMode) return;
   authModal.classList.remove("open");
   authModal.setAttribute("aria-hidden","true");
   authMessage.textContent = "";
+  if (resetPasswordMessage) resetPasswordMessage.textContent = "";
 }
 document.querySelectorAll('a[href="#usuario"]').forEach(function(link){ link.addEventListener("click", openAuthModal); });
 if (authBackdrop) authBackdrop.addEventListener("click", closeAuthModal);
 if (authClose) authClose.addEventListener("click", closeAuthModal);
 
 function showLogin(clearMessage = true) {
+  isPasswordRecoveryMode = false;
+  if (authResetPassword) authResetPassword.classList.add("hidden");
+  authLoggedIn.classList.add("hidden");
+  authLoggedOut.classList.remove("hidden");
   loginTab.classList.add("active"); signupTab.classList.remove("active");
   loginForm.classList.remove("hidden"); signupForm.classList.add("hidden");
   if (clearMessage) authMessage.textContent = "";
 }
 function showSignup(clearMessage = true) {
+  isPasswordRecoveryMode = false;
+  if (authResetPassword) authResetPassword.classList.add("hidden");
+  authLoggedIn.classList.add("hidden");
+  authLoggedOut.classList.remove("hidden");
   signupTab.classList.add("active"); loginTab.classList.remove("active");
   signupForm.classList.remove("hidden"); loginForm.classList.add("hidden");
   if (clearMessage) authMessage.textContent = "";
@@ -54,6 +68,32 @@ function getAuthLang() {
 
 function authText(es, en) {
   return String(getAuthLang()).toLowerCase().startsWith("en") ? en : es;
+}
+
+function showPasswordRecoveryView() {
+  isPasswordRecoveryMode = true;
+  authModal.classList.add("open");
+  authModal.setAttribute("aria-hidden", "false");
+  authLoggedOut.classList.add("hidden");
+  authLoggedIn.classList.add("hidden");
+  if (authResetPassword) authResetPassword.classList.remove("hidden");
+  if (resetPasswordMessage) resetPasswordMessage.textContent = "";
+  setTimeout(function(){
+    const input = document.getElementById("newPassword");
+    if (input) input.focus();
+  }, 120);
+}
+
+function cleanRecoveryUrl() {
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+  }
+}
+
+function urlLooksLikeRecovery() {
+  const url = new URL(window.location.href);
+  const raw = (url.search + " " + url.hash).toLowerCase();
+  return raw.includes("type=recovery") || raw.includes("#reset-password") || raw.includes("access_token=");
 }
 
 function setAuthPlainMessage(message) {
@@ -162,6 +202,8 @@ function getUserDisplayName(user) {
 }
 
 async function checkAuthState() {
+  if (isPasswordRecoveryMode) return;
+  if (authResetPassword) authResetPassword.classList.add("hidden");
   const { data } = await raicesSupabase.auth.getUser();
   if (data && data.user) {
     const displayName = getUserDisplayName(data.user);
@@ -253,14 +295,54 @@ signupForm.addEventListener("submit", async function(e) {
 forgotPasswordBtn.addEventListener("click", async function() {
   const email = document.getElementById("loginEmail").value;
   if (!email) { setAuthPlainMessage(authText("Escribe tu email arriba y luego pulsa recuperar contraseña.", "Enter your email above, then click forgot password.")); return; }
-  const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: "https://myraices.com" });
+  const resetUrl = window.location.origin + "/#reset-password";
+  const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
   setAuthPlainMessage(error ? error.message : authText("Te enviamos un correo para recuperar tu contraseña.", "We sent you a password reset email."));
 });
+
+if (resetPasswordForm) {
+  resetPasswordForm.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const newPassword = document.getElementById("newPassword").value;
+    const confirmNewPassword = document.getElementById("confirmNewPassword").value;
+    if (newPassword.length < 6) {
+      resetPasswordMessage.textContent = authText("La contraseña debe tener al menos 6 caracteres.", "Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      resetPasswordMessage.textContent = authText("Las contraseñas no coinciden.", "Passwords do not match.");
+      return;
+    }
+    resetPasswordMessage.textContent = authText("Guardando nueva contraseña...", "Saving new password...");
+    const { error } = await raicesSupabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      resetPasswordMessage.textContent = error.message || authText("No se pudo actualizar la contraseña.", "We could not update your password.");
+      return;
+    }
+    resetPasswordForm.reset();
+    cleanRecoveryUrl();
+    await raicesSupabase.auth.signOut();
+    isPasswordRecoveryMode = false;
+    showLogin(false);
+    setAuthPlainMessage(authText("Contraseña actualizada. Ahora puedes iniciar sesión con tu nueva contraseña.", "Password updated. You can now sign in with your new password."));
+  });
+}
 
 logoutBtn.addEventListener("click", async function() {
   await raicesSupabase.auth.signOut();
   checkAuthState();
 });
 
-raicesSupabase.auth.onAuthStateChange(function() { checkAuthState(); });
-checkAuthState();
+raicesSupabase.auth.onAuthStateChange(function(event) {
+  if (event === "PASSWORD_RECOVERY" || urlLooksLikeRecovery()) {
+    showPasswordRecoveryView();
+    return;
+  }
+  checkAuthState();
+});
+
+if (urlLooksLikeRecovery()) {
+  showPasswordRecoveryView();
+} else {
+  checkAuthState();
+}
