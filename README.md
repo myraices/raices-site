@@ -27,3 +27,11 @@ Opcionales:
 - Corrige flujo de registro con correo existente.
 - Si Supabase detecta email ya registrado, se muestra mensaje para iniciar sesión o recuperar contraseña.
 - No sincroniza con Brevo cuando el registro no crea un usuario nuevo.
+
+
+## v97 - Brevo emails por API
+
+- La app envía directamente las plantillas transaccionales de Brevo.
+- Welcome usa template ID 1 por defecto.
+- Waitlist usa template ID 3 por defecto.
+- Se recomienda desactivar la automatización `Welcome - Raíces Community` para evitar duplicados.

@@ -120,6 +120,23 @@ exports.handler = async function(event) {
     const lastCart = summarizeCart(cart);
     if (lastCart) attributes.LAST_CART = lastCart;
 
+    async function getExistingContact() {
+      try {
+        const existingResponse = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}?identifierType=email_id`, {
+          method: "GET",
+          headers: { "accept": "application/json", "api-key": apiKey }
+        });
+        if (existingResponse.status === 404) return null;
+        if (!existingResponse.ok) return null;
+        return await existingResponse.json();
+      } catch (err) {
+        return null;
+      }
+    }
+
+    const existingContact = await getExistingContact();
+    const wasExisting = Boolean(existingContact && existingContact.email);
+
     const contactResponse = await fetch("https://api.brevo.com/v3/contacts", {
       method: "POST",
       headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
@@ -131,24 +148,74 @@ exports.handler = async function(event) {
       return { statusCode: contactResponse.status, headers: corsHeaders, body: JSON.stringify({ message: text || "Brevo contact error." }) };
     }
 
+    async function sendTransactionalTemplate(templateId, params) {
+      const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
+        body: JSON.stringify({
+          to: [{ email, name: name || email }],
+          templateId,
+          params: params || {}
+        })
+      });
+      if (!emailResponse.ok) throw new Error(await emailResponse.text());
+      return true;
+    }
+
     let emailSent = false;
     let emailWarning = null;
-    if (normalizedSource === "waitlist") {
-      try {
-        const subject = String(language || "es").toLowerCase().startsWith("es") ? "Recibimos tu interés en Raíces" : "We received your Raíces request";
-        const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
-          method: "POST",
-          headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
-          body: JSON.stringify({ sender: { name: senderName, email: senderEmail }, to: [{ email, name: name || email }], subject, htmlContent: waitlistEmailHtml({ language, name, cart }) })
+    const welcomeTemplateId = Number(process.env.BREVO_WELCOME_TEMPLATE_ID || process.env.RAICES_BREVO_WELCOME_TEMPLATE_ID || 1);
+    const waitlistTemplateId = Number(process.env.BREVO_WAITLIST_TEMPLATE_ID || process.env.RAICES_BREVO_WAITLIST_TEMPLATE_ID || 3);
+
+    try {
+      if (normalizedSource === "waitlist") {
+        // v97: Waitlist email is sent directly by the app using the Brevo transactional template.
+        // This avoids depending on daily filter-based automations.
+        await sendTransactionalTemplate(waitlistTemplateId, {
+          FIRSTNAME: name || "",
+          SOURCE: normalizedSource,
+          WAITLIST: true,
+          CITY: attributes.CITY || "",
+          ZIP: attributes.ZIP || "",
+          LAST_CART: attributes.LAST_CART || "",
+          LANGUAGE: language,
+          cart_summary: attributes.LAST_CART || ""
         });
-        if (!emailResponse.ok) emailWarning = await emailResponse.text();
-        else emailSent = true;
-      } catch (err) {
-        emailWarning = err.message;
+        emailSent = true;
+      } else if ((normalizedSource === "newsletter" || normalizedSource === "confirmed_user" || normalizedSource === "signup") && !wasExisting) {
+        // Welcome is sent only for new Brevo contacts to avoid duplicate welcome emails.
+        await sendTransactionalTemplate(welcomeTemplateId, {
+          FIRSTNAME: name || "",
+          SOURCE: normalizedSource,
+          WAITLIST: false,
+          CUSTOMER: false,
+          LANGUAGE: language
+        });
+        emailSent = true;
+      }
+    } catch (err) {
+      emailWarning = err.message;
+
+      // Fallback: if the waitlist template is not ready, send a simple inline waitlist email.
+      if (normalizedSource === "waitlist") {
+        try {
+          const subject = String(language || "es").toLowerCase().startsWith("es") ? "Ya estás en la lista de espera de Raíces" : "You are on the Raíces waitlist";
+          const fallbackResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+            method: "POST",
+            headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
+            body: JSON.stringify({ sender: { name: senderName, email: senderEmail }, to: [{ email, name: name || email }], subject, htmlContent: waitlistEmailHtml({ language, name, cart }) })
+          });
+          if (fallbackResponse.ok) {
+            emailSent = true;
+            emailWarning = null;
+          }
+        } catch (fallbackErr) {
+          emailWarning = `${emailWarning} | fallback: ${fallbackErr.message}`;
+        }
       }
     }
 
-    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Brevo synced", listId, emailSent, emailWarning }) };
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Brevo synced", listId, wasExisting, emailSent, emailWarning }) };
   } catch (error) {
     return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ message: error.message }) };
   }
