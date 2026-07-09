@@ -35,16 +35,45 @@ document.querySelectorAll('a[href="#usuario"]').forEach(function(link){ link.add
 if (authBackdrop) authBackdrop.addEventListener("click", closeAuthModal);
 if (authClose) authClose.addEventListener("click", closeAuthModal);
 
-function showLogin() {
+function showLogin(clearMessage = true) {
   loginTab.classList.add("active"); signupTab.classList.remove("active");
   loginForm.classList.remove("hidden"); signupForm.classList.add("hidden");
-  authMessage.textContent = "";
+  if (clearMessage) authMessage.textContent = "";
 }
-function showSignup() {
+function showSignup(clearMessage = true) {
   signupTab.classList.add("active"); loginTab.classList.remove("active");
   signupForm.classList.remove("hidden"); loginForm.classList.add("hidden");
-  authMessage.textContent = "";
+  if (clearMessage) authMessage.textContent = "";
   setTimeout(function(){ document.getElementById("signupName").focus(); }, 80);
+}
+
+function getAuthLang() {
+  return window.raicesLang || localStorage.getItem("raices_lang") || "es";
+}
+
+function authText(es, en) {
+  return String(getAuthLang()).toLowerCase().startsWith("en") ? en : es;
+}
+
+function isExistingSignupResponse(data, error) {
+  const message = String((error && error.message) || "").toLowerCase();
+  if (message.includes("already") || message.includes("registered") || message.includes("exists")) return true;
+  const identities = data && data.user && data.user.identities;
+  return Array.isArray(identities) && identities.length === 0;
+}
+
+function routeExistingEmailToLogin(email) {
+  const loginEmail = document.getElementById("loginEmail");
+  if (loginEmail) loginEmail.value = email || "";
+  showLogin(false);
+  authMessage.textContent = authText(
+    "Ese correo ya está registrado. Inicia sesión o usa ‘Olvidé mi contraseña’.",
+    "That email is already registered. Sign in or use ‘Forgot password’."
+  );
+  setTimeout(function(){
+    const passwordInput = document.getElementById("loginPassword");
+    if (passwordInput) passwordInput.focus();
+  }, 80);
 }
 loginTab.addEventListener("click", showLogin);
 signupTab.addEventListener("click", showSignup);
@@ -124,16 +153,25 @@ signupForm.addEventListener("submit", async function(e) {
       }
     });
 
+    if (isExistingSignupResponse(data, error)) {
+      console.warn("Raíces signup duplicate email:", email);
+      routeExistingEmailToLogin(email);
+      return;
+    }
+
     if (error) {
       console.error("Raíces signup error:", error);
-      authMessage.textContent = error.message || "No se pudo crear la cuenta.";
+      authMessage.textContent = error.message || authText("No se pudo crear la cuenta.", "We could not create the account.");
       return;
     }
 
     console.log("Raíces signup response:", data);
-    syncBrevoContact({ email: email, name: name, source: "signup", consent: true, language: window.raicesLang || localStorage.getItem("raices_lang") || "es" });
+    syncBrevoContact({ email: email, name: name, source: "signup", consent: true, language: getAuthLang() });
     signupForm.reset();
-    authMessage.textContent = "Cuenta creada. Revisa tu correo para confirmar el registro.";
+    authMessage.textContent = authText(
+      "Cuenta creada. Revisa tu correo para confirmar el registro.",
+      "Account created. Check your email to confirm registration."
+    );
   } catch (err) {
     console.error("Raíces signup unexpected error:", err);
     authMessage.textContent = "Error inesperado al crear la cuenta. Revisa la consola.";

@@ -22,3 +22,8 @@ Opcionales:
 - `BREVO_LIST_ID` (si no se define, usa `2`)
 - `BREVO_SENDER_EMAIL` (default: `info@myraices.com`)
 - `BREVO_SENDER_NAME` (default: `Raíces`)
+
+## v95
+- Corrige flujo de registro con correo existente.
+- Si Supabase detecta email ya registrado, se muestra mensaje para iniciar sesión o recuperar contraseña.
+- No sincroniza con Brevo cuando el registro no crea un usuario nuevo.
