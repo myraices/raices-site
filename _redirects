@@ -4,3 +4,6 @@
 /teas      /#tes       200
 /about     /#nosotros  200
 /contact   /#contacto  200
+
+/account   /account.html 200
+/my-account /account.html 200

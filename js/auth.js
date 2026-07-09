@@ -25,8 +25,19 @@ const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 let lastUnconfirmedEmail = "";
 let isPasswordRecoveryMode = false;
 
-function openAuthModal(e) {
+async function openAuthModal(e) {
   if (e) e.preventDefault();
+  if (!isPasswordRecoveryMode) {
+    try {
+      const { data } = await raicesSupabase.auth.getUser();
+      if (data && data.user) {
+        window.location.href = "/account";
+        return;
+      }
+    } catch (err) {
+      console.warn("Raíces account redirect warning:", err);
+    }
+  }
   authModal.classList.add("open");
   authModal.setAttribute("aria-hidden","false");
   if (!isPasswordRecoveryMode) checkAuthState();
@@ -261,7 +272,7 @@ signupForm.addEventListener("submit", async function(e) {
       email: email,
       password: password,
       options: {
-        data: { full_name: name },
+        data: { full_name: name, first_name: name, language: getAuthLang() },
         emailRedirectTo: "https://myraices.com/"
       }
     });

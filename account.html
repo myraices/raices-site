@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Cuenta | Raíces</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="account-page">
+  <header class="topbar">
+    <a class="brand" href="/"><img src="assets/raices-logo.png" alt="Raíces" /><span>Raíces</span></a>
+    <nav class="desktop-nav"><a href="/#shop">Tienda</a><a href="/#nosotros">Nosotros</a><a href="/#contacto">Contacto</a></nav>
+  </header>
+
+  <main id="accountApp" class="account-app loading">
+    <section class="account-hero">
+      <p class="eyebrow">Cuenta Raíces</p>
+      <h1 id="accountName">Mi Cuenta</h1>
+      <p id="accountEmailTop" class="account-email"></p>
+    </section>
+
+    <section class="account-shell">
+      <aside class="account-nav" aria-label="Mi Cuenta">
+        <button type="button" data-section="profile" class="active">👤 Perfil</button>
+        <button type="button" data-section="addresses">📍 Direcciones</button>
+        <button type="button" data-section="orders">📦 Mis pedidos</button>
+        <button type="button" data-section="preferences">🌎 Preferencias</button>
+        <button type="button" data-section="security">🔒 Seguridad</button>
+        <button type="button" id="logoutAccountBtn" class="logout-account">🚪 Cerrar sesión</button>
+      </aside>
+
+      <div class="account-content">
+        <section id="section-profile" class="account-section active">
+          <div class="account-card">
+            <h2>Perfil</h2>
+            <p>Actualiza tus datos principales para futuras órdenes.</p>
+            <form id="profileForm" class="account-form">
+              <label>Nombre<input id="firstName" type="text" autocomplete="given-name" /></label>
+              <label>Apellidos<input id="lastName" type="text" autocomplete="family-name" /></label>
+              <label>Email<input id="email" type="email" disabled /></label>
+              <label>Teléfono<input id="phone" type="tel" autocomplete="tel" /></label>
+              <button class="btn" type="submit">Guardar cambios</button>
+              <div id="profileMessage" class="account-message"></div>
+            </form>
+          </div>
+        </section>
+
+        <section id="section-addresses" class="account-section">
+          <div class="account-card">
+            <h2>Dirección de entrega</h2>
+            <p>Por ahora guardaremos una dirección principal.</p>
+            <form id="addressForm" class="account-form">
+              <label>Dirección<input id="address1" type="text" autocomplete="address-line1" /></label>
+              <label>Apt / Suite <span>opcional</span><input id="address2" type="text" autocomplete="address-line2" /></label>
+              <div class="account-form-row">
+                <label>Ciudad<input id="city" type="text" autocomplete="address-level2" /></label>
+                <label>Estado<input id="state" type="text" maxlength="2" autocomplete="address-level1" /></label>
+                <label>ZIP<input id="zip" type="text" inputmode="numeric" autocomplete="postal-code" /></label>
+              </div>
+              <button class="btn" type="submit">Guardar dirección</button>
+              <div id="addressMessage" class="account-message"></div>
+            </form>
+          </div>
+        </section>
+
+        <section id="section-orders" class="account-section">
+          <div class="account-card empty-orders">
+            <h2>Mis pedidos</h2>
+            <p>Todavía no tienes pedidos.</p>
+            <small>Cuando activemos Square y Supabase Orders, aquí aparecerá tu historial.</small>
+          </div>
+        </section>
+
+        <section id="section-preferences" class="account-section">
+          <div class="account-card">
+            <h2>Preferencias</h2>
+            <p>Este idioma se usará para la experiencia de la web y futuras comunicaciones.</p>
+            <form id="preferencesForm" class="account-form">
+              <label>Idioma preferido
+                <select id="preferredLanguage">
+                  <option value="es">Español</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <button class="btn" type="submit">Guardar preferencias</button>
+              <div id="preferencesMessage" class="account-message"></div>
+            </form>
+          </div>
+        </section>
+
+        <section id="section-security" class="account-section">
+          <div class="account-card">
+            <h2>Seguridad</h2>
+            <p>Cambia tu contraseña cuando lo necesites.</p>
+            <form id="passwordForm" class="account-form">
+              <label>Nueva contraseña<input id="newAccountPassword" type="password" minlength="6" autocomplete="new-password" /></label>
+              <label>Confirmar contraseña<input id="confirmAccountPassword" type="password" minlength="6" autocomplete="new-password" /></label>
+              <button class="btn" type="submit">Actualizar contraseña</button>
+              <div id="passwordMessage" class="account-message"></div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/account.js"></script>
+</body>
+</html>
