@@ -394,8 +394,8 @@
         btn.disabled = true;
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
-          await saveInterest({ email: emailValue, name: nameValue, source:'newsletter_section', consent:true });
-          subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter_section', consent:true }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
+          await saveInterest({ email: emailValue, name: nameValue, source:'newsletter', consent:true });
+          subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter', consent:true }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
           localStorage.setItem('raices_newsletter_email', emailValue);
           form.reset();
           setMsg('ok', txt('Gracias por unirte a Raíces. Te enviaremos novedades pronto.', 'Thank you for joining Raíces. We will send updates soon.'));
@@ -428,8 +428,8 @@
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
           const cartSummary = window.RAICES_CART_SUMMARY || null;
-          await saveInterest({ email: emailValue, name:nameValue, source:'checkout_waitlist', consent:true, cart: cartSummary });
-          subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'checkout_waitlist', consent:true, cart: cartSummary }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
+          await saveInterest({ email: emailValue, name:nameValue, source:'waitlist', consent:true, cart: cartSummary });
+          subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'waitlist', consent:true, cart: cartSummary }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
           localStorage.setItem('raices_waitlist_email', emailValue);
           form.reset();
           setMsg('ok', txt('Listo. Te avisaremos cuando abramos pedidos.', 'Done. We will notify you when ordering opens.'));

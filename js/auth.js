@@ -49,6 +49,19 @@ function showSignup() {
 loginTab.addEventListener("click", showLogin);
 signupTab.addEventListener("click", showSignup);
 
+
+async function syncBrevoContact(payload) {
+  try {
+    await fetch("/.netlify/functions/brevo-subscribe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn("Raíces Brevo sync warning:", err);
+  }
+}
+
 function getUserDisplayName(user) {
   const meta = user && user.user_metadata ? user.user_metadata : {};
   const fullName = (meta.full_name || meta.name || "").trim();
@@ -118,6 +131,7 @@ signupForm.addEventListener("submit", async function(e) {
     }
 
     console.log("Raíces signup response:", data);
+    syncBrevoContact({ email: email, name: name, source: "signup", consent: true, language: window.raicesLang || localStorage.getItem("raices_lang") || "es" });
     signupForm.reset();
     authMessage.textContent = "Cuenta creada. Revisa tu correo para confirmar el registro.";
   } catch (err) {
