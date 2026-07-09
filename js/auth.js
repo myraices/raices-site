@@ -19,6 +19,7 @@ const userGreeting = document.getElementById("userGreeting");
 const userIconLink = document.getElementById("userIconLink");
 const logoutBtn = document.getElementById("logoutBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+let lastUnconfirmedEmail = "";
 
 function openAuthModal(e) {
   if (e) e.preventDefault();
@@ -53,6 +54,67 @@ function getAuthLang() {
 
 function authText(es, en) {
   return String(getAuthLang()).toLowerCase().startsWith("en") ? en : es;
+}
+
+function setAuthPlainMessage(message) {
+  authMessage.textContent = message || "";
+}
+
+function setUnconfirmedMessage(email) {
+  lastUnconfirmedEmail = String(email || "").trim().toLowerCase();
+  const message = authText(
+    "Ese correo todavía no está confirmado. Revisa tu bandeja de entrada o reenvía el correo de confirmación.",
+    "That email is not confirmed yet. Check your inbox or resend the confirmation email."
+  );
+  const resendText = authText("Reenviar confirmación", "Resend confirmation");
+  const recoverText = authText("Olvidé mi contraseña", "Forgot password");
+  authMessage.innerHTML = `
+    <div>${message}</div>
+    <div class="auth-inline-actions">
+      <button class="auth-link" type="button" id="resendConfirmationBtn">${resendText}</button>
+      <button class="auth-link" type="button" id="recoverFromUnconfirmedBtn">${recoverText}</button>
+    </div>
+  `;
+  const resendBtn = document.getElementById("resendConfirmationBtn");
+  const recoverBtn = document.getElementById("recoverFromUnconfirmedBtn");
+  if (resendBtn) resendBtn.addEventListener("click", resendConfirmationEmail);
+  if (recoverBtn) recoverBtn.addEventListener("click", function(){ if (forgotPasswordBtn) forgotPasswordBtn.click(); });
+}
+
+function isEmailNotConfirmedError(error) {
+  const message = String((error && error.message) || error || "").toLowerCase();
+  return message.includes("email not confirmed") || message.includes("not confirmed");
+}
+
+async function resendConfirmationEmail() {
+  const email = lastUnconfirmedEmail || (document.getElementById("loginEmail") && document.getElementById("loginEmail").value.trim().toLowerCase());
+  if (!email) {
+    setAuthPlainMessage(authText("Escribe tu email y vuelve a intentarlo.", "Enter your email and try again."));
+    return;
+  }
+  setAuthPlainMessage(authText("Reenviando confirmación...", "Resending confirmation..."));
+  try {
+    const { error } = await raicesSupabase.auth.resend({
+      type: "signup",
+      email: email,
+      options: { emailRedirectTo: "https://myraices.com/" }
+    });
+    if (error) {
+      setUnconfirmedMessage(email);
+      const extra = document.createElement("div");
+      extra.style.marginTop = "8px";
+      extra.textContent = error.message || authText("No se pudo reenviar el correo.", "We could not resend the email.");
+      authMessage.appendChild(extra);
+      return;
+    }
+    setAuthPlainMessage(authText(
+      "Te reenviamos el correo de confirmación. Revisa también Spam o Promotions.",
+      "We resent the confirmation email. Please also check Spam or Promotions."
+    ));
+  } catch (err) {
+    console.error("Raíces resend confirmation error:", err);
+    setAuthPlainMessage(authText("No se pudo reenviar el correo. Intenta de nuevo.", "We could not resend the email. Try again."));
+  }
 }
 
 function isExistingSignupResponse(data, error) {
@@ -129,9 +191,18 @@ loginForm.addEventListener("submit", async function(e) {
   authMessage.textContent = "Verificando...";
   const email = document.getElementById("loginEmail").value;
   const password = document.getElementById("loginPassword").value;
-  const { error } = await raicesSupabase.auth.signInWithPassword({ email, password });
-  if (error) { authMessage.textContent = error.message; return; }
-  authMessage.textContent = "Sesión iniciada.";
+  const { data, error } = await raicesSupabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (isEmailNotConfirmedError(error)) {
+      setUnconfirmedMessage(email);
+    } else {
+      setAuthPlainMessage(error.message);
+    }
+    return;
+  }
+  const userName = data && data.user ? getUserDisplayName(data.user) : "";
+  syncBrevoContact({ email: email, name: userName, source: "confirmed_user", consent: true, language: getAuthLang() });
+  setAuthPlainMessage(authText("Sesión iniciada.", "Signed in."));
   checkAuthState();
 });
 
@@ -166,12 +237,13 @@ signupForm.addEventListener("submit", async function(e) {
     }
 
     console.log("Raíces signup response:", data);
-    syncBrevoContact({ email: email, name: name, source: "signup", consent: true, language: getAuthLang() });
     signupForm.reset();
-    authMessage.textContent = authText(
-      "Cuenta creada. Revisa tu correo para confirmar el registro.",
-      "Account created. Check your email to confirm registration."
-    );
+    const loginEmail = document.getElementById("loginEmail");
+    if (loginEmail) loginEmail.value = email;
+    setAuthPlainMessage(authText(
+      "Cuenta creada. Te enviamos un correo para confirmar el registro. No podrás iniciar sesión hasta confirmar tu email.",
+      "Account created. We sent you an email to confirm your registration. You cannot sign in until your email is confirmed."
+    ));
   } catch (err) {
     console.error("Raíces signup unexpected error:", err);
     authMessage.textContent = "Error inesperado al crear la cuenta. Revisa la consola.";
@@ -180,9 +252,9 @@ signupForm.addEventListener("submit", async function(e) {
 
 forgotPasswordBtn.addEventListener("click", async function() {
   const email = document.getElementById("loginEmail").value;
-  if (!email) { authMessage.textContent = "Escribe tu email arriba y luego pulsa recuperar contraseña."; return; }
+  if (!email) { setAuthPlainMessage(authText("Escribe tu email arriba y luego pulsa recuperar contraseña.", "Enter your email above, then click forgot password.")); return; }
   const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: "https://myraices.com" });
-  authMessage.textContent = error ? error.message : "Te enviamos un correo para recuperar tu contraseña.";
+  setAuthPlainMessage(error ? error.message : authText("Te enviamos un correo para recuperar tu contraseña.", "We sent you a password reset email."));
 });
 
 logoutBtn.addEventListener("click", async function() {
