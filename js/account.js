@@ -7,19 +7,46 @@ const $ = (id) => document.getElementById(id);
 
 const copy = {
   es: {
-    loading: "Cargando tu cuenta...", saved: "Cambios guardados.", saving: "Guardando...", error: "No se pudo guardar. Intenta de nuevo.",
-    notSigned: "Necesitas iniciar sesión para ver Mi Cuenta.", redirect: "Volver al inicio", logout: "Cerrar sesión",
-    passwordMin: "La contraseña debe tener al menos 6 caracteres.", passwordMismatch: "Las contraseñas no coinciden.", passwordSaved: "Contraseña actualizada.",
-    profileSaved: "Perfil actualizado.", addressSaved: "Dirección guardada.", prefSaved: "Preferencias guardadas.", ordersEmpty: "Todavía no tienes pedidos."
+    store:"Tienda", about:"Nosotros", contact:"Contacto", eyebrow:"Cuenta Raíces", accountTitle:"Mi Cuenta",
+    profileNav:"👤 Perfil", addressesNav:"📍 Direcciones", ordersNav:"📦 Mis pedidos", preferencesNav:"🌎 Preferencias", securityNav:"🔒 Seguridad", logoutNav:"🚪 Cerrar sesión",
+    profileTitle:"Perfil", profileIntro:"Actualiza tus datos principales para futuras órdenes.", firstName:"Nombre", lastName:"Apellidos", phone:"Teléfono", saveProfile:"Guardar cambios",
+    addressTitle:"Dirección de entrega", addressIntro:"Por ahora guardaremos una dirección principal.", address1:"Dirección", address2:"Apt / Suite", optional:"opcional", city:"Ciudad", state:"Estado", saveAddress:"Guardar dirección",
+    ordersTitle:"Mis pedidos", ordersEmpty:"Todavía no tienes pedidos.", ordersSmall:"Cuando activemos Square y Supabase Orders, aquí aparecerá tu historial.",
+    preferencesTitle:"Preferencias", preferencesIntro:"Este idioma se usará para la experiencia de la web y futuras comunicaciones.", language:"Idioma preferido", savePreferences:"Guardar preferencias",
+    securityTitle:"Seguridad", securityIntro:"Cambia tu contraseña cuando lo necesites.", newPassword:"Nueva contraseña", confirmPassword:"Confirmar contraseña", updatePassword:"Actualizar contraseña",
+    loading:"Cargando tu cuenta...", saving:"Guardando...", error:"No se pudo guardar. Intenta de nuevo.", notSigned:"Necesitas iniciar sesión para ver Mi Cuenta.", redirect:"Volver al inicio",
+    passwordMin:"La contraseña debe tener al menos 6 caracteres.", passwordMismatch:"Las contraseñas no coinciden.", passwordSaved:"Contraseña actualizada.",
+    profileSaved:"Perfil actualizado.", addressSaved:"Dirección guardada.", prefSaved:"Preferencias guardadas."
   },
   en: {
-    loading: "Loading your account...", saved: "Changes saved.", saving: "Saving...", error: "We could not save. Try again.",
-    notSigned: "You need to sign in to view My Account.", redirect: "Back to home", logout: "Sign out",
-    passwordMin: "Password must be at least 6 characters.", passwordMismatch: "Passwords do not match.", passwordSaved: "Password updated.",
-    profileSaved: "Profile updated.", addressSaved: "Address saved.", prefSaved: "Preferences saved.", ordersEmpty: "You do not have any orders yet."
+    store:"Store", about:"About", contact:"Contact", eyebrow:"Raíces Account", accountTitle:"My Account",
+    profileNav:"👤 Profile", addressesNav:"📍 Addresses", ordersNav:"📦 My orders", preferencesNav:"🌎 Preferences", securityNav:"🔒 Security", logoutNav:"🚪 Sign out",
+    profileTitle:"Profile", profileIntro:"Update your main details for future orders.", firstName:"First name", lastName:"Last name", phone:"Phone", saveProfile:"Save changes",
+    addressTitle:"Delivery address", addressIntro:"For now, we will save one primary delivery address.", address1:"Address", address2:"Apt / Suite", optional:"optional", city:"City", state:"State", saveAddress:"Save address",
+    ordersTitle:"My orders", ordersEmpty:"You do not have any orders yet.", ordersSmall:"Once Square and Supabase Orders are active, your order history will appear here.",
+    preferencesTitle:"Preferences", preferencesIntro:"This language will be used for the website experience and future communications.", language:"Preferred language", savePreferences:"Save preferences",
+    securityTitle:"Security", securityIntro:"Change your password whenever you need to.", newPassword:"New password", confirmPassword:"Confirm password", updatePassword:"Update password",
+    loading:"Loading your account...", saving:"Saving...", error:"We could not save. Try again.", notSigned:"You need to sign in to view My Account.", redirect:"Back to home",
+    passwordMin:"Password must be at least 6 characters.", passwordMismatch:"Passwords do not match.", passwordSaved:"Password updated.",
+    profileSaved:"Profile updated.", addressSaved:"Address saved.", prefSaved:"Preferences saved."
   }
 };
 function t(key){ return (copy[state.lang] && copy[state.lang][key]) || copy.es[key] || key; }
+function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
+function applyAccountLanguage(){
+  document.documentElement.lang = state.lang;
+  setText("navStore", t("store")); setText("navAbout", t("about")); setText("navContact", t("contact"));
+  setText("accountEyebrow", t("eyebrow"));
+  setText("navProfile", t("profileNav")); setText("navAddresses", t("addressesNav")); setText("navOrders", t("ordersNav")); setText("navPreferences", t("preferencesNav")); setText("navSecurity", t("securityNav")); setText("logoutAccountBtn", t("logoutNav"));
+  setText("profileTitle", t("profileTitle")); setText("profileIntro", t("profileIntro")); setText("labelFirstName", t("firstName")); setText("labelLastName", t("lastName")); setText("labelPhone", t("phone")); setText("saveProfileBtn", t("saveProfile"));
+  setText("addressTitle", t("addressTitle")); setText("addressIntro", t("addressIntro")); setText("labelAddress1", t("address1")); setText("labelAddress2", t("address2")); setText("optionalText", t("optional")); setText("labelCity", t("city")); setText("labelState", t("state")); setText("saveAddressBtn", t("saveAddress"));
+  setText("ordersTitle", t("ordersTitle")); setText("ordersEmpty", t("ordersEmpty")); setText("ordersSmall", t("ordersSmall"));
+  setText("preferencesTitle", t("preferencesTitle")); setText("preferencesIntro", t("preferencesIntro")); setText("labelLanguage", t("language")); setText("savePreferencesBtn", t("savePreferences"));
+  setText("securityTitle", t("securityTitle")); setText("securityIntro", t("securityIntro")); setText("labelNewPassword", t("newPassword")); setText("labelConfirmPassword", t("confirmPassword")); setText("updatePasswordBtn", t("updatePassword"));
+  const langBtn = $("accountLangBtn"); if(langBtn) langBtn.textContent = state.lang === "es" ? "ES" : "EN";
+  const pref = $("preferredLanguage"); if(pref) pref.value = state.lang;
+  fillHeaderName();
+}
 function msg(id, text, ok=true){ const el=$(id); if(!el) return; el.textContent=text; el.dataset.state = ok ? "ok" : "error"; }
 function currentMeta(){ return state.user && state.user.user_metadata ? state.user.user_metadata : {}; }
 function safe(v){ return v == null ? "" : String(v); }
@@ -28,6 +55,11 @@ function displayName(){
   const full = [m.first_name, m.last_name].filter(Boolean).join(" ").trim() || safe(m.full_name).trim();
   return full || (state.user && state.user.email ? state.user.email.split("@")[0] : "");
 }
+function fillHeaderName(){
+  if(!$('accountName')) return;
+  const name = displayName();
+  $('accountName').textContent = name ? name : t('accountTitle');
+}
 function setActive(section){
   state.section = section;
   document.querySelectorAll(".account-nav button[data-section]").forEach(b => b.classList.toggle("active", b.dataset.section === section));
@@ -35,7 +67,7 @@ function setActive(section){
 }
 function fillForms(){
   const m = state.meta || {};
-  $("accountName").textContent = displayName() || "Mi Cuenta";
+  fillHeaderName();
   $("accountEmailTop").textContent = state.user.email;
   $("firstName").value = safe(m.first_name || m.name || (m.full_name || "").split(" ")[0]);
   $("lastName").value = safe(m.last_name || "");
@@ -48,9 +80,9 @@ function fillForms(){
   $("state").value = safe(address.state || m.state || "TX");
   $("zip").value = safe(address.zip || m.zip || "");
   const lang = safe(m.language || localStorage.getItem("raices_lang") || "es").toLowerCase().startsWith("en") ? "en" : "es";
-  $("preferredLanguage").value = lang;
   state.lang = lang;
   localStorage.setItem("raices_lang", lang);
+  applyAccountLanguage();
 }
 async function updateMetadata(nextMeta){
   const merged = { ...(state.meta || {}), ...nextMeta };
@@ -64,6 +96,7 @@ async function updateMetadata(nextMeta){
 async function init(){
   const { data } = await raicesSupabase.auth.getUser();
   if (!data || !data.user) {
+    applyAccountLanguage();
     $("accountApp").innerHTML = `<div class="account-shell single"><div class="account-card"><h1>${t("notSigned")}</h1><a class="btn" href="/">${t("redirect")}</a></div></div>`;
     return;
   }
@@ -76,7 +109,17 @@ async function init(){
 }
 
 document.addEventListener("DOMContentLoaded", function(){
+  state.lang = (localStorage.getItem("raices_lang") || "es").toLowerCase().startsWith("en") ? "en" : "es";
+  applyAccountLanguage();
   init().catch(err => { console.error(err); $("accountApp").innerHTML = `<p class="account-message" data-state="error">${t("error")}</p>`; });
+
+  const langBtn = $("accountLangBtn");
+  if(langBtn) langBtn.addEventListener("click", async function(){
+    state.lang = state.lang === "es" ? "en" : "es";
+    localStorage.setItem("raices_lang", state.lang);
+    applyAccountLanguage();
+    if(state.user){ try { await updateMetadata({ language: state.lang }); } catch(e){ console.warn(e); } }
+  });
 
   $("profileForm").addEventListener("submit", async function(e){
     e.preventDefault(); msg("profileMessage", t("saving"));
@@ -100,8 +143,9 @@ document.addEventListener("DOMContentLoaded", function(){
     e.preventDefault(); msg("preferencesMessage", t("saving"));
     try {
       const lang = $("preferredLanguage").value;
-      localStorage.setItem("raices_lang", lang);
       state.lang = lang;
+      localStorage.setItem("raices_lang", lang);
+      applyAccountLanguage();
       await updateMetadata({ language: lang });
       msg("preferencesMessage", t("prefSaved"));
     } catch(err){ console.error(err); msg("preferencesMessage", t("error"), false); }
