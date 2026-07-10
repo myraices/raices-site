@@ -751,3 +751,25 @@ body.cart-open{overflow:hidden}
   box-shadow:0 0 0 4px rgba(35,59,32,.07);
 }
 .google-address-status.hidden{display:none!important;}
+
+/* v109: final address UX polish */
+.address-search-label{gap:8px!important}
+.google-address-autocomplete-host{margin-top:0!important}
+.google-address-autocomplete-host .raices-place-autocomplete,
+.google-address-autocomplete-host gmp-place-autocomplete{
+  min-height:50px!important;
+  height:50px;
+  border-radius:999px!important;
+  overflow:hidden;
+}
+.address-details{display:grid;gap:14px;opacity:0;transform:translateY(-5px);max-height:0;overflow:hidden;pointer-events:none;transition:opacity .22s ease,transform .22s ease,max-height .35s ease}
+.address-details.visible{opacity:1;transform:none;max-height:650px;overflow:visible;pointer-events:auto}
+.address-location-row{grid-template-columns:minmax(0,1.8fr) minmax(90px,.55fr) minmax(110px,.7fr)!important}
+.country-field{max-width:360px}
+.account-form textarea{width:100%;border:1px solid var(--line);border-radius:22px;background:var(--cream);padding:14px 16px;color:var(--deep);outline:none;font:inherit;resize:vertical;box-sizing:border-box}
+.account-form textarea:focus{border-color:rgba(35,59,32,.45);box-shadow:0 0 0 4px rgba(35,59,32,.07)}
+.account-form input[readonly]{background:rgba(248,242,232,.68);cursor:default}
+.account-toast{position:fixed;right:24px;top:24px;z-index:9999;max-width:min(360px,calc(100vw - 32px));padding:14px 18px;border-radius:16px;background:var(--forest);color:#fff;font-weight:800;box-shadow:0 14px 38px rgba(20,35,18,.22);opacity:0;transform:translateY(-12px);pointer-events:none;transition:opacity .22s ease,transform .22s ease}
+.account-toast.show{opacity:1;transform:none}
+.account-toast.error{background:#8a3b2c}
+@media(max-width:700px){.address-location-row{grid-template-columns:1fr 1fr!important}.address-location-row label:first-child{grid-column:1/-1}.country-field{max-width:none}.account-toast{top:14px;right:16px;left:16px;max-width:none}}

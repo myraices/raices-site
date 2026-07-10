@@ -2,7 +2,7 @@ const RAICES_SUPABASE_URL = "https://tqtnffinhqbyesjdollk.supabase.co";
 const RAICES_SUPABASE_KEY = "sb_publishable_UzqAP9ZoPNJVtn1FKpoSNg_oNwvJgKW";
 const raicesSupabase = window.supabase.createClient(RAICES_SUPABASE_URL, RAICES_SUPABASE_KEY);
 
-const state = { user: null, meta: {}, section: "profile", lang: localStorage.getItem("raices_lang") || "es", addresses: [], autocomplete: null };
+const state = { user: null, meta: {}, section: "profile", lang: localStorage.getItem("raices_lang") || "es", addresses: [], autocomplete: null, toastTimer: null };
 const $ = (id) => document.getElementById(id);
 
 const copy = {
@@ -36,6 +36,15 @@ function t(key){ return (copy[state.lang] && copy[state.lang][key]) || copy.es[k
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 function safe(v){ return v == null ? "" : String(v); }
 function msg(id, text, ok=true){ const el=$(id); if(!el) return; el.textContent=text; el.dataset.state = ok ? "ok" : "error"; }
+function toast(text, ok=true){
+  const el=$("accountToast"); if(!el) return;
+  clearTimeout(state.toastTimer);
+  el.textContent=(ok?"✓ ":"")+text;
+  el.classList.toggle("error",!ok);
+  el.classList.add("show");
+  state.toastTimer=setTimeout(()=>el.classList.remove("show"),2800);
+}
+function setAddressDetailsVisible(visible){ $("addressDetails")?.classList.toggle("visible",Boolean(visible)); }
 function currentMeta(){ return state.user && state.user.user_metadata ? state.user.user_metadata : {}; }
 function escapeHtml(value){ return safe(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 
@@ -80,12 +89,13 @@ async function updateMetadata(nextMeta){
 }
 
 function resetAddressForm(){
-  $("addressForm").reset(); if(state.autocompleteElement) state.autocompleteElement.value=""; $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("googleAddressStatus").classList.add("hidden"); $("addressForm").classList.add("hidden");
+  $("addressForm").reset(); setAddressDetailsVisible(false); if(state.autocompleteElement) state.autocompleteElement.value=""; $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("googleAddressStatus").classList.add("hidden"); $("addressForm").classList.add("hidden");
 }
 function openAddressForm(address=null){
   $("addressForm").classList.remove("hidden");
   $("addressId").value=address?address.id:""; $("addressName").value=address?safe(address.label):""; $("placeId").value=address?safe(address.place_id):""; $("latitude").value=address?safe(address.latitude):""; $("longitude").value=address?safe(address.longitude):""; $("address1").value=address?safe(address.address_line1):""; $("address2").value=address?safe(address.address_line2):""; $("city").value=address?safe(address.city):""; $("state").value=address?safe(address.state):""; $("zip").value=address?safe(address.postal_code):""; $("country").value=address && address.country==="US"?"United States":safe(address?.country||"United States"); $("deliveryNotes").value=address?safe(address.delivery_notes):""; $("isDefaultAddress").checked=address?Boolean(address.is_default):state.addresses.length===0;
   if(state.autocompleteElement) state.autocompleteElement.value=address?safe(address.address_line1):"";
+  setAddressDetailsVisible(Boolean(address && address.address_line1));
   $("addressName").focus();
 }
 function renderAddresses(){
@@ -107,14 +117,14 @@ async function saveAddress(){
   const query=id?raicesSupabase.from("customer_addresses").update(payload).eq("id",id):raicesSupabase.from("customer_addresses").insert(payload);
   const {error}=await query; if(error) throw error;
   if(!payload.is_default && state.addresses.length===0){ await raicesSupabase.from("customer_addresses").update({is_default:true}).eq("user_id",state.user.id); }
-  await loadAddresses(); resetAddressForm(); msg("addressMessage",t("addressSaved"));
+  await loadAddresses(); resetAddressForm(); toast(t("addressSaved"));
 }
 async function deleteAddress(id){
   const current=state.addresses.find(a=>String(a.id)===String(id));
   const {error}=await raicesSupabase.from("customer_addresses").delete().eq("id",id); if(error) throw error;
   await loadAddresses();
   if(current&&current.is_default&&state.addresses.length){ const first=state.addresses[0]; await raicesSupabase.from("customer_addresses").update({is_default:true}).eq("id",first.id); await loadAddresses(); }
-  msg("addressMessage",t("addressDeleted"));
+  toast(t("addressDeleted"));
 }
 
 
@@ -189,6 +199,8 @@ async function initAddressAutocomplete(){
         $("latitude").value = place.location?.lat?.() ?? "";
         $("longitude").value = place.location?.lng?.() ?? "";
         $("googleAddressStatus")?.classList.add("hidden");
+        setAddressDetailsVisible(true);
+        setTimeout(()=>$("address2")?.focus(),180);
       }catch(err){
         console.error("Raices address selection error",err);
         $("googleAddressStatus")?.classList.remove("hidden"); msg("googleAddressStatus",t("error"),false);
