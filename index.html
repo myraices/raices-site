@@ -400,10 +400,8 @@
       if(!form || !btn || !email) return;
       function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
       let submitting = false;
-      let submitting = false;
       async function handle(e){
         if(e){ e.preventDefault(); e.stopPropagation(); }
-        if(submitting) return false;
         if(submitting) return false;
         const emailValue = email.value.trim();
         const nameValue = name ? name.value.trim() : '';
@@ -442,7 +440,9 @@
       const msg = document.getElementById('waitlistMessage');
       if(!form || !btn || !email) return;
       function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
+      let submitting = false;
       async function handle(e){
+        if(submitting) return false;
         if(e){ e.preventDefault(); e.stopPropagation(); }
         const emailValue = email.value.trim();
         const nameValue = name ? name.value.trim() : '';
