@@ -54,17 +54,34 @@
 
         <section id="section-addresses" class="account-section">
           <div class="account-card">
-            <h2 id="addressTitle">Dirección de entrega</h2>
-            <p id="addressIntro">Por ahora guardaremos una dirección principal.</p>
-            <form id="addressForm" class="account-form">
-              <label><span id="labelAddress1">Dirección</span><input id="address1" type="text" autocomplete="address-line1" /></label>
+            <div class="address-heading-row">
+              <div>
+                <h2 id="addressTitle">Mis direcciones</h2>
+                <p id="addressIntro">Guarda varias direcciones y elige una como predeterminada.</p>
+              </div>
+              <button id="addAddressBtn" class="btn address-add-btn" type="button">+ Agregar dirección</button>
+            </div>
+
+            <div id="addressesList" class="addresses-list"></div>
+            <div id="addressesEmpty" class="address-empty hidden">
+              <p id="addressesEmptyText">Todavía no tienes direcciones guardadas.</p>
+            </div>
+
+            <form id="addressForm" class="account-form address-editor hidden">
+              <input id="addressId" type="hidden" />
+              <label><span id="labelAddressName">Nombre de la dirección</span><input id="addressName" type="text" maxlength="40" placeholder="Casa" required /></label>
+              <label><span id="labelAddress1">Dirección</span><input id="address1" type="text" autocomplete="address-line1" required /></label>
               <label><span id="labelAddress2">Apt / Suite <em id="optionalText">opcional</em></span><input id="address2" type="text" autocomplete="address-line2" /></label>
               <div class="account-form-row">
-                <label><span id="labelCity">Ciudad</span><input id="city" type="text" autocomplete="address-level2" /></label>
-                <label><span id="labelState">Estado</span><input id="state" type="text" maxlength="2" autocomplete="address-level1" /></label>
-                <label><span>ZIP</span><input id="zip" type="text" inputmode="numeric" autocomplete="postal-code" /></label>
+                <label><span id="labelCity">Ciudad</span><input id="city" type="text" autocomplete="address-level2" required /></label>
+                <label><span id="labelState">Estado</span><input id="state" type="text" maxlength="2" autocomplete="address-level1" required /></label>
+                <label><span>ZIP</span><input id="zip" type="text" inputmode="numeric" autocomplete="postal-code" required /></label>
               </div>
-              <button id="saveAddressBtn" class="btn" type="submit">Guardar dirección</button>
+              <label class="default-address-check"><input id="isDefaultAddress" type="checkbox" /><span id="labelDefaultAddress">Usar como dirección predeterminada</span></label>
+              <div class="address-form-actions">
+                <button id="saveAddressBtn" class="btn" type="submit">Guardar dirección</button>
+                <button id="cancelAddressBtn" class="btn secondary-btn" type="button">Cancelar</button>
+              </div>
               <div id="addressMessage" class="account-message"></div>
             </form>
           </div>
