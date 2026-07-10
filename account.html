@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/google-maps-config.js"></script>
 </head>
 <body class="account-page">
   <header class="topbar account-topbar">
@@ -70,13 +71,20 @@
             <form id="addressForm" class="account-form address-editor hidden">
               <input id="addressId" type="hidden" />
               <label><span id="labelAddressName">Nombre de la dirección</span><input id="addressName" type="text" maxlength="40" placeholder="Casa" required /></label>
-              <label><span id="labelAddress1">Dirección</span><input id="address1" type="text" autocomplete="address-line1" required /></label>
+              <label class="address-search-label"><span id="labelAddressSearch">Buscar dirección</span><div id="googleAddressAutocomplete" class="google-address-autocomplete"></div><small id="addressSearchHelp" class="field-help">Empieza a escribir y selecciona una sugerencia de Google.</small></label>
+              <div id="googleAddressStatus" class="account-message"></div>
+              <input id="placeId" type="hidden" />
+              <input id="latitude" type="hidden" />
+              <input id="longitude" type="hidden" />
+              <label><span id="labelAddress1">Dirección</span><input id="address1" type="text" autocomplete="address-line1" readonly required /></label>
               <label><span id="labelAddress2">Apt / Suite <em id="optionalText">opcional</em></span><input id="address2" type="text" autocomplete="address-line2" /></label>
               <div class="account-form-row">
-                <label><span id="labelCity">Ciudad</span><input id="city" type="text" autocomplete="address-level2" required /></label>
-                <label><span id="labelState">Estado</span><input id="state" type="text" maxlength="2" autocomplete="address-level1" required /></label>
-                <label><span>ZIP</span><input id="zip" type="text" inputmode="numeric" autocomplete="postal-code" required /></label>
+                <label><span id="labelCity">Ciudad</span><input id="city" type="text" autocomplete="address-level2" readonly required /></label>
+                <label><span id="labelState">Estado</span><input id="state" type="text" maxlength="2" autocomplete="address-level1" readonly required /></label>
+                <label><span>ZIP</span><input id="zip" type="text" inputmode="numeric" autocomplete="postal-code" readonly required /></label>
               </div>
+              <label><span id="labelCountry">País</span><input id="country" type="text" value="United States" readonly /></label>
+              <label><span id="labelDeliveryNotes">Notas para la entrega <em id="deliveryNotesOptional">opcional</em></span><textarea id="deliveryNotes" rows="3" maxlength="500" placeholder="Ej. Portón azul, dejar en la puerta"></textarea></label>
               <label class="default-address-check"><input id="isDefaultAddress" type="checkbox" /><span id="labelDefaultAddress">Usar como dirección predeterminada</span></label>
               <div class="address-form-actions">
                 <button id="saveAddressBtn" class="btn" type="submit">Guardar dirección</button>

@@ -2,7 +2,7 @@ const RAICES_SUPABASE_URL = "https://tqtnffinhqbyesjdollk.supabase.co";
 const RAICES_SUPABASE_KEY = "sb_publishable_UzqAP9ZoPNJVtn1FKpoSNg_oNwvJgKW";
 const raicesSupabase = window.supabase.createClient(RAICES_SUPABASE_URL, RAICES_SUPABASE_KEY);
 
-const state = { user: null, meta: {}, section: "profile", lang: localStorage.getItem("raices_lang") || "es", addresses: [] };
+const state = { user: null, meta: {}, section: "profile", lang: localStorage.getItem("raices_lang") || "es", addresses: [], autocomplete: null };
 const $ = (id) => document.getElementById(id);
 
 const copy = {
@@ -10,25 +10,25 @@ const copy = {
     store:"Tienda", about:"Nosotros", contact:"Contacto", eyebrow:"Cuenta Raíces", accountTitle:"Mi Cuenta",
     profileNav:"👤 Perfil", addressesNav:"📍 Direcciones", ordersNav:"📦 Mis pedidos", preferencesNav:"🌎 Preferencias", securityNav:"🔒 Seguridad", logoutNav:"🚪 Cerrar sesión",
     profileTitle:"Perfil", profileIntro:"Actualiza tus datos principales para futuras órdenes.", firstName:"Nombre", lastName:"Apellidos", phone:"Teléfono", saveProfile:"Guardar cambios",
-    addressTitle:"Mis direcciones", addressIntro:"Guarda varias direcciones y elige una como predeterminada.", addAddress:"+ Agregar dirección", addressName:"Nombre de la dirección", address1:"Dirección", address2:"Apt / Suite", optional:"opcional", city:"Ciudad", state:"Estado", defaultAddress:"Usar como dirección predeterminada", saveAddress:"Guardar dirección", cancel:"Cancelar", noAddresses:"Todavía no tienes direcciones guardadas.", edit:"Editar", remove:"Eliminar", defaultBadge:"Predeterminada", confirmDelete:"¿Eliminar esta dirección?",
+    addressTitle:"Mis direcciones", addressIntro:"Guarda varias direcciones y elige una como predeterminada.", addAddress:"+ Agregar dirección", addressName:"Nombre de la dirección", addressSearch:"Buscar dirección", addressSearchHelp:"Empieza a escribir y selecciona una sugerencia de Google.", address1:"Dirección", address2:"Apt / Suite", optional:"opcional", city:"Ciudad", state:"Estado", country:"País", deliveryNotes:"Notas para la entrega", deliveryNotesPlaceholder:"Ej. Portón azul, dejar en la puerta", defaultAddress:"Usar como dirección predeterminada", saveAddress:"Guardar dirección", cancel:"Cancelar", noAddresses:"Todavía no tienes direcciones guardadas.", edit:"Editar", remove:"Eliminar", defaultBadge:"Predeterminada", confirmDelete:"¿Eliminar esta dirección?",
     ordersTitle:"Mis pedidos", ordersEmpty:"Todavía no tienes pedidos.", ordersSmall:"Cuando activemos Square y Supabase Orders, aquí aparecerá tu historial.",
     preferencesTitle:"Preferencias", preferencesIntro:"Este idioma se usará para la experiencia de la web y futuras comunicaciones.", language:"Idioma preferido", savePreferences:"Guardar preferencias",
     securityTitle:"Seguridad", securityIntro:"Cambia tu contraseña cuando lo necesites.", newPassword:"Nueva contraseña", confirmPassword:"Confirmar contraseña", updatePassword:"Actualizar contraseña",
     saving:"Guardando...", error:"No se pudo guardar. Intenta de nuevo.", addressTableError:"Primero debes ejecutar el archivo supabase/customer_addresses.sql en Supabase.", notSigned:"Necesitas iniciar sesión para ver Mi Cuenta.", redirect:"Volver al inicio",
     passwordMin:"La contraseña debe tener al menos 6 caracteres.", passwordMismatch:"Las contraseñas no coinciden.", passwordSaved:"Contraseña actualizada.",
-    profileSaved:"Perfil actualizado.", addressSaved:"Dirección guardada.", addressDeleted:"Dirección eliminada.", prefSaved:"Preferencias guardadas."
+    profileSaved:"Perfil actualizado.", addressSaved:"Dirección guardada.", addressDeleted:"Dirección eliminada.", prefSaved:"Preferencias guardadas.", mapsMissing:"Falta configurar la API key de Google Maps.", selectGoogleAddress:"Selecciona una dirección de las sugerencias de Google."
   },
   en: {
     store:"Store", about:"About", contact:"Contact", eyebrow:"Raíces Account", accountTitle:"My Account",
     profileNav:"👤 Profile", addressesNav:"📍 Addresses", ordersNav:"📦 My orders", preferencesNav:"🌎 Preferences", securityNav:"🔒 Security", logoutNav:"🚪 Sign out",
     profileTitle:"Profile", profileIntro:"Update your main details for future orders.", firstName:"First name", lastName:"Last name", phone:"Phone", saveProfile:"Save changes",
-    addressTitle:"My addresses", addressIntro:"Save multiple addresses and choose one as your default.", addAddress:"+ Add address", addressName:"Address name", address1:"Address", address2:"Apt / Suite", optional:"optional", city:"City", state:"State", defaultAddress:"Use as default address", saveAddress:"Save address", cancel:"Cancel", noAddresses:"You do not have any saved addresses yet.", edit:"Edit", remove:"Delete", defaultBadge:"Default", confirmDelete:"Delete this address?",
+    addressTitle:"My addresses", addressIntro:"Save multiple addresses and choose one as your default.", addAddress:"+ Add address", addressName:"Address name", addressSearch:"Search address", addressSearchHelp:"Start typing and select a Google suggestion.", address1:"Address", address2:"Apt / Suite", optional:"optional", city:"City", state:"State", country:"Country", deliveryNotes:"Delivery notes", deliveryNotesPlaceholder:"E.g. Blue gate, leave at the door", defaultAddress:"Use as default address", saveAddress:"Save address", cancel:"Cancel", noAddresses:"You do not have any saved addresses yet.", edit:"Edit", remove:"Delete", defaultBadge:"Default", confirmDelete:"Delete this address?",
     ordersTitle:"My orders", ordersEmpty:"You do not have any orders yet.", ordersSmall:"Once Square and Supabase Orders are active, your order history will appear here.",
     preferencesTitle:"Preferences", preferencesIntro:"This language will be used for the website experience and future communications.", language:"Preferred language", savePreferences:"Save preferences",
     securityTitle:"Security", securityIntro:"Change your password whenever you need to.", newPassword:"New password", confirmPassword:"Confirm password", updatePassword:"Update password",
     saving:"Saving...", error:"We could not save. Try again.", addressTableError:"First run supabase/customer_addresses.sql in Supabase.", notSigned:"You need to sign in to view My Account.", redirect:"Back to home",
     passwordMin:"Password must be at least 6 characters.", passwordMismatch:"Passwords do not match.", passwordSaved:"Password updated.",
-    profileSaved:"Profile updated.", addressSaved:"Address saved.", addressDeleted:"Address deleted.", prefSaved:"Preferences saved."
+    profileSaved:"Profile updated.", addressSaved:"Address saved.", addressDeleted:"Address deleted.", prefSaved:"Preferences saved.", mapsMissing:"The Google Maps API key has not been configured.", selectGoogleAddress:"Select an address from the Google suggestions."
   }
 };
 
@@ -51,7 +51,7 @@ function applyAccountLanguage(){
   setText("navStore",t("store")); setText("navAbout",t("about")); setText("navContact",t("contact")); setText("accountEyebrow",t("eyebrow"));
   setText("navProfile",t("profileNav")); setText("navAddresses",t("addressesNav")); setText("navOrders",t("ordersNav")); setText("navPreferences",t("preferencesNav")); setText("navSecurity",t("securityNav")); setText("logoutAccountBtn",t("logoutNav"));
   setText("profileTitle",t("profileTitle")); setText("profileIntro",t("profileIntro")); setText("labelFirstName",t("firstName")); setText("labelLastName",t("lastName")); setText("labelPhone",t("phone")); setText("saveProfileBtn",t("saveProfile"));
-  setText("addressTitle",t("addressTitle")); setText("addressIntro",t("addressIntro")); setText("addAddressBtn",t("addAddress")); setText("labelAddressName",t("addressName")); setText("labelAddress1",t("address1")); setText("labelAddress2",t("address2")); setText("optionalText",t("optional")); setText("labelCity",t("city")); setText("labelState",t("state")); setText("labelDefaultAddress",t("defaultAddress")); setText("saveAddressBtn",t("saveAddress")); setText("cancelAddressBtn",t("cancel")); setText("addressesEmptyText",t("noAddresses"));
+  setText("addressTitle",t("addressTitle")); setText("addressIntro",t("addressIntro")); setText("addAddressBtn",t("addAddress")); setText("labelAddressName",t("addressName")); setText("labelAddressSearch",t("addressSearch")); setText("addressSearchHelp",t("addressSearchHelp")); setText("labelAddress1",t("address1")); setText("labelAddress2",t("address2")); setText("optionalText",t("optional")); setText("labelCity",t("city")); setText("labelState",t("state")); setText("labelCountry",t("country")); setText("labelDeliveryNotes",t("deliveryNotes")); setText("deliveryNotesOptional",t("optional")); if($("deliveryNotes")) $("deliveryNotes").placeholder=t("deliveryNotesPlaceholder"); setText("labelDefaultAddress",t("defaultAddress")); setText("saveAddressBtn",t("saveAddress")); setText("cancelAddressBtn",t("cancel")); setText("addressesEmptyText",t("noAddresses"));
   setText("ordersTitle",t("ordersTitle")); setText("ordersEmpty",t("ordersEmpty")); setText("ordersSmall",t("ordersSmall"));
   setText("preferencesTitle",t("preferencesTitle")); setText("preferencesIntro",t("preferencesIntro")); setText("labelLanguage",t("language")); setText("savePreferencesBtn",t("savePreferences"));
   setText("securityTitle",t("securityTitle")); setText("securityIntro",t("securityIntro")); setText("labelNewPassword",t("newPassword")); setText("labelConfirmPassword",t("confirmPassword")); setText("updatePasswordBtn",t("updatePassword"));
@@ -80,11 +80,11 @@ async function updateMetadata(nextMeta){
 }
 
 function resetAddressForm(){
-  $("addressForm").reset(); $("addressId").value=""; $("state").value="TX"; $("addressMessage").textContent=""; $("addressForm").classList.add("hidden");
+  $("addressForm").reset(); $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("addressForm").classList.add("hidden");
 }
 function openAddressForm(address=null){
   $("addressForm").classList.remove("hidden");
-  $("addressId").value=address?address.id:""; $("addressName").value=address?safe(address.label):""; $("address1").value=address?safe(address.address_line1):""; $("address2").value=address?safe(address.address_line2):""; $("city").value=address?safe(address.city):""; $("state").value=address?safe(address.state):"TX"; $("zip").value=address?safe(address.postal_code):""; $("isDefaultAddress").checked=address?Boolean(address.is_default):state.addresses.length===0;
+  $("addressId").value=address?address.id:""; $("addressName").value=address?safe(address.label):""; $("placeId").value=address?safe(address.place_id):""; $("latitude").value=address?safe(address.latitude):""; $("longitude").value=address?safe(address.longitude):""; $("address1").value=address?safe(address.address_line1):""; $("address2").value=address?safe(address.address_line2):""; $("city").value=address?safe(address.city):""; $("state").value=address?safe(address.state):""; $("zip").value=address?safe(address.postal_code):""; $("country").value=address && address.country==="US"?"United States":safe(address?.country||"United States"); $("deliveryNotes").value=address?safe(address.delivery_notes):""; $("isDefaultAddress").checked=address?Boolean(address.is_default):state.addresses.length===0;
   $("addressName").focus();
 }
 function renderAddresses(){
@@ -100,7 +100,8 @@ async function loadAddresses(){
 }
 async function saveAddress(){
   const id=$("addressId").value;
-  const payload={user_id:state.user.id,label:$("addressName").value.trim(),address_line1:$("address1").value.trim(),address_line2:$("address2").value.trim()||null,city:$("city").value.trim(),state:$("state").value.trim().toUpperCase(),postal_code:$("zip").value.trim(),country:"US",is_default:$("isDefaultAddress").checked};
+  if(!$("address1").value.trim() || !$("city").value.trim() || !$("state").value.trim() || !$("zip").value.trim()) throw new Error("ADDRESS_NOT_SELECTED");
+  const payload={user_id:state.user.id,label:$("addressName").value.trim(),address_line1:$("address1").value.trim(),address_line2:$("address2").value.trim()||null,city:$("city").value.trim(),state:$("state").value.trim().toUpperCase(),postal_code:$("zip").value.trim(),country:"US",is_default:$("isDefaultAddress").checked,place_id:$("placeId").value.trim()||null,latitude:$("latitude").value?Number($("latitude").value):null,longitude:$("longitude").value?Number($("longitude").value):null,delivery_notes:$("deliveryNotes").value.trim()||null};
   if(payload.is_default){ const {error}=await raicesSupabase.from("customer_addresses").update({is_default:false}).eq("user_id",state.user.id); if(error) throw error; }
   const query=id?raicesSupabase.from("customer_addresses").update(payload).eq("id",id):raicesSupabase.from("customer_addresses").insert(payload);
   const {error}=await query; if(error) throw error;
@@ -115,12 +116,70 @@ async function deleteAddress(id){
   msg("addressMessage",t("addressDeleted"));
 }
 
+
+function componentValue(components, type, shortName=false){
+  const item=(components||[]).find(c=>(c.types||[]).includes(type));
+  if(!item) return "";
+  return shortName ? (item.shortText||item.short_name||"") : (item.longText||item.long_name||item.shortText||"");
+}
+function loadGoogleMaps(){
+  return new Promise((resolve,reject)=>{
+    if(window.google?.maps?.importLibrary) return resolve();
+    const key=window.RAICES_GOOGLE_MAPS_API_KEY;
+    if(!key || key.includes("PASTE_YOUR_")) return reject(new Error("MAPS_KEY_MISSING"));
+    const existing=document.querySelector('script[data-raices-google-maps]');
+    if(existing){ existing.addEventListener("load",resolve,{once:true}); existing.addEventListener("error",reject,{once:true}); return; }
+    const script=document.createElement("script");
+    script.dataset.raicesGoogleMaps="true";
+    script.async=true; script.defer=true;
+    script.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly&loading=async`;
+    script.onload=resolve; script.onerror=()=>reject(new Error("MAPS_LOAD_FAILED"));
+    document.head.appendChild(script);
+  });
+}
+async function initAddressAutocomplete(){
+  const host=$("googleAddressAutocomplete"); if(!host) return;
+  try{
+    await loadGoogleMaps();
+    await google.maps.importLibrary("places");
+    host.innerHTML="";
+    const autocomplete=new google.maps.places.PlaceAutocompleteElement({includedRegionCodes:["us"]});
+    autocomplete.id="addressAutocompleteElement";
+    autocomplete.setAttribute("aria-label",t("addressSearch"));
+    host.appendChild(autocomplete); state.autocomplete=autocomplete;
+    autocomplete.addEventListener("gmp-select",async event=>{
+      try{
+        const place=event.placePrediction.toPlace();
+        await place.fetchFields({fields:["id","addressComponents","location","formattedAddress"]});
+        const c=place.addressComponents||[];
+        const streetNumber=componentValue(c,"street_number");
+        const route=componentValue(c,"route");
+        const subpremise=componentValue(c,"subpremise");
+        const city=componentValue(c,"locality")||componentValue(c,"postal_town")||componentValue(c,"sublocality");
+        const region=componentValue(c,"administrative_area_level_1",true);
+        const postal=componentValue(c,"postal_code");
+        const country=componentValue(c,"country");
+        $("address1").value=[streetNumber,route].filter(Boolean).join(" ") || place.formattedAddress || "";
+        if(subpremise && !$("address2").value) $("address2").value=subpremise;
+        $("city").value=city; $("state").value=region; $("zip").value=postal; $("country").value=country||"United States";
+        $("placeId").value=place.id||"";
+        $("latitude").value=place.location?.lat?.() ?? "";
+        $("longitude").value=place.location?.lng?.() ?? "";
+        msg("googleAddressStatus",place.formattedAddress||$("address1").value,true);
+      }catch(err){ console.error(err); msg("googleAddressStatus",t("error"),false); }
+    });
+  }catch(err){
+    console.warn(err);
+    msg("googleAddressStatus",err.message==="MAPS_KEY_MISSING"?t("mapsMissing"):t("error"),false);
+  }
+}
+
 async function init(){
   const {data}=await raicesSupabase.auth.getUser();
   if(!data||!data.user){ applyAccountLanguage(); $("accountApp").innerHTML=`<div class="account-shell single"><div class="account-card"><h1>${t("notSigned")}</h1><a class="btn" href="/">${t("redirect")}</a></div></div>`; return; }
   state.user=data.user; state.meta=currentMeta(); fillForms(); $("accountApp").classList.remove("loading");
   document.querySelectorAll(".account-nav button[data-section]").forEach(btn=>btn.addEventListener("click",()=>setActive(btn.dataset.section)));
-  setActive("profile"); await loadAddresses();
+  setActive("profile"); await loadAddresses(); await initAddressAutocomplete();
 }
 
 document.addEventListener("DOMContentLoaded",function(){
@@ -129,7 +188,7 @@ document.addEventListener("DOMContentLoaded",function(){
   $("accountLangBtn")?.addEventListener("click",async()=>{state.lang=state.lang==="es"?"en":"es";localStorage.setItem("raices_lang",state.lang);applyAccountLanguage();if(state.user){try{await updateMetadata({language:state.lang});}catch(e){console.warn(e);}}});
   $("profileForm").addEventListener("submit",async e=>{e.preventDefault();msg("profileMessage",t("saving"));try{const first=$("firstName").value.trim(),last=$("lastName").value.trim();await updateMetadata({first_name:first,last_name:last,full_name:[first,last].filter(Boolean).join(" ").trim(),phone:$("phone").value.trim()});msg("profileMessage",t("profileSaved"));}catch(err){console.error(err);msg("profileMessage",t("error"),false);}});
   $("addAddressBtn").addEventListener("click",()=>openAddressForm()); $("cancelAddressBtn").addEventListener("click",resetAddressForm);
-  $("addressForm").addEventListener("submit",async e=>{e.preventDefault();msg("addressMessage",t("saving"));try{await saveAddress();}catch(err){console.error(err);msg("addressMessage",err.code==="42P01"?t("addressTableError"):t("error"),false);}});
+  $("addressForm").addEventListener("submit",async e=>{e.preventDefault();msg("addressMessage",t("saving"));try{await saveAddress();}catch(err){console.error(err);msg("addressMessage",err.message==="ADDRESS_NOT_SELECTED"?t("selectGoogleAddress"):(err.code==="42P01"?t("addressTableError"):t("error")),false);}});
   $("addressesList").addEventListener("click",async e=>{const btn=e.target.closest("button[data-action]");if(!btn)return;const card=btn.closest(".address-card"),id=card?.dataset.id,address=state.addresses.find(a=>String(a.id)===String(id));if(btn.dataset.action==="edit"&&address)openAddressForm(address);if(btn.dataset.action==="delete"&&id&&confirm(t("confirmDelete"))){try{await deleteAddress(id);}catch(err){console.error(err);msg("addressMessage",t("error"),false);}}});
   $("preferencesForm").addEventListener("submit",async e=>{e.preventDefault();msg("preferencesMessage",t("saving"));try{const lang=$("preferredLanguage").value;state.lang=lang;localStorage.setItem("raices_lang",lang);applyAccountLanguage();await updateMetadata({language:lang});msg("preferencesMessage",t("prefSaved"));}catch(err){console.error(err);msg("preferencesMessage",t("error"),false);}});
   $("passwordForm").addEventListener("submit",async e=>{e.preventDefault();const p1=$("newAccountPassword").value,p2=$("confirmAccountPassword").value;if(p1.length<6)return msg("passwordMessage",t("passwordMin"),false);if(p1!==p2)return msg("passwordMessage",t("passwordMismatch"),false);msg("passwordMessage",t("saving"));const{error}=await raicesSupabase.auth.updateUser({password:p1});if(error)return msg("passwordMessage",error.message||t("error"),false);$("passwordForm").reset();msg("passwordMessage",t("passwordSaved"));});
