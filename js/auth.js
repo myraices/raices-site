@@ -79,6 +79,28 @@ function getAuthLang() {
   return window.raicesLang || localStorage.getItem("raices_lang") || "es";
 }
 
+function normalizeUserLanguage(value) {
+  return String(value || "").toLowerCase().startsWith("en") ? "en" : "es";
+}
+
+function getPreferredLanguageFromUser(user) {
+  const meta = user && user.user_metadata ? user.user_metadata : {};
+  return normalizeUserLanguage(meta.language || meta.preferred_language || "es");
+}
+
+function applyPreferredLanguageFromUser(user) {
+  if (!user) return getAuthLang();
+  const preferredLanguage = getPreferredLanguageFromUser(user);
+  localStorage.setItem("raices_lang", preferredLanguage);
+  if (typeof window.applyRaicesLanguage === "function") {
+    window.applyRaicesLanguage(preferredLanguage);
+  } else {
+    window.raicesLang = preferredLanguage;
+    document.documentElement.lang = preferredLanguage;
+  }
+  return preferredLanguage;
+}
+
 function authText(es, en) {
   return String(getAuthLang()).toLowerCase().startsWith("en") ? en : es;
 }
@@ -262,7 +284,8 @@ loginForm.addEventListener("submit", async function(e) {
     return;
   }
   const userName = data && data.user ? getUserDisplayName(data.user) : "";
-  syncBrevoContact({ email: email, name: userName, source: "confirmed_user", consent: true, language: getAuthLang() });
+  const preferredLanguage = data && data.user ? applyPreferredLanguageFromUser(data.user) : getAuthLang();
+  syncBrevoContact({ email: email, name: userName, source: "confirmed_user", consent: true, language: preferredLanguage });
   setAuthPlainMessage(authText("Sesión iniciada.", "Signed in."));
   checkAuthState();
 });
@@ -352,10 +375,13 @@ logoutBtn.addEventListener("click", async function() {
   checkAuthState();
 });
 
-raicesSupabase.auth.onAuthStateChange(function(event) {
+raicesSupabase.auth.onAuthStateChange(function(event, session) {
   if (event === "PASSWORD_RECOVERY" || urlLooksLikeRecovery()) {
     showPasswordRecoveryView();
     return;
+  }
+  if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session && session.user) {
+    applyPreferredLanguageFromUser(session.user);
   }
   checkAuthState();
 });

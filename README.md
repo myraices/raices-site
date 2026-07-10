@@ -35,3 +35,9 @@ Opcionales:
 - Welcome usa template ID 1 por defecto.
 - Waitlist usa template ID 3 por defecto.
 - Se recomienda desactivar la automatización `Welcome - Raíces Community` para evitar duplicados.
+
+## v111 — Preferred language after sign-in
+- Reads the authenticated user's saved language from Supabase metadata.
+- Applies it immediately to the full storefront after sign-in or session restoration.
+- Synchronizes the applied language with localStorage.
+- Uses the saved preference when syncing the confirmed contact with Brevo at sign-in.
