@@ -108,11 +108,10 @@ exports.handler = async function(event) {
       return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ message: "BREVO_API_KEY no está configurada en Netlify." }) };
     }
 
-    const attributes = {
-      SOURCE: normalizedSource,
-      CUSTOMER: false,
-      WAITLIST: normalizedSource === "waitlist"
-    };
+    // Only update attributes owned by this specific action. Never reset CUSTOMER or WAITLIST
+    // on an existing contact just because they use another form on the site.
+    const attributes = { SOURCE: normalizedSource };
+    if (normalizedSource === "waitlist") attributes.WAITLIST = true;
     if (name) attributes.FIRSTNAME = name;
     if (language) attributes.LOCALE = String(language).toLowerCase().startsWith("en") ? "en" : "es";
     if (customer.city || delivery.city) attributes.CITY = String(customer.city || delivery.city).slice(0, 100);
@@ -136,6 +135,8 @@ exports.handler = async function(event) {
 
     const existingContact = await getExistingContact();
     const wasExisting = Boolean(existingContact && existingContact.email);
+    const existingListIds = Array.isArray(existingContact && existingContact.listIds) ? existingContact.listIds.map(Number) : [];
+    const wasAlreadyInCommunity = existingListIds.includes(listId);
 
     const contactResponse = await fetch("https://api.brevo.com/v3/contacts", {
       method: "POST",
@@ -164,7 +165,6 @@ exports.handler = async function(event) {
 
     let emailSent = false;
     let emailWarning = null;
-    const welcomeTemplateId = Number(process.env.BREVO_WELCOME_TEMPLATE_ID || process.env.RAICES_BREVO_WELCOME_TEMPLATE_ID || 1);
     const locale = String(language || "es").toLowerCase().startsWith("en") ? "en" : "es";
     const waitlistTemplateIdEs = Number(
       process.env.BREVO_WAITLIST_TEMPLATE_ID_ES ||
@@ -193,16 +193,6 @@ exports.handler = async function(event) {
           cart_summary: attributes.LAST_CART || ""
         });
         emailSent = true;
-      } else if ((normalizedSource === "newsletter" || normalizedSource === "confirmed_user" || normalizedSource === "signup") && !wasExisting) {
-        // Welcome is sent only for new Brevo contacts to avoid duplicate welcome emails.
-        await sendTransactionalTemplate(welcomeTemplateId, {
-          FIRSTNAME: name || "",
-          SOURCE: normalizedSource,
-          WAITLIST: false,
-          CUSTOMER: false,
-          LANGUAGE: language
-        });
-        emailSent = true;
       }
     } catch (err) {
       emailWarning = err.message;
@@ -226,7 +216,19 @@ exports.handler = async function(event) {
       }
     }
 
-    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Brevo synced", listId, wasExisting, emailSent, emailWarning }) };
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        message: "Brevo synced",
+        listId,
+        wasExisting,
+        wasAlreadyInCommunity,
+        addedToCommunity: !wasAlreadyInCommunity,
+        emailSent,
+        emailWarning
+      })
+    };
   } catch (error) {
     return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ message: error.message }) };
   }

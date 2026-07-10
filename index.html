@@ -370,7 +370,7 @@
         body: JSON.stringify(payload)
       });
       if(!res.ok){ throw new Error('Brevo subscribe failed'); }
-      return res;
+      return await res.json();
     }
     async function getCurrentUserId(){
       try{
@@ -399,23 +399,33 @@
       const msg = document.getElementById('newsletterMessage');
       if(!form || !btn || !email) return;
       function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
+      let submitting = false;
+      let submitting = false;
       async function handle(e){
         if(e){ e.preventDefault(); e.stopPropagation(); }
+        if(submitting) return false;
+        if(submitting) return false;
         const emailValue = email.value.trim();
         const nameValue = name ? name.value.trim() : '';
         if(!validEmail(emailValue)){ setMsg('error', txt('Escribe un correo válido.', 'Enter a valid email.')); return false; }
         if(consent && !consent.checked){ setMsg('error', txt('Debes aceptar recibir comunicaciones de Raíces.', 'Please accept receiving Raíces communications.')); return false; }
+        submitting = true;
         btn.disabled = true;
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
           await saveInterest({ email: emailValue, name: nameValue, source:'newsletter', consent:true });
-          subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter', consent:true }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
+          const brevoResult = await subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter', consent:true });
           localStorage.setItem('raices_newsletter_email', emailValue);
           form.reset();
-          setMsg('ok', txt('Gracias por unirte a Raíces. Te enviaremos novedades pronto.', 'Thank you for joining Raíces. We will send updates soon.'));
+          if(brevoResult && brevoResult.wasAlreadyInCommunity){
+            setMsg('ok', txt('Ya formas parte de la comunidad Raíces.', 'You are already part of the Raíces community.'));
+          }else{
+            setMsg('ok', txt('Gracias por unirte a Raíces. Revisa tu correo de bienvenida.', 'Thank you for joining Raíces. Check your welcome email.'));
+          }
         }catch(err){
           setMsg('error', txt('No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.', 'We could not save your email. Try again or message us on WhatsApp.'));
         }finally{
+          submitting = false;
           btn.disabled = false;
         }
         return false;
@@ -438,18 +448,20 @@
         const nameValue = name ? name.value.trim() : '';
         if(!validEmail(emailValue)){ setMsg('error', txt('Escribe un correo válido.', 'Enter a valid email.')); return false; }
         if(consent && !consent.checked){ setMsg('error', txt('Debes aceptar recibir comunicaciones de Raíces.', 'Please accept receiving Raíces communications.')); return false; }
+        submitting = true;
         btn.disabled = true;
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
           const cartSummary = window.RAICES_CART_SUMMARY || null;
           await saveInterest({ email: emailValue, name:nameValue, source:'waitlist', consent:true, cart: cartSummary });
-          subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'waitlist', consent:true, cart: cartSummary }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
+          await subscribe({ email: emailValue, name:nameValue, language:getLang(), source:'waitlist', consent:true, cart: cartSummary });
           localStorage.setItem('raices_waitlist_email', emailValue);
           form.reset();
           setMsg('ok', txt('Listo. Te avisaremos cuando abramos pedidos.', 'Done. We will notify you when ordering opens.'));
         }catch(err){
           setMsg('error', txt('No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.', 'We could not save your email. Try again or message us on WhatsApp.'));
         }finally{
+          submitting = false;
           btn.disabled = false;
         }
         return false;
