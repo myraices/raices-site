@@ -755,12 +755,14 @@ body.cart-open{overflow:hidden}
 /* v109: final address UX polish */
 .address-search-label{gap:8px!important}
 .google-address-autocomplete-host{margin-top:0!important}
+.google-address-autocomplete-host{position:relative;overflow:visible!important;z-index:20}
 .google-address-autocomplete-host .raices-place-autocomplete,
 .google-address-autocomplete-host gmp-place-autocomplete{
+  display:block;
+  width:100%;
   min-height:50px!important;
-  height:50px;
   border-radius:999px!important;
-  overflow:hidden;
+  overflow:visible!important;
 }
 .address-details{display:grid;gap:14px;opacity:0;transform:translateY(-5px);max-height:0;overflow:hidden;pointer-events:none;transition:opacity .22s ease,transform .22s ease,max-height .35s ease}
 .address-details.visible{opacity:1;transform:none;max-height:650px;overflow:visible;pointer-events:auto}
