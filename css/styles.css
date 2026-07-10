@@ -719,3 +719,35 @@ body.cart-open{overflow:hidden}
 .google-address-autocomplete-host{width:100%;margin-top:8px}
 .google-address-autocomplete-host gmp-place-autocomplete,.google-address-autocomplete-host .raices-place-autocomplete{display:block;width:100%;min-height:52px}
 .google-address-autocomplete-host .raices-place-autocomplete{--gmpx-color-surface:#f8f2e8;--gmpx-color-on-surface:#24351f;--gmpx-font-family:inherit}
+
+
+/* v108: Raíces-styled Google address field */
+.google-address-autocomplete-host{width:100%;}
+.google-address-autocomplete-host .raices-place-autocomplete,
+.google-address-autocomplete-host gmp-place-autocomplete{
+  display:block;
+  width:100%;
+  min-height:50px;
+  box-sizing:border-box;
+  background-color:var(--cream);
+  border:1px solid var(--line);
+  border-radius:999px;
+  color:var(--deep);
+  color-scheme:light;
+  font-family:inherit;
+  font-size:.98rem;
+  line-height:1.2;
+  --gmpx-color-surface:var(--cream);
+  --gmpx-color-on-surface:var(--deep);
+  --gmpx-color-primary:var(--forest);
+  --gmp-mat-color-surface:var(--cream);
+  --gmp-mat-color-on-surface:var(--deep);
+  --gmp-mat-color-primary:var(--forest);
+  --gmp-mat-color-outline-decorative:var(--line);
+}
+.google-address-autocomplete-host .raices-place-autocomplete:focus-within,
+.google-address-autocomplete-host gmp-place-autocomplete:focus-within{
+  border-color:rgba(35,59,32,.45);
+  box-shadow:0 0 0 4px rgba(35,59,32,.07);
+}
+.google-address-status.hidden{display:none!important;}

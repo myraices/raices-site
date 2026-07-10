@@ -51,7 +51,7 @@ function applyAccountLanguage(){
   setText("navStore",t("store")); setText("navAbout",t("about")); setText("navContact",t("contact")); setText("accountEyebrow",t("eyebrow"));
   setText("navProfile",t("profileNav")); setText("navAddresses",t("addressesNav")); setText("navOrders",t("ordersNav")); setText("navPreferences",t("preferencesNav")); setText("navSecurity",t("securityNav")); setText("logoutAccountBtn",t("logoutNav"));
   setText("profileTitle",t("profileTitle")); setText("profileIntro",t("profileIntro")); setText("labelFirstName",t("firstName")); setText("labelLastName",t("lastName")); setText("labelPhone",t("phone")); setText("saveProfileBtn",t("saveProfile"));
-  setText("addressTitle",t("addressTitle")); setText("addressIntro",t("addressIntro")); setText("addAddressBtn",t("addAddress")); setText("labelAddressName",t("addressName")); setText("labelAddressSearch",t("addressSearch")); setText("addressSearchHelp",t("addressSearchHelp")); setText("labelAddress1",t("address1")); setText("labelAddress2",t("address2")); setText("optionalText",t("optional")); setText("labelCity",t("city")); setText("labelState",t("state")); setText("labelCountry",t("country")); setText("labelDeliveryNotes",t("deliveryNotes")); setText("deliveryNotesOptional",t("optional")); if($("deliveryNotes")) $("deliveryNotes").placeholder=t("deliveryNotesPlaceholder"); if(state.autocompleteElement) state.autocompleteElement.placeholder=state.lang==="en"?"Start typing an address":"Empieza a escribir una dirección"; setText("labelDefaultAddress",t("defaultAddress")); setText("saveAddressBtn",t("saveAddress")); setText("cancelAddressBtn",t("cancel")); setText("addressesEmptyText",t("noAddresses"));
+  setText("addressTitle",t("addressTitle")); setText("addressIntro",t("addressIntro")); setText("addAddressBtn",t("addAddress")); setText("labelAddressName",t("addressName")); setText("labelAddressSearch",t("addressSearch")); setText("labelAddress1",t("address1")); setText("labelAddress2",t("address2")); setText("optionalText",t("optional")); setText("labelCity",t("city")); setText("labelState",t("state")); setText("labelCountry",t("country")); setText("labelDeliveryNotes",t("deliveryNotes")); setText("deliveryNotesOptional",t("optional")); if($("deliveryNotes")) $("deliveryNotes").placeholder=t("deliveryNotesPlaceholder"); if(state.autocompleteElement) state.autocompleteElement.placeholder=state.lang==="en"?"Start typing an address":"Empieza a escribir una dirección"; setText("labelDefaultAddress",t("defaultAddress")); setText("saveAddressBtn",t("saveAddress")); setText("cancelAddressBtn",t("cancel")); setText("addressesEmptyText",t("noAddresses"));
   setText("ordersTitle",t("ordersTitle")); setText("ordersEmpty",t("ordersEmpty")); setText("ordersSmall",t("ordersSmall"));
   setText("preferencesTitle",t("preferencesTitle")); setText("preferencesIntro",t("preferencesIntro")); setText("labelLanguage",t("language")); setText("savePreferencesBtn",t("savePreferences"));
   setText("securityTitle",t("securityTitle")); setText("securityIntro",t("securityIntro")); setText("labelNewPassword",t("newPassword")); setText("labelConfirmPassword",t("confirmPassword")); setText("updatePasswordBtn",t("updatePassword"));
@@ -80,7 +80,7 @@ async function updateMetadata(nextMeta){
 }
 
 function resetAddressForm(){
-  $("addressForm").reset(); if(state.autocompleteElement) state.autocompleteElement.value=""; $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("addressForm").classList.add("hidden");
+  $("addressForm").reset(); if(state.autocompleteElement) state.autocompleteElement.value=""; $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("googleAddressStatus").classList.add("hidden"); $("addressForm").classList.add("hidden");
 }
 function openAddressForm(address=null){
   $("addressForm").classList.remove("hidden");
@@ -188,16 +188,16 @@ async function initAddressAutocomplete(){
         $("placeId").value = place.id || "";
         $("latitude").value = place.location?.lat?.() ?? "";
         $("longitude").value = place.location?.lng?.() ?? "";
-        msg("googleAddressStatus", place.formattedAddress || $("address1").value, true);
+        $("googleAddressStatus")?.classList.add("hidden");
       }catch(err){
         console.error("Raices address selection error",err);
-        msg("googleAddressStatus",t("error"),false);
+        $("googleAddressStatus")?.classList.remove("hidden"); msg("googleAddressStatus",t("error"),false);
       }
     });
-    msg("googleAddressStatus", state.lang === "en" ? "Google address search is ready." : "La búsqueda de direcciones está lista.", true);
+    $("googleAddressStatus")?.classList.add("hidden");
   }catch(err){
     console.error("Raices Google Maps initialization error", err);
-    msg("googleAddressStatus", err.message === "MAPS_KEY_MISSING" ? t("mapsMissing") : (state.lang === "en" ? "Google address search could not load." : "No se pudo cargar la búsqueda de direcciones."), false);
+    $("googleAddressStatus")?.classList.remove("hidden"); msg("googleAddressStatus", err.message === "MAPS_KEY_MISSING" ? t("mapsMissing") : (state.lang === "en" ? "Google address search could not load." : "No se pudo cargar la búsqueda de direcciones."), false);
   }
 }
 
