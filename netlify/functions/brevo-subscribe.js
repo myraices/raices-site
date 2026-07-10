@@ -114,7 +114,7 @@ exports.handler = async function(event) {
       WAITLIST: normalizedSource === "waitlist"
     };
     if (name) attributes.FIRSTNAME = name;
-    if (language) attributes._DETECTED_LANGUAGE = language;
+    if (language) attributes.LOCALE = String(language).toLowerCase().startsWith("en") ? "en" : "es";
     if (customer.city || delivery.city) attributes.CITY = String(customer.city || delivery.city).slice(0, 100);
     if (delivery.zip || customer.zip) attributes.ZIP = String(delivery.zip || customer.zip).slice(0, 20);
     const lastCart = summarizeCart(cart);
