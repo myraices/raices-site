@@ -714,3 +714,8 @@ body.cart-open{overflow:hidden}
 .account-form textarea{width:100%;border:1px solid var(--line);border-radius:20px;background:var(--cream);padding:14px 16px;color:var(--deep);outline:none;font:inherit;resize:vertical;min-height:92px}
 .account-form textarea:focus{border-color:rgba(35,59,32,.45);box-shadow:0 0 0 4px rgba(35,59,32,.07)}
 .account-form input[readonly]{background:rgba(238,231,218,.62);color:var(--deep);cursor:default}
+
+/* Google Places new autocomplete widget */
+.google-address-autocomplete-host{width:100%;margin-top:8px}
+.google-address-autocomplete-host gmp-place-autocomplete,.google-address-autocomplete-host .raices-place-autocomplete{display:block;width:100%;min-height:52px}
+.google-address-autocomplete-host .raices-place-autocomplete{--gmpx-color-surface:#f8f2e8;--gmpx-color-on-surface:#24351f;--gmpx-font-family:inherit}
