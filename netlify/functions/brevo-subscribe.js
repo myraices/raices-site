@@ -165,7 +165,17 @@ exports.handler = async function(event) {
     let emailSent = false;
     let emailWarning = null;
     const welcomeTemplateId = Number(process.env.BREVO_WELCOME_TEMPLATE_ID || process.env.RAICES_BREVO_WELCOME_TEMPLATE_ID || 1);
-    const waitlistTemplateId = Number(process.env.BREVO_WAITLIST_TEMPLATE_ID || process.env.RAICES_BREVO_WAITLIST_TEMPLATE_ID || 3);
+    const locale = String(language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+    const waitlistTemplateIdEs = Number(
+      process.env.BREVO_WAITLIST_TEMPLATE_ID_ES ||
+      process.env.BREVO_WAITLIST_TEMPLATE_ID ||
+      process.env.RAICES_BREVO_WAITLIST_TEMPLATE_ID ||
+      3
+    );
+    const waitlistTemplateIdEn = Number(process.env.BREVO_WAITLIST_TEMPLATE_ID_EN || 0);
+    const waitlistTemplateId = locale === "en" && waitlistTemplateIdEn > 0
+      ? waitlistTemplateIdEn
+      : waitlistTemplateIdEs;
 
     try {
       if (normalizedSource === "waitlist") {
@@ -179,6 +189,7 @@ exports.handler = async function(event) {
           ZIP: attributes.ZIP || "",
           LAST_CART: attributes.LAST_CART || "",
           LANGUAGE: language,
+          LOCALE: locale,
           cart_summary: attributes.LAST_CART || ""
         });
         emailSent = true;
