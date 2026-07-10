@@ -10,7 +10,7 @@ const copy = {
     store:"Tienda", about:"Nosotros", contact:"Contacto", eyebrow:"Cuenta Raíces", accountTitle:"Mi Cuenta",
     profileNav:"👤 Perfil", addressesNav:"📍 Direcciones", ordersNav:"📦 Mis pedidos", preferencesNav:"🌎 Preferencias", securityNav:"🔒 Seguridad", logoutNav:"🚪 Cerrar sesión",
     profileTitle:"Perfil", profileIntro:"Actualiza tus datos principales para futuras órdenes.", firstName:"Nombre", lastName:"Apellidos", phone:"Teléfono", saveProfile:"Guardar cambios",
-    addressTitle:"Mis direcciones", addressIntro:"Guarda varias direcciones y elige una como predeterminada.", addAddress:"+ Agregar dirección", addressName:"Nombre de la dirección", addressSearch:"Buscar dirección", addressSearchHelp:"Empieza a escribir y selecciona una sugerencia de Google.", address1:"Dirección", address2:"Apt / Suite", optional:"opcional", city:"Ciudad", state:"Estado", country:"País", deliveryNotes:"Notas para la entrega", deliveryNotesPlaceholder:"Ej. Portón azul, dejar en la puerta", defaultAddress:"Usar como dirección predeterminada", saveAddress:"Guardar dirección", cancel:"Cancelar", noAddresses:"Todavía no tienes direcciones guardadas.", edit:"Editar", remove:"Eliminar", defaultBadge:"Predeterminada", confirmDelete:"¿Eliminar esta dirección?",
+    addressTitle:"Mis direcciones", addressIntro:"Guarda varias direcciones y elige una como predeterminada.", addAddress:"+ Agregar dirección", addressName:"Nombre de la dirección", addressSearch:"Dirección", addressSearchHelp:"Empieza a escribir y selecciona una sugerencia de Google.", address1:"Dirección", address2:"Apt / Suite", optional:"opcional", city:"Ciudad", state:"Estado", country:"País", deliveryNotes:"Notas para la entrega", deliveryNotesPlaceholder:"Ej. Portón azul, dejar en la puerta", defaultAddress:"Usar como dirección predeterminada", saveAddress:"Guardar dirección", cancel:"Cancelar", noAddresses:"Todavía no tienes direcciones guardadas.", edit:"Editar", remove:"Eliminar", defaultBadge:"Predeterminada", confirmDelete:"¿Eliminar esta dirección?",
     ordersTitle:"Mis pedidos", ordersEmpty:"Todavía no tienes pedidos.", ordersSmall:"Cuando activemos Square y Supabase Orders, aquí aparecerá tu historial.",
     preferencesTitle:"Preferencias", preferencesIntro:"Este idioma se usará para la experiencia de la web y futuras comunicaciones.", language:"Idioma preferido", savePreferences:"Guardar preferencias",
     securityTitle:"Seguridad", securityIntro:"Cambia tu contraseña cuando lo necesites.", newPassword:"Nueva contraseña", confirmPassword:"Confirmar contraseña", updatePassword:"Actualizar contraseña",
@@ -22,7 +22,7 @@ const copy = {
     store:"Store", about:"About", contact:"Contact", eyebrow:"Raíces Account", accountTitle:"My Account",
     profileNav:"👤 Profile", addressesNav:"📍 Addresses", ordersNav:"📦 My orders", preferencesNav:"🌎 Preferences", securityNav:"🔒 Security", logoutNav:"🚪 Sign out",
     profileTitle:"Profile", profileIntro:"Update your main details for future orders.", firstName:"First name", lastName:"Last name", phone:"Phone", saveProfile:"Save changes",
-    addressTitle:"My addresses", addressIntro:"Save multiple addresses and choose one as your default.", addAddress:"+ Add address", addressName:"Address name", addressSearch:"Search address", addressSearchHelp:"Start typing and select a Google suggestion.", address1:"Address", address2:"Apt / Suite", optional:"optional", city:"City", state:"State", country:"Country", deliveryNotes:"Delivery notes", deliveryNotesPlaceholder:"E.g. Blue gate, leave at the door", defaultAddress:"Use as default address", saveAddress:"Save address", cancel:"Cancel", noAddresses:"You do not have any saved addresses yet.", edit:"Edit", remove:"Delete", defaultBadge:"Default", confirmDelete:"Delete this address?",
+    addressTitle:"My addresses", addressIntro:"Save multiple addresses and choose one as your default.", addAddress:"+ Add address", addressName:"Address name", addressSearch:"Address", addressSearchHelp:"Start typing and select a Google suggestion.", address1:"Address", address2:"Apt / Suite", optional:"optional", city:"City", state:"State", country:"Country", deliveryNotes:"Delivery notes", deliveryNotesPlaceholder:"E.g. Blue gate, leave at the door", defaultAddress:"Use as default address", saveAddress:"Save address", cancel:"Cancel", noAddresses:"You do not have any saved addresses yet.", edit:"Edit", remove:"Delete", defaultBadge:"Default", confirmDelete:"Delete this address?",
     ordersTitle:"My orders", ordersEmpty:"You do not have any orders yet.", ordersSmall:"Once Square and Supabase Orders are active, your order history will appear here.",
     preferencesTitle:"Preferences", preferencesIntro:"This language will be used for the website experience and future communications.", language:"Preferred language", savePreferences:"Save preferences",
     securityTitle:"Security", securityIntro:"Change your password whenever you need to.", newPassword:"New password", confirmPassword:"Confirm password", updatePassword:"Update password",
@@ -80,11 +80,12 @@ async function updateMetadata(nextMeta){
 }
 
 function resetAddressForm(){
-  $("addressForm").reset(); $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("addressForm").classList.add("hidden");
+  $("addressForm").reset(); if(state.autocompleteElement) state.autocompleteElement.value=""; $("addressId").value=""; $("placeId").value=""; $("latitude").value=""; $("longitude").value=""; $("state").value=""; $("country").value="United States"; $("addressMessage").textContent=""; $("googleAddressStatus").textContent=""; $("addressForm").classList.add("hidden");
 }
 function openAddressForm(address=null){
   $("addressForm").classList.remove("hidden");
   $("addressId").value=address?address.id:""; $("addressName").value=address?safe(address.label):""; $("placeId").value=address?safe(address.place_id):""; $("latitude").value=address?safe(address.latitude):""; $("longitude").value=address?safe(address.longitude):""; $("address1").value=address?safe(address.address_line1):""; $("address2").value=address?safe(address.address_line2):""; $("city").value=address?safe(address.city):""; $("state").value=address?safe(address.state):""; $("zip").value=address?safe(address.postal_code):""; $("country").value=address && address.country==="US"?"United States":safe(address?.country||"United States"); $("deliveryNotes").value=address?safe(address.delivery_notes):""; $("isDefaultAddress").checked=address?Boolean(address.is_default):state.addresses.length===0;
+  if(state.autocompleteElement) state.autocompleteElement.value=address?safe(address.address_line1):"";
   $("addressName").focus();
 }
 function renderAddresses(){
@@ -123,19 +124,31 @@ function componentValue(components, type, shortName=false){
   return shortName ? (item.shortText||item.short_name||"") : (item.longText||item.long_name||item.shortText||"");
 }
 function loadGoogleMaps(){
-  return new Promise((resolve,reject)=>{
-    if(window.google?.maps?.importLibrary) return resolve();
-    const key=window.RAICES_GOOGLE_MAPS_API_KEY;
-    if(!key || key.includes("PASTE_YOUR_")) return reject(new Error("MAPS_KEY_MISSING"));
-    const existing=document.querySelector('script[data-raices-google-maps]');
-    if(existing){ existing.addEventListener("load",resolve,{once:true}); existing.addEventListener("error",reject,{once:true}); return; }
-    const script=document.createElement("script");
-    script.dataset.raicesGoogleMaps="true";
-    script.async=true; script.defer=true;
-    script.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly&loading=async`;
-    script.onload=resolve; script.onerror=()=>reject(new Error("MAPS_LOAD_FAILED"));
-    document.head.appendChild(script);
-  });
+  if(window.google?.maps?.importLibrary) return Promise.resolve();
+  const key=window.RAICES_GOOGLE_MAPS_API_KEY;
+  if(!key || key.includes("PASTE_YOUR_") || key.includes("__GOOGLE_")) return Promise.reject(new Error("MAPS_KEY_MISSING"));
+
+  // Official Google Dynamic Library Import bootstrap.
+  // This defines google.maps.importLibrary immediately and resolves only when the API is ready.
+  ((g)=>{
+    var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;
+    b=b[c]||(b[c]={});
+    var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,
+      u=()=>h||(h=new Promise(async(f,n)=>{
+        await (a=m.createElement("script"));
+        e.set("libraries",[...r]+"");
+        for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);
+        e.set("callback",c+".maps."+q);
+        a.src=`https://maps.${c}apis.com/maps/api/js?`+e;
+        d[q]=f;
+        a.onerror=()=>h=n(Error(p+" could not load."));
+        a.nonce=m.querySelector("script[nonce]")?.nonce||"";
+        m.head.append(a)
+      }));
+    d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))
+  })({key:key,v:"weekly",language:state.lang,region:"US"});
+
+  return Promise.resolve();
 }
 async function initAddressAutocomplete(){
   const host=$("googleAddressAutocompleteHost"); if(!host) return;
@@ -148,10 +161,11 @@ async function initAddressAutocomplete(){
     const autocompleteElement = new PlaceAutocompleteElement({
       includedRegionCodes:["us"]
     });
-    autocompleteElement.placeholder = state.lang === "en" ? "Start typing an address" : "Empieza a escribir una dirección";
+    autocompleteElement.placeholder = state.lang === "en" ? "Start typing your address" : "Empieza a escribir tu dirección";
     autocompleteElement.classList.add("raices-place-autocomplete");
     host.appendChild(autocompleteElement);
     state.autocompleteElement = autocompleteElement;
+    if($("address1").value) autocompleteElement.value=$("address1").value;
 
     autocompleteElement.addEventListener("gmp-select", async (event)=>{
       try{
@@ -168,6 +182,7 @@ async function initAddressAutocomplete(){
         const postal = componentValue(c,"postal_code");
         const country = componentValue(c,"country");
         $("address1").value = [streetNumber,route].filter(Boolean).join(" ") || place.formattedAddress || "";
+        autocompleteElement.value = $("address1").value;
         if(subpremise && !$("address2").value) $("address2").value = subpremise;
         $("city").value = city; $("state").value = region; $("zip").value = postal; $("country").value = country || "United States";
         $("placeId").value = place.id || "";

@@ -71,12 +71,12 @@
             <form id="addressForm" class="account-form address-editor hidden">
               <input id="addressId" type="hidden" />
               <label><span id="labelAddressName">Nombre de la dirección</span><input id="addressName" type="text" maxlength="40" placeholder="Casa" required /></label>
-              <label class="address-search-label"><span id="labelAddressSearch">Buscar dirección</span><div id="googleAddressAutocompleteHost" class="google-address-autocomplete-host"></div><small id="addressSearchHelp" class="field-help">Empieza a escribir y selecciona una sugerencia de Google.</small></label>
+              <label class="address-search-label"><span id="labelAddressSearch">Dirección</span><div id="googleAddressAutocompleteHost" class="google-address-autocomplete-host"></div><small id="addressSearchHelp" class="field-help">Empieza a escribir y selecciona una sugerencia de Google.</small></label>
               <div id="googleAddressStatus" class="account-message"></div>
               <input id="placeId" type="hidden" />
               <input id="latitude" type="hidden" />
               <input id="longitude" type="hidden" />
-              <label><span id="labelAddress1">Dirección</span><input id="address1" type="text" autocomplete="address-line1" readonly required /></label>
+              <input id="address1" type="hidden" required />
               <label><span id="labelAddress2">Apt / Suite <em id="optionalText">opcional</em></span><input id="address2" type="text" autocomplete="address-line2" /></label>
               <div class="account-form-row">
                 <label><span id="labelCity">Ciudad</span><input id="city" type="text" autocomplete="address-level2" readonly required /></label>

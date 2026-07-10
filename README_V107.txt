@@ -1,0 +1,1 @@
+Raíces v107: fixes Google Maps loading using the official Dynamic Library Import bootstrap and simplifies the address form to one visible Address field. API key remains injected by Netlify via GOOGLE_MAPS_API_KEY.
