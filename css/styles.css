@@ -696,3 +696,9 @@ body.cart-open{overflow:hidden}
 .account-page .account-form label > span{display:block;}
 .account-page .account-form label em{font-style:normal;color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0;}
 @media(max-width:860px){.account-page .account-topbar{height:auto;min-height:74px;align-items:center}.account-page .account-brand img{width:78px}.account-page .account-desktop-nav{gap:10px;font-size:.65rem;flex-wrap:wrap;justify-content:flex-end}.account-page .account-app{padding-top:18px}.account-page .account-hero{padding-top:10px}.account-page .account-hero h1{font-size:2.4rem}}
+
+/* v101: clear account access in header and mobile drawer */
+.account-access{width:auto;min-width:132px;padding:0 14px;grid-template-columns:22px auto;gap:8px;border-radius:999px;text-decoration:none}
+.account-access-label{font-size:.70rem;font-weight:800;letter-spacing:.035em;white-space:nowrap}
+.drawer-account-link{font-weight:800;color:var(--clay)!important}
+@media(max-width:1100px){.account-access{min-width:42px;width:42px;padding:0;display:grid;grid-template-columns:1fr}.account-access-label{display:none}}

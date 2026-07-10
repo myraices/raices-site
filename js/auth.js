@@ -20,6 +20,8 @@ const accountEmail = document.getElementById("accountEmail");
 const userWrap = document.getElementById("userWrap");
 const userGreeting = document.getElementById("userGreeting");
 const userIconLink = document.getElementById("userIconLink");
+const userActionLabel = document.getElementById("userActionLabel");
+const drawerAccountLink = document.getElementById("drawerAccountLink");
 const logoutBtn = document.getElementById("logoutBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 let lastUnconfirmedEmail = "";
@@ -223,18 +225,24 @@ async function checkAuthState() {
     accountEmail.textContent = displayName ? "Hola, " + displayName : data.user.email;
     if (userWrap) userWrap.classList.add("logged-in");
     if (userGreeting) userGreeting.textContent = displayName ? "Hola, " + displayName : "Hola";
+    const accountLabel = authText("Mi cuenta", "My account");
+    if (userActionLabel) userActionLabel.textContent = accountLabel;
+    if (drawerAccountLink) drawerAccountLink.textContent = "👤 " + accountLabel;
     if (userIconLink) {
-      userIconLink.setAttribute("title", displayName ? "Mi cuenta - Hola, " + displayName : "Mi cuenta - conectado");
-      userIconLink.setAttribute("aria-label", displayName ? "Mi cuenta, conectado como " + displayName : "Mi cuenta, conectado");
+      userIconLink.setAttribute("title", displayName ? accountLabel + " - " + displayName : accountLabel);
+      userIconLink.setAttribute("aria-label", displayName ? accountLabel + ", " + displayName : accountLabel);
     }
   } else {
     authLoggedIn.classList.add("hidden");
     authLoggedOut.classList.remove("hidden");
     if (userWrap) userWrap.classList.remove("logged-in");
     if (userGreeting) userGreeting.textContent = "";
+    const loginLabel = authText("Iniciar sesión", "Sign in");
+    if (userActionLabel) userActionLabel.textContent = loginLabel;
+    if (drawerAccountLink) drawerAccountLink.textContent = "👤 " + loginLabel;
     if (userIconLink) {
-      userIconLink.setAttribute("title", "Mi cuenta");
-      userIconLink.setAttribute("aria-label", "Usuario");
+      userIconLink.setAttribute("title", loginLabel);
+      userIconLink.setAttribute("aria-label", loginLabel);
     }
   }
 }
@@ -357,3 +365,8 @@ if (urlLooksLikeRecovery()) {
 } else {
   checkAuthState();
 }
+
+
+window.addEventListener("raices:languageChanged", function(){
+  checkAuthState().catch(function(err){ console.warn("Raíces account label language warning:", err); });
+});
