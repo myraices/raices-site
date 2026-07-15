@@ -25,3 +25,8 @@ Flujo de publicación: descomprimir sobre la carpeta local del repositorio, revi
 ## v117.2 — Password recovery redirect fix
 - Uses `?mode=reset-password` as a persistent recovery marker.
 - Opens the new-password form even when Supabase consumes the token before `auth.js` attaches its listener.
+
+## v117.3 — Password recovery session fix
+- Establishes the Supabase recovery session explicitly before calling `updateUser()`.
+- Supports both PKCE `code` links and implicit access/refresh-token links.
+- Prevents the misleading `Auth session missing!` failure and shows a clear expired-link message.

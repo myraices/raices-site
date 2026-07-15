@@ -32,6 +32,8 @@ let signupTurnstileWidgetId = null;
 let forgotTurnstileWidgetId = null;
 let signupTurnstileToken = "";
 let forgotTurnstileToken = "";
+let passwordRecoverySessionReady = false;
+let passwordRecoveryInitPromise = null;
 
 function resetTurnstileWidget(widgetId) {
   if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);
@@ -197,6 +199,65 @@ function cleanRecoveryUrl() {
   if (window.history && window.history.replaceState) {
     window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
   }
+}
+
+function getRecoveryUrlValues() {
+  const url = new URL(window.location.href);
+  const query = url.searchParams;
+  const hash = new URLSearchParams(String(url.hash || "").replace(/^#/, ""));
+  return {
+    code: query.get("code") || hash.get("code") || "",
+    accessToken: hash.get("access_token") || query.get("access_token") || "",
+    refreshToken: hash.get("refresh_token") || query.get("refresh_token") || ""
+  };
+}
+
+async function ensurePasswordRecoverySession() {
+  if (passwordRecoverySessionReady) return true;
+  if (passwordRecoveryInitPromise) return passwordRecoveryInitPromise;
+
+  passwordRecoveryInitPromise = (async function() {
+    // Supabase may use either a PKCE `code` query parameter or implicit
+    // access/refresh tokens, depending on the Auth project configuration.
+    // Do not allow updateUser() until one of those has produced a real session.
+    let sessionResult = await raicesSupabase.auth.getSession();
+    if (sessionResult.data && sessionResult.data.session) {
+      passwordRecoverySessionReady = true;
+      return true;
+    }
+
+    const values = getRecoveryUrlValues();
+    if (values.code) {
+      const exchange = await raicesSupabase.auth.exchangeCodeForSession(values.code);
+      if (!exchange.error && exchange.data && exchange.data.session) {
+        passwordRecoverySessionReady = true;
+        return true;
+      }
+      // The client may have exchanged the code automatically just before us.
+      sessionResult = await raicesSupabase.auth.getSession();
+      if (sessionResult.data && sessionResult.data.session) {
+        passwordRecoverySessionReady = true;
+        return true;
+      }
+      if (exchange.error) console.warn("Raíces recovery code exchange warning:", exchange.error.message);
+    }
+
+    if (values.accessToken && values.refreshToken) {
+      const setResult = await raicesSupabase.auth.setSession({
+        access_token: values.accessToken,
+        refresh_token: values.refreshToken
+      });
+      if (!setResult.error && setResult.data && setResult.data.session) {
+        passwordRecoverySessionReady = true;
+        return true;
+      }
+      if (setResult.error) console.warn("Raíces recovery token session warning:", setResult.error.message);
+    }
+
+    return false;
+  })().finally(function(){ passwordRecoveryInitPromise = null; });
+
+  return passwordRecoveryInitPromise;
 }
 
 function urlLooksLikeRecovery() {
@@ -470,6 +531,15 @@ if (resetPasswordForm) {
       resetPasswordMessage.textContent = authText("Las contraseñas no coinciden.", "Passwords do not match.");
       return;
     }
+    resetPasswordMessage.textContent = authText("Validando el enlace de recuperación...", "Validating the recovery link...");
+    const recoveryReady = await ensurePasswordRecoverySession();
+    if (!recoveryReady) {
+      resetPasswordMessage.textContent = authText(
+        "Este enlace de recuperación no tiene una sesión válida o ya venció. Solicita un correo nuevo e inténtalo otra vez.",
+        "This recovery link has no valid session or has expired. Request a new email and try again."
+      );
+      return;
+    }
     resetPasswordMessage.textContent = authText("Guardando nueva contraseña...", "Saving new password...");
     const { error } = await raicesSupabase.auth.updateUser({ password: newPassword });
     if (error) {
@@ -491,7 +561,13 @@ logoutBtn.addEventListener("click", async function() {
 });
 
 raicesSupabase.auth.onAuthStateChange(function(event, session) {
-  if (event === "PASSWORD_RECOVERY" || urlLooksLikeRecovery()) {
+  if (event === "PASSWORD_RECOVERY") {
+    passwordRecoverySessionReady = Boolean(session);
+    showPasswordRecoveryView();
+    return;
+  }
+  if (urlLooksLikeRecovery()) {
+    if (session) passwordRecoverySessionReady = true;
     showPasswordRecoveryView();
     return;
   }
@@ -503,6 +579,23 @@ raicesSupabase.auth.onAuthStateChange(function(event, session) {
 
 if (urlLooksLikeRecovery()) {
   showPasswordRecoveryView();
+  if (resetPasswordMessage) {
+    resetPasswordMessage.textContent = authText("Validando el enlace de recuperación...", "Validating the recovery link...");
+  }
+  ensurePasswordRecoverySession().then(function(ready){
+    if (resetPasswordMessage) {
+      resetPasswordMessage.textContent = ready ? "" : authText(
+        "No se pudo validar este enlace. Solicita un correo nuevo de recuperación.",
+        "We could not validate this link. Request a new recovery email."
+      );
+    }
+  }).catch(function(err){
+    console.error("Raíces recovery initialization error:", err);
+    if (resetPasswordMessage) resetPasswordMessage.textContent = authText(
+      "No se pudo validar este enlace. Solicita un correo nuevo de recuperación.",
+      "We could not validate this link. Request a new recovery email."
+    );
+  });
 } else {
   checkAuthState();
 }
