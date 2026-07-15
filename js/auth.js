@@ -202,7 +202,12 @@ function cleanRecoveryUrl() {
 function urlLooksLikeRecovery() {
   const url = new URL(window.location.href);
   const raw = (url.search + " " + url.hash).toLowerCase();
-  return raw.includes("type=recovery") || raw.includes("#reset-password") || raw.includes("access_token=");
+  const mode = String(url.searchParams.get("mode") || "").toLowerCase();
+  return mode === "reset-password" ||
+    raw.includes("type=recovery") ||
+    raw.includes("#reset-password") ||
+    raw.includes("access_token=") ||
+    raw.includes("token_hash=");
 }
 
 function setAuthPlainMessage(message) {
@@ -436,7 +441,9 @@ if (sendResetPasswordBtn) sendResetPasswordBtn.addEventListener("click", async f
   setAuthPlainMessage(authText("Verificando...", "Verifying..."));
   try {
     await verifyTurnstile(forgotTurnstileToken, "password_reset");
-    const resetUrl = window.location.origin + "/#reset-password";
+    // Keep a query marker because Supabase may consume and remove the auth
+    // token from the URL before this script attaches its auth listener.
+    const resetUrl = window.location.origin + "/?mode=reset-password";
     const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
     setAuthPlainMessage(error ? error.message : authText("Te enviamos un correo para recuperar tu contraseña.", "We sent you a password reset email."));
     if (!error && forgotPasswordPanel) forgotPasswordPanel.classList.add("hidden");

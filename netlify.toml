@@ -5,7 +5,7 @@
 [build.environment]
   # This is a browser API key and must be present in the published JavaScript.
   # Security comes from Google Cloud HTTP-referrer and API restrictions.
-  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_MAPS_API_KEY"
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_MAPS_API_KEY,TURNSTILE_SITE_KEY"
 
 [[redirects]]
   from = "/arepas"

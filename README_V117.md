@@ -16,3 +16,12 @@ Variables requeridas en Netlify:
 - `TURNSTILE_SECRET_KEY`
 
 Flujo de publicación: descomprimir sobre la carpeta local del repositorio, revisar en GitHub Desktop, hacer commit y push.
+
+
+## v117.1 Netlify deploy fix
+- Added TURNSTILE_SITE_KEY to SECRETS_SCAN_OMIT_KEYS because it is a public browser key intentionally injected into the built JavaScript.
+
+
+## v117.2 — Password recovery redirect fix
+- Uses `?mode=reset-password` as a persistent recovery marker.
+- Opens the new-password form even when Supabase consumes the token before `auth.js` attaches its listener.
