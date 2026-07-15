@@ -24,8 +24,81 @@ const userActionLabel = document.getElementById("userActionLabel");
 const drawerAccountLink = document.getElementById("drawerAccountLink");
 const logoutBtn = document.getElementById("logoutBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
+const forgotPasswordPanel = document.getElementById("forgotPasswordPanel");
+const sendResetPasswordBtn = document.getElementById("sendResetPasswordBtn");
 let lastUnconfirmedEmail = "";
 let isPasswordRecoveryMode = false;
+let signupTurnstileWidgetId = null;
+let forgotTurnstileWidgetId = null;
+let signupTurnstileToken = "";
+let forgotTurnstileToken = "";
+
+function resetTurnstileWidget(widgetId) {
+  if (widgetId !== null && window.turnstile) window.turnstile.reset(widgetId);
+}
+
+function waitForTurnstile(attempts = 40) {
+  return new Promise(function(resolve, reject) {
+    function check(remaining) {
+      if (window.turnstile && typeof window.turnstile.render === "function") return resolve(window.turnstile);
+      if (remaining <= 0) return reject(new Error("Turnstile did not load"));
+      setTimeout(function(){ check(remaining - 1); }, 150);
+    }
+    check(attempts);
+  });
+}
+
+async function renderTurnstileWidgets() {
+  const sitekey = String(window.RAICES_TURNSTILE_SITE_KEY || "").trim();
+  if (!sitekey || sitekey.includes("__TURNSTILE")) throw new Error("Turnstile site key is not configured");
+  const turnstileApi = await waitForTurnstile();
+  if (document.getElementById("signupTurnstile") && signupTurnstileWidgetId === null) {
+    signupTurnstileWidgetId = turnstileApi.render("#signupTurnstile", {
+      sitekey: sitekey, action: "signup", theme: "light", size: "normal",
+      callback: function(token){ signupTurnstileToken = token; },
+      "expired-callback": function(){ signupTurnstileToken = ""; },
+      "error-callback": function(){ signupTurnstileToken = ""; }
+    });
+  }
+  if (document.getElementById("forgotTurnstile") && forgotTurnstileWidgetId === null) {
+    forgotTurnstileWidgetId = turnstileApi.render("#forgotTurnstile", {
+      sitekey: sitekey, action: "password_reset", theme: "light", size: "normal",
+      callback: function(token){ forgotTurnstileToken = token; },
+      "expired-callback": function(){ forgotTurnstileToken = ""; },
+      "error-callback": function(){ forgotTurnstileToken = ""; }
+    });
+  }
+}
+
+async function verifyTurnstile(token, action) {
+  if (!token) throw new Error("captcha_required");
+  const response = await fetch("/.netlify/functions/verify-turnstile", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: token, action: action })
+  });
+  const result = await response.json().catch(function(){ return {}; });
+  if (!response.ok || !result.ok) throw new Error(result.error || "captcha_failed");
+  return true;
+}
+
+function validateSignupName(value) {
+  const name = String(value || "").trim().replace(/\s+/g, " ");
+  if (name.length < 2 || name.length > 60) return false;
+  if (!/^[\p{L}][\p{L}\p{M}'’.-]*(?: [\p{L}][\p{L}\p{M}'’.-]*)*$/u.test(name)) return false;
+  const letters = name.toLocaleLowerCase().replace(/[^\p{L}]/gu, "");
+  if (/(.)\1{4,}/u.test(letters)) return false;
+  if (letters.length >= 10 && !/[aeiouáéíóúü]/u.test(letters)) return false;
+  const uncommonRun = letters.match(/[^aeiouáéíóúüy]{8,}/u);
+  if (letters.length >= 14 && uncommonRun) return false;
+  return true;
+}
+
+function captchaMessage(error) {
+  const code = String((error && error.message) || error || "");
+  if (code === "captcha_required") return authText("Completa la verificación de seguridad.", "Complete the security verification.");
+  if (code === "verification_unavailable") return authText("La verificación no está disponible ahora. Intenta de nuevo.", "Security verification is unavailable. Try again.");
+  return authText("La verificación de seguridad venció o no fue válida. Intenta de nuevo.", "The security verification expired or was invalid. Try again.");
+}
 
 async function openAuthModal(e) {
   if (e) e.preventDefault();
@@ -72,6 +145,7 @@ function showSignup(clearMessage = true) {
   signupTab.classList.add("active"); loginTab.classList.remove("active");
   signupForm.classList.remove("hidden"); loginForm.classList.add("hidden");
   if (clearMessage) authMessage.textContent = "";
+  renderTurnstileWidgets().catch(function(err){ console.error("Raíces Turnstile load error:", err); });
   setTimeout(function(){ document.getElementById("signupName").focus(); }, 80);
 }
 
@@ -292,13 +366,22 @@ loginForm.addEventListener("submit", async function(e) {
 
 signupForm.addEventListener("submit", async function(e) {
   e.preventDefault();
-  authMessage.textContent = "Creando cuenta...";
 
-  const name = document.getElementById("signupName").value.trim();
+  const name = document.getElementById("signupName").value.trim().replace(/\s+/g, " ");
   const email = document.getElementById("signupEmail").value.trim().toLowerCase();
   const password = document.getElementById("signupPassword").value;
+  if (!validateSignupName(name)) {
+    setAuthPlainMessage(authText("Escribe un nombre real y válido.", "Enter a real, valid name."));
+    return;
+  }
+  if (!signupTurnstileToken) {
+    setAuthPlainMessage(authText("Completa la verificación de seguridad.", "Complete the security verification."));
+    return;
+  }
+  authMessage.textContent = authText("Verificando y creando cuenta...", "Verifying and creating account...");
 
   try {
+    await verifyTurnstile(signupTurnstileToken, "signup");
     const { data, error } = await raicesSupabase.auth.signUp({
       email: email,
       password: password,
@@ -330,16 +413,41 @@ signupForm.addEventListener("submit", async function(e) {
     ));
   } catch (err) {
     console.error("Raíces signup unexpected error:", err);
-    authMessage.textContent = "Error inesperado al crear la cuenta. Revisa la consola.";
+    setAuthPlainMessage(captchaMessage(err));
+  } finally {
+    signupTurnstileToken = "";
+    resetTurnstileWidget(signupTurnstileWidgetId);
   }
 });
 
 forgotPasswordBtn.addEventListener("click", async function() {
-  const email = document.getElementById("loginEmail").value;
+  const email = document.getElementById("loginEmail").value.trim();
   if (!email) { setAuthPlainMessage(authText("Escribe tu email arriba y luego pulsa recuperar contraseña.", "Enter your email above, then click forgot password.")); return; }
-  const resetUrl = window.location.origin + "/#reset-password";
-  const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
-  setAuthPlainMessage(error ? error.message : authText("Te enviamos un correo para recuperar tu contraseña.", "We sent you a password reset email."));
+  if (forgotPasswordPanel) forgotPasswordPanel.classList.remove("hidden");
+  setAuthPlainMessage(authText("Completa la verificación para enviar el enlace.", "Complete the verification to send the link."));
+  renderTurnstileWidgets().catch(function(err){ console.error("Raíces Turnstile load error:", err); });
+});
+
+if (sendResetPasswordBtn) sendResetPasswordBtn.addEventListener("click", async function() {
+  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+  if (!email) { setAuthPlainMessage(authText("Escribe tu email arriba.", "Enter your email above.")); return; }
+  if (!forgotTurnstileToken) { setAuthPlainMessage(authText("Completa la verificación de seguridad.", "Complete the security verification.")); return; }
+  sendResetPasswordBtn.disabled = true;
+  setAuthPlainMessage(authText("Verificando...", "Verifying..."));
+  try {
+    await verifyTurnstile(forgotTurnstileToken, "password_reset");
+    const resetUrl = window.location.origin + "/#reset-password";
+    const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
+    setAuthPlainMessage(error ? error.message : authText("Te enviamos un correo para recuperar tu contraseña.", "We sent you a password reset email."));
+    if (!error && forgotPasswordPanel) forgotPasswordPanel.classList.add("hidden");
+  } catch (err) {
+    console.error("Raíces password reset verification error:", err);
+    setAuthPlainMessage(captchaMessage(err));
+  } finally {
+    forgotTurnstileToken = "";
+    resetTurnstileWidget(forgotTurnstileWidgetId);
+    sendResetPasswordBtn.disabled = false;
+  }
 });
 
 if (resetPasswordForm) {
@@ -391,6 +499,7 @@ if (urlLooksLikeRecovery()) {
 } else {
   checkAuthState();
 }
+renderTurnstileWidgets().catch(function(err){ console.warn("Raíces Turnstile initialization:", err); });
 
 
 window.addEventListener("raices:languageChanged", function(){

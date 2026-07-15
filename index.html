@@ -300,11 +300,17 @@
           <label>Contraseña</label><input type="password" id="loginPassword" required placeholder="Tu contraseña"/>
           <button class="btn auth-submit" type="submit" data-i18n="enter">Entrar</button>
           <button class="auth-link" id="forgotPasswordBtn" type="button" data-i18n="forgot">Olvidé mi contraseña</button>
+          <div class="auth-captcha-panel hidden" id="forgotPasswordPanel">
+            <p class="auth-small" id="forgotPasswordHelp">Confirma que eres una persona para recibir el enlace de recuperación.</p>
+            <div class="turnstile-wrap"><div id="forgotTurnstile"></div></div>
+            <button class="btn auth-submit" id="sendResetPasswordBtn" type="button">Enviar enlace de recuperación</button>
+          </div>
         </form>
         <form id="signupForm" class="auth-form hidden">
           <label>Nombre</label><input type="text" id="signupName" required placeholder="Tu nombre"/>
           <label>Email</label><input type="email" id="signupEmail" required placeholder="tu@email.com"/>
           <label>Contraseña</label><input type="password" id="signupPassword" required minlength="6" placeholder="Mínimo 6 caracteres"/>
+          <div class="turnstile-wrap"><div id="signupTurnstile"></div></div>
           <button class="btn auth-submit" type="submit">Crear cuenta</button>
           <p class="auth-small" data-i18n="confirm_email_note">Revisa tu email para confirmar el registro.</p>
         </form>
@@ -351,6 +357,8 @@
   <script src="js/products.js"></script>
   <script src="js/site-config.js"></script>
   <script src="js/supabase-config.js"></script>
+  <script src="js/turnstile-config.js"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="js/catalog-db.js"></script>
   <script src="js/catalog-bootstrap.js"></script>
 

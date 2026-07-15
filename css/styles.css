@@ -775,3 +775,7 @@ body.cart-open{overflow:hidden}
 .account-toast.show{opacity:1;transform:none}
 .account-toast.error{background:#8a3b2c}
 @media(max-width:700px){.address-location-row{grid-template-columns:1fr 1fr!important}.address-location-row label:first-child{grid-column:1/-1}.country-field{max-width:none}.account-toast{top:14px;right:16px;left:16px;max-width:none}}
+
+/* v117: Cloudflare Turnstile protection for account creation and password recovery */
+.turnstile-wrap{min-height:65px;margin-top:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}.auth-captcha-panel{display:grid;gap:8px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}.auth-captcha-panel .auth-submit{margin-top:2px}.auth-form button:disabled{opacity:.62;cursor:not-allowed}
+@media(max-width:390px){.turnstile-wrap{transform:scale(.9);transform-origin:center}}
