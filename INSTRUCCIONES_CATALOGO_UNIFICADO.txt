@@ -1,0 +1,24 @@
+CATÁLOGO UNIFICADO — ORDEN CORRECTO
+
+1. En Supabase (proyecto MyRaíces), ejecuta UNA SOLA VEZ:
+   supabase/unify_products_v1.sql
+
+2. Verifica en Table Editor > products que aparecen los 39 productos reales.
+   Los productos ficticios anteriores quedarán ARCHIVADOS, no eliminados.
+
+3. Actualiza NURAI:
+   - Descomprime NURAI_v5.6_Productos_Unificados.zip en la carpeta local NURAI.
+   - Reemplaza archivos.
+   - Commit y Push.
+   - Verifica admin.myraices.com > Productos.
+
+4. Actualiza myraices.com:
+   - Descomprime MyRaices_v118_Catalogo_Unificado.zip en la carpeta local del sitio.
+   - Reemplaza archivos.
+   - Commit y Push.
+   - Verifica que la tienda muestre los mismos productos.
+
+Resultado:
+- Supabase public.products es la única fuente de verdad.
+- NURAI y myraices.com muestran los mismos registros.
+- Los cambios de precio, imagen, estado y stock hechos en NURAI se reflejan en la web.
