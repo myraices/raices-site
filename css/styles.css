@@ -779,3 +779,12 @@ body.cart-open{overflow:hidden}
 /* v117: Cloudflare Turnstile protection for account creation and password recovery */
 .turnstile-wrap{min-height:65px;margin-top:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}.auth-captcha-panel{display:grid;gap:8px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}.auth-captcha-panel .auth-submit{margin-top:2px}.auth-form button:disabled{opacity:.62;cursor:not-allowed}
 @media(max-width:390px){.turnstile-wrap{transform:scale(.9);transform-origin:center}}
+
+/* v119 — Live inventory / sold-out states */
+.product-card-shop.is-sold-out .product-media{filter:saturate(.72)}
+.product-card-shop.is-sold-out .product-badge{background:rgba(255,250,241,.96);color:#7d4234}
+.sold-out-label{display:block;margin-top:4px;color:#8a4b3b;font-size:.76rem;font-weight:800;letter-spacing:.04em}
+.sold-out-notify-btn{background:transparent!important;color:var(--forest)!important;border:1px solid var(--forest)!important;min-height:42px}
+.sold-out-notify-btn:hover{background:var(--forest)!important;color:#fff!important}
+.modal-price-row>div:first-child{display:flex;flex-direction:column;align-items:flex-start}
+@media(max-width:700px){.sold-out-notify-btn{width:100%;min-height:34px;font-size:.62rem;letter-spacing:.08em}.sold-out-modal-btn{min-height:42px;font-size:.78rem}.product-card-shop.is-sold-out .action-stack{width:100%}}

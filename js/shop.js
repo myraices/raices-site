@@ -99,6 +99,15 @@
     return "$" + Number(value || 0).toFixed(2);
   }
 
+  function isProductAvailable(product){
+    return !!product && product.available !== false && !product.soldOut;
+  }
+
+  function soldOutAction(product, context){
+    const extraClass = context === 'modal' ? ' sold-out-modal-btn' : '';
+    return `<button class="btn sold-out-notify-btn${extraClass}" type="button" data-notify-product="${product.sku}">${t('notify_product')}</button>`;
+  }
+
   function normalizeZip(value){
     return String(value || '').replace(/\D/g,'').slice(0,5);
   }
@@ -461,7 +470,7 @@
     const p = products.find(item => item.sku === sku);
     if(!p || !productModal || !productModalContent) return;
     const benefits = benefitList(p).map(b => `<li>${b}</li>`).join('');
-    const related = relatedProducts(p).map(r => `<button class="ritual-card" data-related-add="${r.sku}"><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}</em></button>`).join('');
+    const related = relatedProducts(p).map(r => `<button class="ritual-card" ${isProductAvailable(r) ? `data-related-add="${r.sku}"` : `data-related-view="${r.sku}"`}><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}${isProductAvailable(r) ? '' : ` · ${t('sold_out')}`}</em></button>`).join('');
     const hasVariants = Array.isArray(p.variants) && p.variants.length;
     const selectedVariant = hasVariants ? variantDisplay(p.variants[0]) : "";
     const variantBlock = hasVariants ? `
@@ -481,7 +490,7 @@
           <p class="modal-description">${productDescription(p)}</p>
           <div class="product-meta modal-meta">${productMeta(p)}</div>
           ${variantBlock}
-          <div class="modal-price-row"><strong>${money(p.price)}</strong><button class="btn" data-modal-add="${p.sku}" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div>
+          <div class="modal-price-row"><div><strong>${money(p.price)}</strong>${isProductAvailable(p) ? '' : `<span class="sold-out-label">${t('sold_out')}</span>`}</div>${isProductAvailable(p) ? `<button class="btn" data-modal-add="${p.sku}" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button>` : soldOutAction(p, 'modal')}</div>
           <div class="modal-sections">
             <section><h3>${t('benefits')}</h3><ul>${benefits}</ul></section>
             <section><h3>${t('ingredients')}</h3><p>${localizedIngredients(p)}</p></section>
@@ -507,7 +516,9 @@
     });
 
     productModalContent.querySelectorAll('[data-modal-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.modalAdd, this.dataset.selectedVariant || ""); }));
+    productModalContent.querySelectorAll('[data-notify-product]').forEach(btn => btn.addEventListener('click', function(){ openProductWaitlist(this.dataset.notifyProduct); }));
     productModalContent.querySelectorAll('[data-related-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.relatedAdd); }));
+    productModalContent.querySelectorAll('[data-related-view]').forEach(btn => btn.addEventListener('click', function(){ openProductModal(this.dataset.relatedView); }));
   }
 
   function closeProductModal(){
@@ -542,15 +553,17 @@
     productGrid.innerHTML = list.map(p => {
       const isRitualBox = p.slug === 'ritual-box';
       const isConfigurable = Array.isArray(p.variants) && p.variants.length;
-      const primaryAction = isRitualBox
-        ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Personalizar Ritual Box' : 'Customize Ritual Box'}</button>`
-        : isConfigurable
-          ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Elegir opción' : 'Choose option'}</button>`
-          : `<button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
-           <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>`;
-      return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''}">
+      const primaryAction = !isProductAvailable(p)
+        ? `<button class="text-product-link" data-view="${p.sku}">${t('view_product')}</button>${soldOutAction(p, 'card')}`
+        : isRitualBox
+          ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Personalizar Ritual Box' : 'Customize Ritual Box'}</button>`
+          : isConfigurable
+            ? `<button class="btn personalize-btn" data-view="${p.sku}">${currentLang()==='es' ? 'Elegir opción' : 'Choose option'}</button>`
+            : `<button class="text-product-link" data-view="${p.sku}">${p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product')}</button>
+             <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>`;
+      return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''} ${isProductAvailable(p) ? '' : 'is-sold-out'}">
       <div class="product-media" style="background-image:url('${p.image}')">
-        <span class="product-badge">${isRitualBox ? (currentLang()==='es' ? 'Personalizable' : 'Customizable') : (p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory))}</span>
+        <span class="product-badge">${isProductAvailable(p) ? (isRitualBox ? (currentLang()==='es' ? 'Personalizable' : 'Customizable') : (p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory))) : t('sold_out')}</span>
       </div>
       <div class="product-body">
         <div>
@@ -583,6 +596,11 @@
         openProductModal(this.dataset.view);
       });
     });
+    productGrid.querySelectorAll("[data-notify-product]").forEach(btn => {
+      btn.addEventListener("click", function(){
+        openProductWaitlist(this.dataset.notifyProduct);
+      });
+    });
   }
 
   function openCartDrawer(){
@@ -612,6 +630,10 @@
   function addToCart(sku, variant){
     const product = products.find(p => p.sku === sku);
     if(!product) return;
+    if(!isProductAvailable(product)){
+      openProductWaitlist(product.sku);
+      return;
+    }
     const key = cartItemKey(sku, variant);
     const existing = cart.find(item => cartItemKey(item.sku, item.variant) === key);
     if(existing) existing.qty += 1;
@@ -629,7 +651,15 @@
   }
 
   function renderCart(){
-    const enriched = cart.map(item => ({...item, product: products.find(p => p.sku === item.sku)})).filter(i => i.product);
+    const validCart = cart.filter(item => {
+      const product = products.find(p => p.sku === item.sku);
+      return product && isProductAvailable(product);
+    });
+    if(validCart.length !== cart.length){
+      cart = validCart;
+      localStorage.setItem("raices_cart", JSON.stringify(cart));
+    }
+    const enriched = cart.map(item => ({...item, product: products.find(p => p.sku === item.sku)})).filter(i => i.product && isProductAvailable(i.product));
     const count = enriched.reduce((sum, item) => sum + item.qty, 0);
     const subtotal = enriched.reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
     const zip = getDeliveryZip();
@@ -780,6 +810,19 @@
   const waitlistName = document.getElementById('waitlistName');
   const waitlistConsent = document.getElementById('waitlistConsent');
   const waitlistMessage = document.getElementById('waitlistMessage');
+  let waitlistProduct = null;
+
+  function openProductWaitlist(sku){
+    waitlistProduct = products.find(product => product.sku === sku) || null;
+    window.RAICES_WAITLIST_PRODUCT = waitlistProduct;
+    if(waitlistProduct){
+      const title = waitlistModal ? waitlistModal.querySelector('h2') : null;
+      const text = waitlistModal ? waitlistModal.querySelector('.waitlist-copy, [data-i18n="waitlist_checkout_text"]') : null;
+      if(title) title.textContent = `${t('notify_product_title')}: ${waitlistProduct.name}`;
+      if(text) text.textContent = t('notify_product_text');
+    }
+    openWaitlistModal();
+  }
 
   function openWaitlistModal(){
     if(waitlistEmail){
@@ -801,46 +844,17 @@
   const checkoutWaitBtn = document.getElementById('checkoutSoon');
   if(checkoutWaitBtn) checkoutWaitBtn.addEventListener('click', function(e){
     e.preventDefault();
+    waitlistProduct = null;
+    window.RAICES_WAITLIST_PRODUCT = null;
+    const title = waitlistModal ? waitlistModal.querySelector('h2') : null;
+    const text = waitlistModal ? waitlistModal.querySelector('.waitlist-copy, [data-i18n="waitlist_checkout_text"]') : null;
+    if(title) title.textContent = t('waitlist_checkout_title');
+    if(text) text.textContent = t('waitlist_checkout_text');
     openWaitlistModal();
   });
   if(waitlistBackdrop) waitlistBackdrop.addEventListener('click', closeWaitlistModal);
   if(waitlistClose) waitlistClose.addEventListener('click', closeWaitlistModal);
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeWaitlistModal(); });
-  if(waitlistForm){
-    waitlistForm.addEventListener('submit', async function(e){
-      e.preventDefault();
-      const email = waitlistEmail ? waitlistEmail.value.trim() : '';
-      const name = waitlistName ? waitlistName.value.trim() : '';
-      if(waitlistMessage){ waitlistMessage.dataset.state='idle'; waitlistMessage.textContent = currentLang()==='es' ? 'Enviando...' : 'Sending...'; }
-      if(!email || !email.includes('@')){
-        if(waitlistMessage){ waitlistMessage.dataset.state='error'; waitlistMessage.textContent = currentLang()==='es' ? 'Escribe un correo válido.' : 'Enter a valid email.'; }
-        return;
-      }
-      if(waitlistConsent && !waitlistConsent.checked){
-        if(waitlistMessage){ waitlistMessage.dataset.state='error'; waitlistMessage.textContent = currentLang()==='es' ? 'Debes aceptar recibir comunicaciones de Raíces.' : 'Please accept receiving Raíces communications.'; }
-        return;
-      }
-      try{
-        const cartSummary = window.RAICES_CART_SUMMARY || null;
-        const saveResponse = await fetch('/.netlify/functions/save-interest', {
-          method:'POST',
-          headers:{'content-type':'application/json'},
-          body: JSON.stringify({ email, name, source:'checkout_waitlist', consent:true, cart: cartSummary, language: currentLang() })
-        });
-        if(!saveResponse.ok) throw new Error('Save interest failed');
-        fetch('/.netlify/functions/brevo-subscribe', {
-          method:'POST',
-          headers:{'content-type':'application/json'},
-          body: JSON.stringify({ email, name, source:'checkout_waitlist', consent:true, cart: cartSummary, language: currentLang() })
-        }).catch(function(err){ console.warn('Brevo subscribe warning', err); });
-        localStorage.setItem('raices_waitlist_email', email);
-        if(waitlistMessage){ waitlistMessage.dataset.state='ok'; waitlistMessage.textContent = currentLang()==='es' ? 'Listo. Te avisaremos cuando abramos pedidos.' : 'Done. We will notify you when ordering opens.'; }
-        if(waitlistForm) waitlistForm.reset();
-      } catch(err){
-        if(waitlistMessage){ waitlistMessage.dataset.state='error'; waitlistMessage.textContent = currentLang()==='es' ? 'No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.' : 'We could not save your email. Try again or message us on WhatsApp.'; }
-      }
-    });
-  }
 
   window.addEventListener('raices:languageChanged', function(){
     renderDoors();
