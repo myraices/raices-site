@@ -88,6 +88,7 @@ exports.handler = async function(event) {
     const language = String(payload.language || "es").trim().slice(0, 8);
     const consent = Boolean(payload.consent || source === "waitlist" || source === "checkout_waitlist" || source === "signup");
     const cart = payload.cart || null;
+    const product = payload.product || null;
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const normalizedSource = source === "newsletter_section" ? "newsletter" : (source === "checkout_waitlist" ? "waitlist" : source);
@@ -178,7 +179,16 @@ exports.handler = async function(event) {
       : waitlistTemplateIdEs;
 
     try {
-      if (normalizedSource === "waitlist") {
+      if (normalizedSource === "product_back_in_stock" && product && product.sku) {
+        const isEs = locale === "es";
+        const subject = isEs ? `Te avisaremos cuando ${product.name || product.sku} vuelva` : `We will notify you when ${product.name || product.sku} is back`;
+        const htmlContent = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:28px;color:#20351f"><h1 style="font-family:Georgia,serif">${isEs ? "Tu solicitud quedó registrada" : "Your request was saved"}</h1><p>${isEs ? "Te avisaremos automáticamente cuando" : "We will automatically notify you when"} <strong>${escapeHtml(product.name || product.sku)}</strong> ${isEs ? "vuelva a estar disponible." : "is available again."}</p><p style="color:#6a715f">Raíces · myraices.com</p></div>`;
+        const customerResponse = await fetch("https://api.brevo.com/v3/smtp/email", { method:"POST", headers:{"accept":"application/json","content-type":"application/json","api-key":apiKey}, body:JSON.stringify({sender:{name:senderName,email:senderEmail},to:[{email,name:name||email}],subject,htmlContent}) });
+        if (!customerResponse.ok) throw new Error(await customerResponse.text());
+        const adminHtml = `<div style="font-family:Arial,sans-serif"><h2>Nuevo interés de inventario</h2><p><strong>Producto:</strong> ${escapeHtml(product.name || product.sku)}</p><p><strong>SKU:</strong> ${escapeHtml(product.sku)}</p><p><strong>Cliente:</strong> ${escapeHtml(name || "Sin nombre")}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p></div>`;
+        await fetch("https://api.brevo.com/v3/smtp/email", { method:"POST", headers:{"accept":"application/json","content-type":"application/json","api-key":apiKey}, body:JSON.stringify({sender:{name:senderName,email:senderEmail},to:[{email:"info@myraices.com",name:"Raíces"}],subject:`Nuevo interés: ${product.name || product.sku}`,htmlContent:adminHtml}) });
+        emailSent = true;
+      } else if (normalizedSource === "waitlist") {
         // v97: Waitlist email is sent directly by the app using the Brevo transactional template.
         // This avoids depending on daily filter-based automations.
         await sendTransactionalTemplate(waitlistTemplateId, {

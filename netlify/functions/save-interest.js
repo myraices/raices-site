@@ -21,6 +21,7 @@ exports.handler = async function(event) {
     const cart = payload.cart || null;
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
+    const product = payload.product || null;
 
     if (!email || !email.includes("@")) {
       return { statusCode: 400, body: JSON.stringify({ message: "Email inválido." }) };
@@ -31,6 +32,36 @@ exports.handler = async function(event) {
 
     if (!serviceRoleKey) {
       return { statusCode: 500, body: JSON.stringify({ message: "SUPABASE_SERVICE_ROLE_KEY no está configurada en Netlify." }) };
+    }
+
+    if (source === "product_back_in_stock" && product && product.sku) {
+      const sku = String(product.sku).trim();
+      const productName = String(product.name || sku).trim();
+      const waitlistRecord = {
+        product_id: product.id || null,
+        sku,
+        product_name: productName,
+        email,
+        name: name || null,
+        language,
+        status: "pending",
+        last_requested_at: new Date().toISOString(),
+        source: "website",
+        metadata: payload
+      };
+      const existingResponse = await fetch(`${supabaseUrl}/rest/v1/stock_waitlist?email=eq.${encodeURIComponent(email)}&sku=eq.${encodeURIComponent(sku)}&status=eq.pending&select=id`, {
+        headers: { "apikey": serviceRoleKey, "authorization": `Bearer ${serviceRoleKey}` }
+      });
+      const existing = existingResponse.ok ? await existingResponse.json() : [];
+      const endpoint = existing.length ? `${supabaseUrl}/rest/v1/stock_waitlist?id=eq.${existing[0].id}` : `${supabaseUrl}/rest/v1/stock_waitlist`;
+      const method = existing.length ? "PATCH" : "POST";
+      const waitlistResponse = await fetch(endpoint, {
+        method,
+        headers: { "apikey": serviceRoleKey, "authorization": `Bearer ${serviceRoleKey}`, "content-type": "application/json", "prefer": "return=representation" },
+        body: JSON.stringify(waitlistRecord)
+      });
+      if (!waitlistResponse.ok) return { statusCode: waitlistResponse.status, headers: corsHeaders, body: JSON.stringify({ message: await waitlistResponse.text() }) };
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: existing.length ? "Updated" : "Saved", duplicate: Boolean(existing.length) }) };
     }
 
     const record = {
