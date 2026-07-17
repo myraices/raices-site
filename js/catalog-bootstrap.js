@@ -1,11 +1,11 @@
 /* Loads catalog-dependent scripts only after the Supabase catalog bridge resolves. */
 (function () {
   const dependentScripts = [
-    "js/catalog.js?v=119",
-    "js/app.js?v=119",
-    "js/shop.js?v=119",
-    "js/analytics.js?v=119",
-    "js/auth.js?v=119",
+    "js/catalog.js?v=121",
+    "js/app.js?v=121",
+    "js/shop.js?v=121",
+    "js/analytics.js?v=121",
+    "js/auth.js?v=121",
   ];
 
   function loadScript(src) {
