@@ -788,3 +788,5 @@ body.cart-open{overflow:hidden}
 .sold-out-notify-btn:hover{background:var(--forest)!important;color:#fff!important}
 .modal-price-row>div:first-child{display:flex;flex-direction:column;align-items:flex-start}
 @media(max-width:700px){.sold-out-notify-btn{width:100%;min-height:34px;font-size:.62rem;letter-spacing:.08em}.sold-out-modal-btn{min-height:42px;font-size:.78rem}.product-card-shop.is-sold-out .action-stack{width:100%}}
+
+.form-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;}

@@ -1,3 +1,33 @@
+
+function validHumanName(value) {
+  const name = String(value || "").trim().replace(/\s+/g, " ");
+  if (name.length < 2 || name.length > 60) return false;
+  if (!/^[\p{L}][\p{L}\p{M}'’.-]*(?: [\p{L}][\p{L}\p{M}'’.-]*)*$/u.test(name)) return false;
+  const letters = name.toLocaleLowerCase().replace(/[^\p{L}]/gu, "");
+  if (/(.)\1{4,}/u.test(letters)) return false;
+  if (letters.length >= 10 && !/[aeiouáéíóúü]/u.test(letters)) return false;
+  if (letters.length >= 14 && /[^aeiouáéíóúüy]{8,}/u.test(letters)) return false;
+  return true;
+}
+
+async function verifyTurnstile(event, token, action) {
+  const secret = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
+  if (!secret) throw new Error("TURNSTILE_SECRET_KEY no está configurada en Netlify.");
+  if (!token) return false;
+  const params = new URLSearchParams();
+  params.set("secret", secret);
+  params.set("response", token);
+  const clientIp = event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"];
+  if (clientIp) params.set("remoteip", String(clientIp).split(",")[0].trim());
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: params.toString()
+  });
+  const result = await response.json();
+  return Boolean(result.success && (!result.action || result.action === action));
+}
+
 exports.handler = async function(event) {
   const corsHeaders = {
     "access-control-allow-origin": "*",
@@ -22,6 +52,20 @@ exports.handler = async function(event) {
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const product = payload.product || null;
+    const protectedSource = source === "waitlist" || source === "checkout_waitlist" || source === "product_back_in_stock";
+
+    if (protectedSource) {
+      if (String(payload.honeypot || "").trim()) {
+        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Invalid submission." }) };
+      }
+      if (!validHumanName(name)) {
+        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Nombre inválido." }) };
+      }
+      const verified = await verifyTurnstile(event, String(payload.turnstile_token || "").trim(), "waitlist");
+      if (!verified) {
+        return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Verificación de seguridad inválida." }) };
+      }
+    }
 
     if (!email || !email.includes("@")) {
       return { statusCode: 400, body: JSON.stringify({ message: "Email inválido." }) };

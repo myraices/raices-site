@@ -253,7 +253,8 @@
       <form id="waitlistCheckoutForm" class="waitlist-form" method="post" action="javascript:void(0)" onsubmit="return false;">
         <label>
           <span data-i18n="waitlist_name_label">Nombre</span>
-          <input id="waitlistName" type="text" autocomplete="name" placeholder="Tu nombre"/>
+          <input id="waitlistName" type="text" autocomplete="name" placeholder="Tu nombre" required maxlength="60"/>
+          <input id="waitlistWebsite" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="form-honeypot"/>
         </label>
         <label>
           <span>Email</span>
@@ -263,6 +264,7 @@
           <input id="waitlistConsent" type="checkbox" required/>
           <span data-i18n="waitlist_consent">Acepto recibir comunicaciones de Raíces sobre lanzamientos, productos y novedades.</span>
         </label>
+        <div class="turnstile-wrap"><div id="waitlistTurnstile"></div></div>
         <button class="btn waitlist-submit" id="waitlistSubmit" type="button" data-i18n="waitlist_submit">Avisarme cuando abran pedidos</button>
         <p id="waitlistMessage" class="waitlist-message"></p>
       </form>
@@ -443,7 +445,34 @@
       const email = document.getElementById('waitlistEmail');
       const consent = document.getElementById('waitlistConsent');
       const msg = document.getElementById('waitlistMessage');
+      const honeypot = document.getElementById('waitlistWebsite');
+      let waitlistTurnstileWidgetId = null;
+      let waitlistTurnstileToken = '';
       if(!form || !btn || !email) return;
+      function validHumanName(value){
+        const normalized = String(value || '').trim().replace(/\s+/g,' ');
+        if(normalized.length < 2 || normalized.length > 60) return false;
+        if(!/^[\p{L}][\p{L}\p{M}'’.-]*(?: [\p{L}][\p{L}\p{M}'’.-]*)*$/u.test(normalized)) return false;
+        const letters = normalized.toLocaleLowerCase().replace(/[^\p{L}]/gu,'');
+        if(/(.)\1{4,}/u.test(letters)) return false;
+        if(letters.length >= 10 && !/[aeiouáéíóúü]/u.test(letters)) return false;
+        if(letters.length >= 14 && /[^aeiouáéíóúüy]{8,}/u.test(letters)) return false;
+        return true;
+      }
+      async function renderWaitlistTurnstile(){
+        if(waitlistTurnstileWidgetId !== null) return;
+        const sitekey = String(window.RAICES_TURNSTILE_SITE_KEY || '').trim();
+        if(!sitekey || sitekey.includes('__TURNSTILE')) return;
+        for(let i=0;i<40 && !(window.turnstile && typeof window.turnstile.render === 'function');i++) await new Promise(r=>setTimeout(r,150));
+        if(!(window.turnstile && typeof window.turnstile.render === 'function')) return;
+        waitlistTurnstileWidgetId = window.turnstile.render('#waitlistTurnstile',{
+          sitekey, action:'waitlist', theme:'light', size:'normal',
+          callback:function(token){ waitlistTurnstileToken = token; },
+          'expired-callback':function(){ waitlistTurnstileToken = ''; },
+          'error-callback':function(){ waitlistTurnstileToken = ''; }
+        });
+      }
+      renderWaitlistTurnstile().catch(()=>{});
       function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
       let submitting = false;
       async function handle(e){
@@ -451,6 +480,9 @@
         if(e){ e.preventDefault(); e.stopPropagation(); }
         const emailValue = email.value.trim();
         const nameValue = name ? name.value.trim() : '';
+        if(honeypot && honeypot.value){ return false; }
+        if(!validHumanName(nameValue)){ setMsg('error', txt('Escribe un nombre válido.', 'Enter a valid name.')); return false; }
+        if(!waitlistTurnstileToken){ setMsg('error', txt('Completa la verificación de seguridad.', 'Complete the security verification.')); return false; }
         if(!validEmail(emailValue)){ setMsg('error', txt('Escribe un correo válido.', 'Enter a valid email.')); return false; }
         if(consent && !consent.checked){ setMsg('error', txt('Debes aceptar recibir comunicaciones de Raíces.', 'Please accept receiving Raíces communications.')); return false; }
         submitting = true;
@@ -461,10 +493,12 @@
           const waitlistProduct = window.RAICES_WAITLIST_PRODUCT || null;
           const source = waitlistProduct ? 'product_back_in_stock' : 'waitlist';
           const product = waitlistProduct ? { id:waitlistProduct.id, sku:waitlistProduct.sku, name:waitlistProduct.name } : null;
-          await saveInterest({ email: emailValue, name:nameValue, source, consent:true, cart: cartSummary, product });
+          await saveInterest({ email: emailValue, name:nameValue, source, consent:true, cart: cartSummary, product, turnstile_token:waitlistTurnstileToken, honeypot:honeypot ? honeypot.value : '' });
           await subscribe({ email: emailValue, name:nameValue, language:getLang(), source, consent:true, cart: cartSummary, product });
           localStorage.setItem('raices_waitlist_email', emailValue);
           form.reset();
+          waitlistTurnstileToken = '';
+          if(waitlistTurnstileWidgetId !== null && window.turnstile) window.turnstile.reset(waitlistTurnstileWidgetId);
           setMsg('ok', waitlistProduct
             ? txt(`Listo. Te avisaremos cuando ${waitlistProduct.name} vuelva a estar disponible.`, `Done. We will notify you when ${waitlistProduct.name} is available again.`)
             : txt('Listo. Te avisaremos cuando abramos pedidos.', 'Done. We will notify you when ordering opens.'));
