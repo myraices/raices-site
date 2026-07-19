@@ -92,6 +92,12 @@ exports.handler = async function(event) {
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const normalizedSource = source === "newsletter_section" ? "newsletter" : (source === "checkout_waitlist" ? "waitlist" : source);
+    const protectedSources = new Set(["newsletter", "waitlist", "product_back_in_stock"]);
+    const internalSecret = String(event.headers["x-raices-internal-secret"] || "").trim();
+    const expectedSecret = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
+    if (protectedSources.has(normalizedSource) && (!expectedSecret || internalSecret !== expectedSecret)) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Protected endpoint." }) };
+    }
 
     if (!email || !email.includes("@")) {
       return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Email inválido." }) };

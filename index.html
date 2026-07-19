@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Raíces | Wellness Begins at the Root</title>
   <meta name="description" content="Raíces es una marca de bienestar con alimentos artesanales, infusiones, objetos para el hogar y guías digitales para volver a lo esencial."/>
-  <link href="css/styles.css?v=119" rel="stylesheet"/>
+  <link href="css/styles.css?v=123" rel="stylesheet"/>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-28FCJQTL9R"></script>
   <script src="js/ga-init.js"></script>
   <link rel="canonical" href="https://myraices.com/"/>
@@ -160,7 +160,8 @@
         <form class="newsletter-form" id="newsletterForm" name="newsletter" method="post" action="javascript:void(0)" onsubmit="return false;" novalidate>
           <label>
             <span data-i18n="newsletter_name_label">Nombre</span>
-            <input id="newsletterName" type="text" name="name" autocomplete="name" placeholder="Tu nombre"/>
+            <input id="newsletterName" type="text" name="name" autocomplete="name" placeholder="Tu nombre" required maxlength="60"/>
+            <input id="newsletterWebsite" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="form-honeypot"/>
           </label>
           <label>
             <span>Email</span>
@@ -170,6 +171,7 @@
             <input id="newsletterConsent" type="checkbox" required/>
             <span data-i18n="newsletter_consent">Acepto recibir comunicaciones de Raíces sobre lanzamientos, productos, recetas y novedades.</span>
           </label>
+          <div class="turnstile-wrap"><div id="newsletterTurnstile"></div></div>
           <button type="button" id="newsletterSubmit" data-i18n="subscribe">Suscribirme</button>
           <p id="newsletterMessage" class="newsletter-message" aria-live="polite"></p>
         </form>
@@ -360,8 +362,9 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/turnstile-config.js"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script src="js/catalog-db.js?v=121"></script>
-  <script src="js/catalog-bootstrap.js?v=121"></script>
+  <script src="js/app.js?v=123"></script>
+  <script src="js/catalog-db.js?v=123"></script>
+  <script src="js/catalog-bootstrap.js?v=123"></script>
 
   <script>
   // v90: robust Brevo submit handlers - never navigate away from the page
@@ -404,7 +407,34 @@
       const email = document.getElementById('emailInput');
       const consent = document.getElementById('newsletterConsent');
       const msg = document.getElementById('newsletterMessage');
+      const honeypot = document.getElementById('newsletterWebsite');
+      let newsletterTurnstileWidgetId = null;
+      let newsletterTurnstileToken = '';
       if(!form || !btn || !email) return;
+      function validHumanName(value){
+        const normalized = String(value || '').trim().replace(/\s+/g,' ');
+        if(normalized.length < 2 || normalized.length > 60) return false;
+        if(!/^[\p{L}][\p{L}\p{M}'’.-]*(?: [\p{L}][\p{L}\p{M}'’.-]*)*$/u.test(normalized)) return false;
+        const letters = normalized.toLocaleLowerCase().replace(/[^\p{L}]/gu,'');
+        if(/(.)\1{4,}/u.test(letters)) return false;
+        if(letters.length >= 10 && !/[aeiouáéíóúü]/u.test(letters)) return false;
+        if(letters.length >= 14 && /[^aeiouáéíóúüy]{8,}/u.test(letters)) return false;
+        return true;
+      }
+      async function renderNewsletterTurnstile(){
+        if(newsletterTurnstileWidgetId !== null) return;
+        const sitekey = String(window.RAICES_TURNSTILE_SITE_KEY || '').trim();
+        if(!sitekey || sitekey.includes('__TURNSTILE')) return;
+        for(let i=0;i<40 && !(window.turnstile && typeof window.turnstile.render === 'function');i++) await new Promise(r=>setTimeout(r,150));
+        if(!(window.turnstile && typeof window.turnstile.render === 'function')) return;
+        newsletterTurnstileWidgetId = window.turnstile.render('#newsletterTurnstile',{
+          sitekey, action:'newsletter', theme:'light', size:'normal',
+          callback:function(token){ newsletterTurnstileToken = token; },
+          'expired-callback':function(){ newsletterTurnstileToken = ''; },
+          'error-callback':function(){ newsletterTurnstileToken = ''; }
+        });
+      }
+      renderNewsletterTurnstile().catch(()=>{});
       function setMsg(state, value){ if(msg){ msg.dataset.state = state; msg.textContent = value; } }
       let submitting = false;
       async function handle(e){
@@ -412,21 +442,21 @@
         if(submitting) return false;
         const emailValue = email.value.trim();
         const nameValue = name ? name.value.trim() : '';
+        if(honeypot && honeypot.value){ return false; }
+        if(!validHumanName(nameValue)){ setMsg('error', txt('Escribe un nombre válido.', 'Enter a valid name.')); return false; }
+        if(!newsletterTurnstileToken){ setMsg('error', txt('Completa la verificación de seguridad.', 'Complete the security verification.')); return false; }
         if(!validEmail(emailValue)){ setMsg('error', txt('Escribe un correo válido.', 'Enter a valid email.')); return false; }
         if(consent && !consent.checked){ setMsg('error', txt('Debes aceptar recibir comunicaciones de Raíces.', 'Please accept receiving Raíces communications.')); return false; }
         submitting = true;
         btn.disabled = true;
         setMsg('idle', txt('Enviando...', 'Sending...'));
         try{
-          await saveInterest({ email: emailValue, name: nameValue, source:'newsletter', consent:true });
-          const brevoResult = await subscribe({ email: emailValue, name: nameValue, language:getLang(), source:'newsletter', consent:true });
+          const result = await saveInterest({ email: emailValue, name: nameValue, source:'newsletter', consent:true, turnstile_token:newsletterTurnstileToken, honeypot:honeypot ? honeypot.value : '' });
           localStorage.setItem('raices_newsletter_email', emailValue);
           form.reset();
-          if(brevoResult && brevoResult.wasAlreadyInCommunity){
-            setMsg('ok', txt('Ya formas parte de la comunidad Raíces.', 'You are already part of the Raíces community.'));
-          }else{
-            setMsg('ok', txt('Gracias por unirte a Raíces. Revisa tu correo de bienvenida.', 'Thank you for joining Raíces. Check your welcome email.'));
-          }
+          newsletterTurnstileToken = '';
+          if(newsletterTurnstileWidgetId !== null && window.turnstile) window.turnstile.reset(newsletterTurnstileWidgetId);
+          setMsg('ok', txt('Gracias por unirte a Raíces. Revisa tu correo de bienvenida.', 'Thank you for joining Raíces. Check your welcome email.'));
         }catch(err){
           setMsg('error', txt('No pudimos guardar tu correo. Intenta de nuevo o escríbenos por WhatsApp.', 'We could not save your email. Try again or message us on WhatsApp.'));
         }finally{
@@ -494,7 +524,6 @@
           const source = waitlistProduct ? 'product_back_in_stock' : 'waitlist';
           const product = waitlistProduct ? { id:waitlistProduct.id, sku:waitlistProduct.sku, name:waitlistProduct.name } : null;
           await saveInterest({ email: emailValue, name:nameValue, source, consent:true, cart: cartSummary, product, turnstile_token:waitlistTurnstileToken, honeypot:honeypot ? honeypot.value : '' });
-          await subscribe({ email: emailValue, name:nameValue, language:getLang(), source, consent:true, cart: cartSummary, product });
           localStorage.setItem('raices_waitlist_email', emailValue);
           form.reset();
           waitlistTurnstileToken = '';

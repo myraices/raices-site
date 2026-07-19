@@ -790,3 +790,24 @@ body.cart-open{overflow:hidden}
 @media(max-width:700px){.sold-out-notify-btn{width:100%;min-height:34px;font-size:.62rem;letter-spacing:.08em}.sold-out-modal-btn{min-height:42px;font-size:.78rem}.product-card-shop.is-sold-out .action-stack{width:100%}}
 
 .form-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;}
+
+/* v123: mobile navigation stability and protected newsletter */
+body.mobile-menu-open{overflow:hidden;touch-action:none}
+.form-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.newsletter-form .turnstile-wrap{width:100%;max-width:100%;overflow:visible}
+@media(max-width:900px){
+  .site-header{position:sticky;top:0;z-index:170}
+  .nav{padding-left:16px;padding-right:16px}
+  .nav-icons{gap:8px}
+  .mobile-btn{display:grid!important;flex:0 0 42px;position:relative;z-index:175;cursor:pointer}
+  .drawer{overflow-y:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:480px){
+  .logo img{width:132px;max-height:58px}
+  .nav{height:82px}
+  .icon-link{width:38px;height:38px}
+  .lang{padding:0 8px;min-width:42px}
+  .newsletter-premium{padding:18px 14px}
+  .newsletter-form{padding:16px 12px;overflow:hidden}
+  .newsletter-form .turnstile-wrap{transform:scale(.88);transform-origin:center;margin-left:-10px;margin-right:-10px}
+}

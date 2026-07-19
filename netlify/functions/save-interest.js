@@ -28,6 +28,29 @@ async function verifyTurnstile(event, token, action) {
   return Boolean(result.success && (!result.action || result.action === action));
 }
 
+async function syncBrevoInternally(event, payload) {
+  const secret = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
+  const configuredBase = String(process.env.URL || process.env.DEPLOY_PRIME_URL || "").replace(/\/$/, "");
+  const host = String(event.headers.host || "").trim();
+  const protocol = String(event.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
+  const baseUrl = configuredBase || (host ? `${protocol}://${host}` : "");
+  if (!baseUrl || !secret) return { ok: false, skipped: true };
+  try {
+    const response = await fetch(`${baseUrl}/.netlify/functions/brevo-subscribe`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-raices-internal-secret": secret
+      },
+      body: JSON.stringify(payload)
+    });
+    return { ok: response.ok, status: response.status };
+  } catch (error) {
+    console.error("Internal Brevo sync failed", error);
+    return { ok: false, error: error.message };
+  }
+}
+
 exports.handler = async function(event) {
   const corsHeaders = {
     "access-control-allow-origin": "*",
@@ -52,7 +75,7 @@ exports.handler = async function(event) {
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const product = payload.product || null;
-    const protectedSource = source === "waitlist" || source === "checkout_waitlist" || source === "product_back_in_stock";
+    const protectedSource = source === "waitlist" || source === "checkout_waitlist" || source === "product_back_in_stock" || source === "newsletter" || source === "newsletter_section";
 
     if (protectedSource) {
       if (String(payload.honeypot || "").trim()) {
@@ -61,7 +84,8 @@ exports.handler = async function(event) {
       if (!validHumanName(name)) {
         return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Nombre inválido." }) };
       }
-      const verified = await verifyTurnstile(event, String(payload.turnstile_token || "").trim(), "waitlist");
+      const verificationAction = source === "newsletter" || source === "newsletter_section" ? "newsletter" : "waitlist";
+      const verified = await verifyTurnstile(event, String(payload.turnstile_token || "").trim(), verificationAction);
       if (!verified) {
         return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Verificación de seguridad inválida." }) };
       }
@@ -105,7 +129,8 @@ exports.handler = async function(event) {
         body: JSON.stringify(waitlistRecord)
       });
       if (!waitlistResponse.ok) return { statusCode: waitlistResponse.status, headers: corsHeaders, body: JSON.stringify({ message: await waitlistResponse.text() }) };
-      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: existing.length ? "Updated" : "Saved", duplicate: Boolean(existing.length) }) };
+      const brevo = await syncBrevoInternally(event, { email, name, source, language, consent: true, product, cart });
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: existing.length ? "Updated" : "Saved", duplicate: Boolean(existing.length), brevo }) };
     }
 
     const record = {
@@ -145,7 +170,8 @@ exports.handler = async function(event) {
     }
 
     const data = await response.json().catch(() => []);
-    return { statusCode: 200, body: JSON.stringify({ message: "Saved", data }) };
+    const brevo = await syncBrevoInternally(event, { email, name: name || customer.name || "", source, language, consent: true, cart, product });
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Saved", data, brevo }) };
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ message: error.message }) };
   }

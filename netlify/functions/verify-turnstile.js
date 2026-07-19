@@ -1,4 +1,4 @@
-const ALLOWED_ACTIONS = new Set(["signup", "password_reset", "waitlist"]);
+const ALLOWED_ACTIONS = new Set(["signup", "password_reset", "waitlist", "newsletter"]);
 
 function json(statusCode, body) {
   return {
