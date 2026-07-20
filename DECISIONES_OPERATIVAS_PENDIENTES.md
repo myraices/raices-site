@@ -1,3 +1,7 @@
+# Decisiones operativas pendientes — v126
+
+La v126 completa el pulido visual. Estas decisiones siguen siendo necesarias antes de activar Square.
+
 # Decisiones operativas pendientes antes de ventas
 
 1. Confirmar zonas, ZIP codes y fees definitivos de delivery.
