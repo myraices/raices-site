@@ -35,4 +35,9 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+<url><loc>https://myraices.com/checkout-preview.html</loc></url>
+<url><loc>https://myraices.com/delivery-policy.html</loc></url>
+<url><loc>https://myraices.com/refund-policy.html</loc></url>
+<url><loc>https://myraices.com/terms.html</loc></url>
+<url><loc>https://myraices.com/privacy.html</loc></url>
 </urlset>

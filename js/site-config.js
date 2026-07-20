@@ -59,9 +59,9 @@ window.RAICES_COLLECTIONS = {
 };
 
 
-/* v125 — definitive pre-Square cart and checkout foundation. Change only STORE_MODE when Raíces is ready to sell. */
+/* v127 — complete purchase experience foundation. Change only STORE_MODE when Raíces is ready to sell. */
 window.RAICES_STORE_CONFIG = Object.freeze({
-  VERSION: "v125",
+  VERSION: "v127",
   STORE_MODE: "PREOPENING", // PREOPENING | SALES
   DELIVERY: Object.freeze({
     currency: "USD",
@@ -75,6 +75,8 @@ window.RAICES_STORE_CONFIG = Object.freeze({
     ]
   }),
   CHECKOUT_PREVIEW_URL: "checkout-preview.html",
+  ORDER_CONFIRMATION_URL: "order-confirmation.html",
+  ORDER_RULES: Object.freeze({ minimumSubtotal: 0, freeDeliveryThreshold: 100, estimatedDeliveryMinHours: 24, estimatedDeliveryMaxHours: 48 }),
   INVENTORY: Object.freeze({ enforceAvailableStock: true }),
   TAX: Object.freeze({ mode: "SQUARE_AT_PAYMENT" })
 });
