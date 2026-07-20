@@ -112,14 +112,13 @@
     return String(value || '').replace(/\D/g,'').slice(0,5);
   }
 
-  const deliveryZones = [
-    { name:'Katy / Cinco Ranch', cost:5, zips:['77449','77450','77491','77493','77494'] },
-    { name:'Fulshear', cost:8, zips:['77441'] },
-    { name:'Richmond', cost:8, zips:['77406','77407','77469'] },
-    { name:'Sugar Land', cost:15, zips:['77478','77479','77498'] },
-    { name:'Cypress', cost:15, zips:['77429','77433'] },
-    { name:'Houston', cost:15, prefix:['770'] }
-  ];
+  const configuredZones = window.RAICES_STORE_CONFIG?.DELIVERY?.zones || [];
+  const deliveryZones = configuredZones.map(zone => ({
+    name: zone.name,
+    cost: Number(zone.fee || zone.cost || 0),
+    zips: zone.zips || [],
+    prefix: zone.prefixes || zone.prefix || []
+  }));
 
   function buildDeliveryState(zip){
     const clean = normalizeZip(zip);
@@ -687,9 +686,12 @@
     if(cartTotal) cartTotal.textContent = money(total);
     const checkoutBtn = document.getElementById('checkoutSoon');
     if(checkoutBtn){
-      checkoutBtn.classList.remove('disabled');
-      checkoutBtn.disabled = false;
-      checkoutBtn.textContent = currentLang()==='es' ? 'Avisarme cuando abran pedidos' : 'Notify me when orders open';
+      const salesMode = window.RAICES_STORE_CONFIG?.STORE_MODE === 'SALES';
+      checkoutBtn.classList.toggle('disabled', salesMode && !canCheckout);
+      checkoutBtn.disabled = salesMode && !canCheckout;
+      checkoutBtn.textContent = salesMode
+        ? (currentLang()==='es' ? 'Continuar al checkout' : 'Continue to checkout')
+        : (currentLang()==='es' ? 'Vista previa del checkout' : 'Checkout preview');
     }
     const cartNote = document.querySelector('.cart-note');
     if(cartNote){
@@ -844,13 +846,14 @@
   const checkoutWaitBtn = document.getElementById('checkoutSoon');
   if(checkoutWaitBtn) checkoutWaitBtn.addEventListener('click', function(e){
     e.preventDefault();
-    waitlistProduct = null;
-    window.RAICES_WAITLIST_PRODUCT = null;
-    const title = waitlistModal ? waitlistModal.querySelector('h2') : null;
-    const text = waitlistModal ? waitlistModal.querySelector('.waitlist-copy, [data-i18n="waitlist_checkout_text"]') : null;
-    if(title) title.textContent = t('waitlist_checkout_title');
-    if(text) text.textContent = t('waitlist_checkout_text');
-    openWaitlistModal();
+    const config = window.RAICES_STORE_CONFIG || {};
+    if(config.STORE_MODE === 'PREOPENING'){
+      window.location.href = config.CHECKOUT_PREVIEW_URL || 'checkout-preview.html';
+      return;
+    }
+    const summary = window.RAICES_CART_SUMMARY || {};
+    if(!summary.canCheckout) return;
+    document.dispatchEvent(new CustomEvent('raices:checkoutRequested', { detail: summary }));
   });
   if(waitlistBackdrop) waitlistBackdrop.addEventListener('click', closeWaitlistModal);
   if(waitlistClose) waitlistClose.addEventListener('click', closeWaitlistModal);

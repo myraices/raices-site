@@ -57,3 +57,22 @@ window.RAICES_COLLECTIONS = {
   "Home Rituals": { title: "Home Rituals", description: "Piezas sencillas para preparar, servir y disfrutar con intención.", image: "assets/categories/category-home.jpg" },
   "The Library": { title: "The Library", description: "Guías digitales para volver a lo esencial y cultivar bienestar.", image: "assets/categories/category-wellness.jpg" }
 };
+
+
+/* v124 — public store release mode. Change only STORE_MODE when Raíces is ready to sell. */
+window.RAICES_STORE_CONFIG = Object.freeze({
+  VERSION: "v124",
+  STORE_MODE: "PREOPENING", // PREOPENING | SALES
+  DELIVERY: Object.freeze({
+    currency: "USD",
+    zones: [
+      { name: "Katy / Cinco Ranch", fee: 5, zips: ["77449","77450","77491","77493","77494"] },
+      { name: "Fulshear", fee: 8, zips: ["77441"] },
+      { name: "Richmond", fee: 8, zips: ["77406","77407","77469"] },
+      { name: "Sugar Land", fee: 15, zips: ["77478","77479","77498"] },
+      { name: "Cypress", fee: 15, zips: ["77429","77433"] },
+      { name: "Houston", fee: 15, prefixes: ["770"] }
+    ]
+  }),
+  CHECKOUT_PREVIEW_URL: "checkout-preview.html"
+});

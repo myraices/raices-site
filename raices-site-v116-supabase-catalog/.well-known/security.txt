@@ -1,3 +1,0 @@
-Contact: mailto:info@myraices.com
-Preferred-Languages: en, es
-Canonical: https://myraices.com/.well-known/security.txt
