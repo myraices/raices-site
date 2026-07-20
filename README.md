@@ -1,4 +1,4 @@
-# Raíces v127 — Purchase Experience
+# Raíces v127.1 — Purchase Experience
 
 Conserva la lógica validada de inventario y carrito e incorpora la experiencia completa previa a Square.
 
