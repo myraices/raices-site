@@ -185,6 +185,7 @@
       <div><p class="eyebrow">Raíces Cart</p><h2 data-i18n="cart_title">Tu carrito</h2></div>
       <button id="closeCart">×</button>
     </div>
+    <div id="cartStatus" class="cart-status" role="status" aria-live="polite" hidden></div>
     <div id="cartItems" class="cart-items"></div>
     <div class="cart-footer compact-cart-footer">
       <div class="cart-accordion-wrap">
@@ -200,47 +201,16 @@
           </div>
         </details>
 
-        <details class="cart-accordion">
-          <summary><span data-delivery-i18n="delivery_details_title">Datos de entrega</span><em data-delivery-i18n="delivery_required_note">Obligatorio para continuar</em></summary>
-          <div class="delivery-details-box" id="deliveryDetailsBox">
-            <div class="delivery-fields-grid">
-              <label>
-                <span data-delivery-i18n="field_name">Nombre</span>
-                <input id="deliveryName" type="text" autocomplete="name" placeholder="Nombre y apellido"/>
-              </label>
-              <label>
-                <span data-delivery-i18n="field_phone">Teléfono</span>
-                <input id="deliveryPhone" type="tel" autocomplete="tel" placeholder="(000) 000-0000"/>
-              </label>
-              <label class="full">
-                <span data-delivery-i18n="field_address">Dirección</span>
-                <input id="deliveryAddress" type="text" autocomplete="street-address" placeholder="Street address"/>
-              </label>
-              <label>
-                <span data-delivery-i18n="field_apt">Apt / Suite</span>
-                <input id="deliveryApt" type="text" placeholder="Opcional"/>
-              </label>
-              <label>
-                <span data-delivery-i18n="field_city">Ciudad</span>
-                <input id="deliveryCity" type="text" autocomplete="address-level2" placeholder="Katy"/>
-              </label>
-              <label class="full">
-                <span data-delivery-i18n="field_notes">Instrucciones de entrega</span>
-                <textarea id="deliveryNotes" rows="2" placeholder="Gate code, dejar en la puerta, etc."></textarea>
-              </label>
-            </div>
-            <p id="deliveryDetailsMessage" class="delivery-details-message" data-state="idle">Completa tus datos de entrega para continuar.</p>
-          </div>
-        </details>
+
       </div>
 
       <div class="cart-summary-box">
         <div class="cart-line"><span data-i18n="subtotal">Subtotal</span><strong id="cartSubtotal">$0.00</strong></div>
         <div class="cart-line"><span data-i18n="delivery_label">Delivery</span><strong id="cartDelivery">—</strong></div>
-        <div class="cart-line cart-total-line"><span data-i18n="total_label">Total</span><strong id="cartTotal">$0.00</strong></div>
+        <div class="cart-line cart-total-line"><span data-i18n="total_label">Total estimado</span><strong id="cartTotal">$0.00</strong></div>
       </div>
-      <p class="cart-note"><strong>Modo preapertura:</strong> esta vista permite revisar el pedido. Los pagos todavía no están habilitados.</p>
-      <button class="btn checkout-btn" type="button" id="checkoutSoon" >Vista previa del checkout</button>
+      <p class="cart-note">La dirección completa, impuestos y pago se completan en el checkout. Pagos aún no habilitados.</p>
+      <button class="btn checkout-btn" type="button" id="checkoutSoon" >Continuar al checkout</button>
     </div>
   </aside>
 

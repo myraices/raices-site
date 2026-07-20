@@ -59,9 +59,9 @@ window.RAICES_COLLECTIONS = {
 };
 
 
-/* v124 — public store release mode. Change only STORE_MODE when Raíces is ready to sell. */
+/* v125 — definitive pre-Square cart and checkout foundation. Change only STORE_MODE when Raíces is ready to sell. */
 window.RAICES_STORE_CONFIG = Object.freeze({
-  VERSION: "v124",
+  VERSION: "v125",
   STORE_MODE: "PREOPENING", // PREOPENING | SALES
   DELIVERY: Object.freeze({
     currency: "USD",
@@ -74,5 +74,7 @@ window.RAICES_STORE_CONFIG = Object.freeze({
       { name: "Houston", fee: 15, prefixes: ["770"] }
     ]
   }),
-  CHECKOUT_PREVIEW_URL: "checkout-preview.html"
+  CHECKOUT_PREVIEW_URL: "checkout-preview.html",
+  INVENTORY: Object.freeze({ enforceAvailableStock: true }),
+  TAX: Object.freeze({ mode: "SQUARE_AT_PAYMENT" })
 });

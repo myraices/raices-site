@@ -30,15 +30,7 @@
   const deliveryZip = document.getElementById("deliveryZip");
   const applyDeliveryZip = document.getElementById("applyDeliveryZip");
   const deliveryMessage = document.getElementById("deliveryMessage");
-  const deliveryDetailsMessage = document.getElementById("deliveryDetailsMessage");
-  const deliveryFields = {
-    name: document.getElementById("deliveryName"),
-    phone: document.getElementById("deliveryPhone"),
-    address: document.getElementById("deliveryAddress"),
-    apt: document.getElementById("deliveryApt"),
-    city: document.getElementById("deliveryCity"),
-    notes: document.getElementById("deliveryNotes")
-  };
+  const cartStatus = document.getElementById("cartStatus");
 
   let activeCategory = "All";
   let activeCollection = "All";
@@ -101,6 +93,22 @@
 
   function isProductAvailable(product){
     return !!product && product.available !== false && !product.soldOut;
+  }
+
+  function maxProductQty(product){
+    if(!product) return 0;
+    const stock = product.stock;
+    if(stock === null || stock === undefined || stock === '') return Infinity;
+    return Math.max(0, Number(stock) || 0);
+  }
+
+  function showCartStatus(message, state='info'){
+    if(!cartStatus || !message) return;
+    cartStatus.hidden = false;
+    cartStatus.dataset.state = state;
+    cartStatus.textContent = message;
+    clearTimeout(showCartStatus.timer);
+    showCartStatus.timer = setTimeout(()=>{ cartStatus.hidden = true; }, 6500);
   }
 
   function soldOutAction(product, context){
@@ -259,61 +267,6 @@
   function loadDeliveryInfo(){
     try { return JSON.parse(localStorage.getItem('raices_delivery_info') || '{}') || {}; }
     catch(e){ return {}; }
-  }
-
-  function normalizeDeliveryInfo(info){
-    info = info || {};
-    return {
-      name: String(info.name || '').trim(),
-      phone: String(info.phone || '').trim(),
-      address: String(info.address || '').trim(),
-      apt: String(info.apt || '').trim(),
-      city: String(info.city || '').trim(),
-      notes: String(info.notes || '').trim()
-    };
-  }
-
-  function getDeliveryInfoFromFields(){
-    return normalizeDeliveryInfo({
-      name: deliveryFields.name ? deliveryFields.name.value : '',
-      phone: deliveryFields.phone ? deliveryFields.phone.value : '',
-      address: deliveryFields.address ? deliveryFields.address.value : '',
-      apt: deliveryFields.apt ? deliveryFields.apt.value : '',
-      city: deliveryFields.city ? deliveryFields.city.value : '',
-      notes: deliveryFields.notes ? deliveryFields.notes.value : ''
-    });
-  }
-
-  function saveDeliveryInfo(){
-    const info = getDeliveryInfoFromFields();
-    localStorage.setItem('raices_delivery_info', JSON.stringify(info));
-    return info;
-  }
-
-  function requiredDeliveryInfoComplete(info){
-    info = normalizeDeliveryInfo(info);
-    return !!(info.name && info.phone && info.address && info.city);
-  }
-
-  function hydrateDeliveryFields(){
-    const info = normalizeDeliveryInfo(loadDeliveryInfo());
-    Object.entries(deliveryFields).forEach(([key, el]) => { if(el) el.value = info[key] || ''; });
-  }
-
-  function updateDeliveryDetailsLanguage(){
-    document.querySelectorAll('[data-delivery-i18n]').forEach(el => { el.textContent = deliveryI18n(el.dataset.deliveryI18n); });
-    if(deliveryFields.name) deliveryFields.name.placeholder = deliveryI18n('name_placeholder');
-    if(deliveryFields.address) deliveryFields.address.placeholder = deliveryI18n('address_placeholder');
-    if(deliveryFields.apt) deliveryFields.apt.placeholder = deliveryI18n('apt_placeholder');
-    if(deliveryFields.city) deliveryFields.city.placeholder = deliveryI18n('city_placeholder');
-    if(deliveryFields.notes) deliveryFields.notes.placeholder = deliveryI18n('notes_placeholder');
-  }
-
-  function updateDeliveryDetailsUI(info, hasItems){
-    if(!deliveryDetailsMessage) return;
-    const complete = requiredDeliveryInfoComplete(info);
-    deliveryDetailsMessage.dataset.state = complete ? 'ok' : (hasItems ? 'error' : 'idle');
-    deliveryDetailsMessage.textContent = complete ? deliveryI18n('details_ok') : (hasItems ? deliveryI18n('details_missing') : deliveryI18n('details_prompt'));
   }
 
   function unitPiecesLabel(count){
@@ -635,8 +588,15 @@
     }
     const key = cartItemKey(sku, variant);
     const existing = cart.find(item => cartItemKey(item.sku, item.variant) === key);
-    if(existing) existing.qty += 1;
-    else cart.push({ sku: product.sku, qty: 1, variant: variant || "" });
+    const maxQty = maxProductQty(product);
+    if(existing){
+      if(existing.qty >= maxQty){
+        showCartStatus(currentLang()==='es' ? `Solo hay ${maxQty} unidad(es) disponibles de ${product.name}.` : `Only ${maxQty} unit(s) of ${product.name} are available.`, 'warning');
+        openCartDrawer();
+        return;
+      }
+      existing.qty += 1;
+    } else cart.push({ sku: product.sku, qty: 1, variant: variant || "" });
     saveCart();
     openCartDrawer();
   }
@@ -644,19 +604,32 @@
   function updateQty(key, delta){
     const item = cart.find(i => cartItemKey(i.sku, i.variant) === key);
     if(!item) return;
-    item.qty += delta;
+    const product = products.find(p => p.sku === item.sku);
+    const maxQty = maxProductQty(product);
+    if(delta > 0 && item.qty >= maxQty){
+      showCartStatus(currentLang()==='es' ? `Has alcanzado el inventario disponible (${maxQty}).` : `You reached the available inventory (${maxQty}).`, 'warning');
+      return;
+    }
+    item.qty = Math.min(item.qty + delta, maxQty);
     if(item.qty <= 0) cart = cart.filter(i => cartItemKey(i.sku, i.variant) !== key);
     saveCart();
   }
 
   function renderCart(){
+    const removedNames = [];
     const validCart = cart.filter(item => {
       const product = products.find(p => p.sku === item.sku);
-      return product && isProductAvailable(product);
+      const valid = product && isProductAvailable(product) && maxProductQty(product) > 0;
+      if(!valid) removedNames.push(product?.name || item.sku);
+      return valid;
+    }).map(item => {
+      const product = products.find(p => p.sku === item.sku);
+      return {...item, qty: Math.min(Math.max(1, Number(item.qty)||1), maxProductQty(product))};
     });
-    if(validCart.length !== cart.length){
+    if(removedNames.length || JSON.stringify(validCart) !== JSON.stringify(cart)){
       cart = validCart;
       localStorage.setItem("raices_cart", JSON.stringify(cart));
+      if(removedNames.length) showCartStatus((currentLang()==='es' ? 'Se retiró del carrito por falta de disponibilidad: ' : 'Removed because it is no longer available: ') + removedNames.join(', '), 'warning');
     }
     const enriched = cart.map(item => ({...item, product: products.find(p => p.sku === item.sku)})).filter(i => i.product && isProductAvailable(i.product));
     const count = enriched.reduce((sum, item) => sum + item.qty, 0);
@@ -666,16 +639,13 @@
     const zone = deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null;
     const deliveryCost = count > 0 && deliveryState.valid ? deliveryState.cost : 0;
     const total = subtotal + deliveryCost;
-    const deliveryInfo = normalizeDeliveryInfo(loadDeliveryInfo());
-    const deliveryInfoComplete = requiredDeliveryInfoComplete(deliveryInfo);
-    const canCheckout = count > 0 && deliveryState.valid && deliveryInfoComplete;
+    const canCheckout = count > 0;
     window.RAICES_CART_SUMMARY = {
       items: enriched.map(item => ({ sku:item.sku, qty:item.qty, variant:item.variant || '', name:item.product.name, price:Number(item.product.price || 0), lineTotal:item.qty * Number(item.product.price || 0) })),
       subtotal,
       delivery: deliveryState,
       deliveryCost,
       total,
-      customer: deliveryInfo,
       canCheckout
     };
     localStorage.setItem('raices_cart_summary', JSON.stringify(window.RAICES_CART_SUMMARY));
@@ -687,22 +657,21 @@
     const checkoutBtn = document.getElementById('checkoutSoon');
     if(checkoutBtn){
       const salesMode = window.RAICES_STORE_CONFIG?.STORE_MODE === 'SALES';
-      checkoutBtn.classList.toggle('disabled', salesMode && !canCheckout);
-      checkoutBtn.disabled = salesMode && !canCheckout;
+      checkoutBtn.classList.toggle('disabled', !canCheckout);
+      checkoutBtn.disabled = !canCheckout;
       checkoutBtn.textContent = salesMode
         ? (currentLang()==='es' ? 'Continuar al checkout' : 'Continue to checkout')
-        : (currentLang()==='es' ? 'Vista previa del checkout' : 'Checkout preview');
+        : (currentLang()==='es' ? 'Continuar al checkout' : 'Continue to checkout');
     }
     const cartNote = document.querySelector('.cart-note');
     if(cartNote){
       cartNote.textContent = currentLang()==='es'
-        ? 'Todavía no estamos aceptando pedidos. Únete a la lista para avisarte cuando abramos oficialmente.'
-        : 'We are not accepting orders yet. Join the list and we will notify you when ordering opens.';
+        ? 'La dirección completa, impuestos y pago se completan en el checkout. Pagos aún no habilitados.'
+        : 'Full address, taxes and payment are completed at checkout. Payments are not enabled yet.';
     }
     if(deliveryZip && document.activeElement !== deliveryZip) deliveryZip.value = zip;
     updateDeliveryUI(zip, deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null, count);
-    updateDeliveryDetailsLanguage();
-    updateDeliveryDetailsUI(deliveryInfo, count > 0);
+
     if(!cartItems) return;
     if(enriched.length === 0){
       cartItems.innerHTML = `<div class="cart-empty-state">
@@ -720,6 +689,7 @@
       const variantText = item.variant ? `<span class="cart-variant">${item.variant}</span>` : "";
       const variantImage = item.variant && Array.isArray(item.product.variants) ? (item.product.variants.find(v => variantDisplay(v) === item.variant || v.name === item.variant)?.image || item.product.image) : item.product.image;
       const unit = translateUnit(item.product.unit);
+      const stockNote = Number.isFinite(maxProductQty(item.product)) ? `<span>${currentLang()==='es' ? 'Disponibles' : 'Available'}: ${maxProductQty(item.product)}</span>` : '';
       return `<div class="cart-item">
       <div class="cart-item-img" style="background-image:url('${variantImage}')"></div>
       <div class="cart-item-main">
@@ -727,12 +697,12 @@
           <h4>${item.product.name}</h4>
           <button class="cart-remove" data-remove="${key}" aria-label="${currentLang()==='es' ? 'Eliminar' : 'Remove'}">×</button>
         </div>
-        <div class="cart-item-meta">${unit ? `<span>${unit}</span>` : ''}${variantText}</div>
+        <div class="cart-item-meta">${unit ? `<span>${unit}</span>` : ''}${variantText}${stockNote}</div>
         <div class="cart-item-bottom">
           <div class="qty-controls">
             <button data-qty="${key}" data-delta="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button>
             <strong>${item.qty}</strong>
-            <button data-qty="${key}" data-delta="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button>
+            <button data-qty="${key}" data-delta="1" ${item.qty >= maxProductQty(item.product) ? 'disabled' : ''} aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button>
           </div>
           <strong class="cart-item-total">${money(item.qty * Number(item.product.price || 0))}</strong>
         </div>
@@ -771,14 +741,6 @@
     deliveryZip.addEventListener("blur", function(){ setDeliveryZip(this.value); renderCart(); });
   }
 
-
-  hydrateDeliveryFields();
-  updateDeliveryDetailsLanguage();
-  Object.values(deliveryFields).forEach(el => {
-    if(!el) return;
-    el.addEventListener('input', function(){ saveDeliveryInfo(); renderCart(); });
-    el.addEventListener('blur', function(){ saveDeliveryInfo(); renderCart(); });
-  });
 
   if(openCart) openCart.addEventListener("click", function(e){ e.preventDefault(); openCartDrawer(); });
   if(closeCart) closeCart.addEventListener("click", closeCartDrawer);
@@ -847,13 +809,9 @@
   if(checkoutWaitBtn) checkoutWaitBtn.addEventListener('click', function(e){
     e.preventDefault();
     const config = window.RAICES_STORE_CONFIG || {};
-    if(config.STORE_MODE === 'PREOPENING'){
-      window.location.href = config.CHECKOUT_PREVIEW_URL || 'checkout-preview.html';
-      return;
-    }
     const summary = window.RAICES_CART_SUMMARY || {};
     if(!summary.canCheckout) return;
-    document.dispatchEvent(new CustomEvent('raices:checkoutRequested', { detail: summary }));
+    window.location.href = config.CHECKOUT_PREVIEW_URL || 'checkout-preview.html';
   });
   if(waitlistBackdrop) waitlistBackdrop.addEventListener('click', closeWaitlistModal);
   if(waitlistClose) waitlistClose.addEventListener('click', closeWaitlistModal);
