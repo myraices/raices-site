@@ -19,9 +19,13 @@
   <meta name="twitter:description" content="Descubre alimentos artesanales, infusiones, objetos para el hogar y guías digitales creados para nutrir tus rituales cotidianos."/>
   <meta name="twitter:image" content="https://myraices.com/og-image.jpg"/>
   <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://myraices.com/#organization","name":"Raíces","legalName":"MyRaices LLC","url":"https://myraices.com/","logo":{"@type":"ImageObject","url":"https://myraices.com/assets/raices-logo.png"},"image":"https://myraices.com/og-image.jpg","email":"info@myraices.com"},{"@type":"WebSite","@id":"https://myraices.com/#website","url":"https://myraices.com/","name":"Raíces","inLanguage":["es","en"],"publisher":{"@id":"https://myraices.com/#organization"}}]}</script>
-  <link href="css/styles.css?v=128.2" rel="stylesheet"/>
+  <link href="css/styles.css?v=128.3" rel="stylesheet"/>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-28FCJQTL9R"></script>
   <script src="js/ga-init.js"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin>
+  <link rel="dns-prefetch" href="//www.googletagmanager.com">
+  <link rel="preload" as="image" href="/assets/hero-hand-plant.webp" fetchpriority="high">
   <meta name="theme-color" content="#233b20"/>
   <link href="/favicon.ico" rel="icon" sizes="any"/>
   <link href="/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
@@ -31,7 +35,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div class="intro"><div><img src="assets/raices-logo.png" alt="Raíces"/><p>La salud comienza desde la raíz</p></div></div>
+  <div class="intro"><div><img src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"><p>La salud comienza desde la raíz</p></div></div>
 
   <div class="preopening-bar" role="status">
     <span class="preopening-dot" aria-hidden="true"></span>
@@ -41,7 +45,7 @@
 
   <header class="site-header">
     <div class="container nav">
-      <a class="logo" href="#inicio"><img src="assets/raices-logo.png" alt="Raíces"/></a>
+      <a class="logo" href="#inicio"><img src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"></a>
       <nav class="menu" aria-label="Principal">
         <a href="#inicio" data-i18n="nav_home">Inicio</a>
         <a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a>
@@ -70,7 +74,7 @@
   </header>
 
   <aside class="drawer" id="drawer">
-    <div class="drawer-head"><img src="assets/raices-logo.png" alt="Raíces"/><button id="closeDrawer">×</button></div>
+    <div class="drawer-head"><img src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"><button id="closeDrawer">×</button></div>
     <a href="#usuario" class="js-auth-open drawer-account-link" id="drawerAccountLink">👤 Iniciar sesión</a><a href="#inicio" data-i18n="nav_home">Inicio</a><a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a><a href="#nosotros" data-i18n="nav_about">Nosotros</a><button class="drawer-lang" id="drawerLangBtn" type="button">ES ▾</button>
   </aside>
   <div class="backdrop" id="backdrop"></div>
@@ -78,7 +82,7 @@
   <main>
     <section id="inicio" class="hero">
       <div class="hero-copy reveal">
-        <img class="hero-logo-mark" src="assets/raices-logo.png" alt="Raíces"/>
+        <img class="hero-logo-mark" src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async">
         <p class="eyebrow" data-i18n="hero_eyebrow">Raíces · Marca de bienestar</p>
         <h1 data-i18n="hero_title">Nutre tu cuerpo. Vuelve a tus raíces.</h1>
         <p data-i18n="hero_text">Alimentos artesanales, infusiones, objetos para el hogar y guías de bienestar creados para convertir lo cotidiano en ritual.</p>
@@ -331,7 +335,7 @@
 
   <footer>
     <div class="container footer-grid">
-      <div><img class="footer-logo" src="assets/raices-logo.png" alt="Raíces"/><p>La salud comienza desde la raíz.</p></div>
+      <div><img class="footer-logo" src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"><p>La salud comienza desde la raíz.</p></div>
       <div><h3>Explore</h3><a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a></div>
       <div><h3>Account</h3><a href="#usuario" class="js-auth-open">Mi cuenta</a><a href="#" id="footerCartLink">Carrito</a><a href="#contacto">Newsletter</a><a href="delivery-policy.html">Entregas</a><a href="refund-policy.html">Cancelaciones</a></div>
       <div><h3>Raíces</h3><p>Houston, Texas</p><p><a href="https://wa.me/16577937685">WhatsApp (657) 793-7685</a></p><p>info@myraices.com</p><p><a href="terms.html">Términos</a> · <a href="privacy.html">Privacidad</a></p></div>
@@ -344,9 +348,9 @@
   <script src="js/supabase-config.js"></script>
   <script src="js/turnstile-config.js"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script src="js/app.js?v=124"></script>
-  <script src="js/catalog-db.js?v=124"></script>
-  <script src="js/catalog-bootstrap.js?v=124"></script>
+  <script src="js/app.js?v=128.3"></script>
+  <script src="js/catalog-db.js?v=128.3"></script>
+  <script src="js/catalog-bootstrap.js?v=128.3"></script>
 
   <script>
   // v90: robust Brevo submit handlers - never navigate away from the page

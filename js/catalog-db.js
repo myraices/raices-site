@@ -1,6 +1,6 @@
 /* Raíces unified catalog — Supabase is the single source of truth. */
 (function () {
-  const FALLBACK_IMAGE = "assets/raices-logo.png";
+  const FALLBACK_IMAGE = "assets/raices-logo.webp";
   const categoryMap = { cocina:"Kitchen", kitchen:"Kitchen", herbal:"Herbal", dulces:"Desserts", desserts:"Desserts", home:"Home", wellness:"Wellness" };
   const collectionMap = { arepas:"Signature Arepas", empanadas:"Signature Empanadas", "proteínas":"Protein Craft Collection", proteinas:"Protein Craft Collection", herbal:"Three Moments", postres:"Signature Desserts", home:"Home Rituals", "guías":"The Library", guias:"The Library" };
   const normalize = (value) => String(value || "").trim();

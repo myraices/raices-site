@@ -6,7 +6,7 @@ window.RAICES_CATEGORIES = {
     tagline_en: "Handcrafted foods inspired by nature.",
     description: "Arepas, empanadas y proteínas al vacío elaboradas con ingredientes reales, pensadas para nutrir sin complicar tu día.",
     description_en: "Arepas, empanadas and ready-to-enjoy proteins made with real ingredients to nourish your day with ease.",
-    image: "assets/categories/category-kitchen.jpg"
+    image: "assets/categories/category-kitchen.webp"
   },
   "Herbal": {
     title: "Herbal",
@@ -15,7 +15,7 @@ window.RAICES_CATEGORIES = {
     tagline_en: "Herbal rituals. One same root.",
     description: "Infusiones y rituales herbales creados para acompañar tus momentos de energía, equilibrio y calma.",
     description_en: "Herbal infusions and rituals created to accompany moments of energy, balance and calm.",
-    image: "assets/categories/category-herbal.jpg"
+    image: "assets/categories/category-herbal.webp"
   },
   "Desserts": {
     title: "Desserts",
@@ -24,7 +24,7 @@ window.RAICES_CATEGORIES = {
     tagline_en: "Because wellness also deserves sweetness.",
     description: "Postres artesanales con ingredientes naturales, porciones generosas y una mirada más consciente hacia lo dulce.",
     description_en: "Handcrafted desserts with natural ingredients and a more thoughtful way to enjoy sweetness.",
-    image: "assets/categories/category-desserts.jpg"
+    image: "assets/categories/category-desserts.webp"
   },
   "Home": {
     title: "Home",
@@ -33,7 +33,7 @@ window.RAICES_CATEGORIES = {
     tagline_en: "Small objects for meaningful rituals.",
     description: "Objetos y accesorios para transformar una taza, una mesa o una pausa en un pequeño ritual cotidiano.",
     description_en: "Objects and accessories that turn a cup, a table or a pause into a meaningful everyday ritual.",
-    image: "assets/categories/category-home.jpg"
+    image: "assets/categories/category-home.webp"
   },
   "Wellness": {
     title: "Wellness",
@@ -42,20 +42,20 @@ window.RAICES_CATEGORIES = {
     tagline_en: "Knowledge that nourishes body and mind.",
     description: "Guías digitales para cultivar hábitos, cocina consciente, calma y bienestar desde lo esencial.",
     description_en: "Digital guides to cultivate habits, conscious cooking, calm and wellbeing from the essential.",
-    image: "assets/categories/category-wellness.jpg"
+    image: "assets/categories/category-wellness.webp"
   }
 };
 
 window.RAICES_COLLECTIONS = {
-  "Signature Arepas": { title: "Signature Arepas Collection", description: "Tradición reinventada con yuca, vegetales y sabores naturales.", image: "assets/arepas-board.jpg" },
-  "Signature Empanadas": { title: "Signature Empanadas Collection", description: "Masa artesanal, rellenos honestos y colores que nacen de la raíz.", image: "assets/empanadas-signature-board.jpg" },
-  "Protein Craft Collection": { title: "Protein Craft Collection", description: "Proteínas cocinadas lentamente y listas para disfrutar.", image: "assets/proteinas-board.jpg" },
-  "Three Moments": { title: "Herbal Rituals", description: "Slim & Drain, Golden Fit, Dream & Calm y Gut Harmony: rituales herbales para acompañar tu día.", image: "assets/categories/category-herbal.jpg" },
-  "Ritual Collection": { title: "Ritual Collection", description: "Los tres tés insignia de Raíces para acompañar cada momento del día.", image: "assets/products/herbal/herbal-ritual-collection.jpg" },
-  "Ritual Box": { title: "Ritual Box", description: "Caja premium con té a elección, mug, difusor y tarjeta ritual.", image: "assets/products/herbal/herbal-ritual-box-dream-calm.jpg" },
-  "Signature Desserts": { title: "Signature Desserts", description: "Lo dulce también puede sentirse natural, cuidado y especial.", image: "assets/categories/category-desserts.jpg" },
-  "Home Rituals": { title: "Home Rituals", description: "Piezas sencillas para preparar, servir y disfrutar con intención.", image: "assets/categories/category-home.jpg" },
-  "The Library": { title: "The Library", description: "Guías digitales para volver a lo esencial y cultivar bienestar.", image: "assets/categories/category-wellness.jpg" }
+  "Signature Arepas": { title: "Signature Arepas Collection", description: "Tradición reinventada con yuca, vegetales y sabores naturales.", image: "assets/arepas-board.webp" },
+  "Signature Empanadas": { title: "Signature Empanadas Collection", description: "Masa artesanal, rellenos honestos y colores que nacen de la raíz.", image: "assets/empanadas-signature-board.webp" },
+  "Protein Craft Collection": { title: "Protein Craft Collection", description: "Proteínas cocinadas lentamente y listas para disfrutar.", image: "assets/proteinas-board.webp" },
+  "Three Moments": { title: "Herbal Rituals", description: "Slim & Drain, Golden Fit, Dream & Calm y Gut Harmony: rituales herbales para acompañar tu día.", image: "assets/categories/category-herbal.webp" },
+  "Ritual Collection": { title: "Ritual Collection", description: "Los tres tés insignia de Raíces para acompañar cada momento del día.", image: "assets/products/herbal/herbal-ritual-collection.webp" },
+  "Ritual Box": { title: "Ritual Box", description: "Caja premium con té a elección, mug, difusor y tarjeta ritual.", image: "assets/products/herbal/herbal-ritual-box-dream-calm.webp" },
+  "Signature Desserts": { title: "Signature Desserts", description: "Lo dulce también puede sentirse natural, cuidado y especial.", image: "assets/categories/category-desserts.webp" },
+  "Home Rituals": { title: "Home Rituals", description: "Piezas sencillas para preparar, servir y disfrutar con intención.", image: "assets/categories/category-home.webp" },
+  "The Library": { title: "The Library", description: "Guías digitales para volver a lo esencial y cultivar bienestar.", image: "assets/categories/category-wellness.webp" }
 };
 
 

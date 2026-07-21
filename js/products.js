@@ -13,7 +13,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 18.0,
-    "image": "assets/products/arepas/arepa-yuca-clasica.jpg",
+    "image": "assets/products/arepas/arepa-yuca-clasica.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -41,7 +41,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 19.0,
-    "image": "assets/products/arepas/arepa-yuca-zanahoria.jpg",
+    "image": "assets/products/arepas/arepa-yuca-zanahoria.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -69,7 +69,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 19.0,
-    "image": "assets/products/arepas/arepa-yuca-remolacha.jpg",
+    "image": "assets/products/arepas/arepa-yuca-remolacha.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -97,7 +97,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 19.0,
-    "image": "assets/products/arepas/arepa-yuca-curcuma.jpg",
+    "image": "assets/products/arepas/arepa-yuca-curcuma.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -125,7 +125,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 19.0,
-    "image": "assets/products/arepas/arepa-yuca-ajo-romero.jpg",
+    "image": "assets/products/arepas/arepa-yuca-ajo-romero.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -153,7 +153,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 20.0,
-    "image": "assets/products/arepas/arepa-yuca-4-seeds.jpg",
+    "image": "assets/products/arepas/arepa-yuca-4-seeds.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -181,7 +181,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 20.0,
-    "image": "assets/products/arepas/arepa-batata-yuca.jpg",
+    "image": "assets/products/arepas/arepa-batata-yuca.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -209,7 +209,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "113 g (4 oz)",
     "netWeight": "680 g (24 oz)",
     "price": 19.0,
-    "image": "assets/products/arepas/arepa-platano-maduro.jpg",
+    "image": "assets/products/arepas/arepa-platano-maduro.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -237,7 +237,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-yuca-pollo.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-pollo.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -265,7 +265,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-yuca-pavo-romero.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-pavo-romero.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -293,7 +293,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-platano-pollo.jpg",
+    "image": "assets/products/empanadas/empanada-platano-pollo.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -321,7 +321,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-yuca-remolacha-carne.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-remolacha-carne.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -349,7 +349,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-yuca-curcuma-pollo.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-curcuma-pollo.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -377,7 +377,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-yuca-espinaca-queso.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-espinaca-queso.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -405,7 +405,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "142 g (5 oz)",
     "netWeight": "568 g (20 oz)",
     "price": 23.0,
-    "image": "assets/products/empanadas/empanada-yuca-4-seeds-pavo.jpg",
+    "image": "assets/products/empanadas/empanada-yuca-4-seeds-pavo.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -433,7 +433,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "454 g (16 oz)",
     "netWeight": "454 g (16 oz)",
     "price": 16.0,
-    "image": "assets/products/proteinas/proteina-pollo-romero-limon.jpg",
+    "image": "assets/products/proteinas/proteina-pollo-romero-limon.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -461,7 +461,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "454 g (16 oz)",
     "netWeight": "454 g (16 oz)",
     "price": 19.0,
-    "image": "assets/products/proteinas/proteina-carne-mechada.jpg",
+    "image": "assets/products/proteinas/proteina-carne-mechada.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -489,7 +489,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "454 g (16 oz)",
     "netWeight": "454 g (16 oz)",
     "price": 17.0,
-    "image": "assets/products/proteinas/proteina-pavo-mediterraneo.jpg",
+    "image": "assets/products/proteinas/proteina-pavo-mediterraneo.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -517,7 +517,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "454 g (16 oz)",
     "netWeight": "454 g (16 oz)",
     "price": 20.0,
-    "image": "assets/products/proteinas/proteina-pescado-limon-hierbas.jpg",
+    "image": "assets/products/proteinas/proteina-pescado-limon-hierbas.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -545,7 +545,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "454 g (16 oz)",
     "netWeight": "454 g (16 oz)",
     "price": 17.0,
-    "image": "assets/products/proteinas/proteina-cerdo-ajo-tomillo.jpg",
+    "image": "assets/products/proteinas/proteina-cerdo-ajo-tomillo.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -573,7 +573,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "60 g (2.11 oz)",
     "netWeight": "60 g (2.11 oz)",
     "price": 19.0,
-    "image": "assets/products/herbal/te-slim-drain.jpg",
+    "image": "assets/products/herbal/te-slim-drain.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -601,7 +601,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "60 g (2.11 oz)",
     "netWeight": "60 g (2.11 oz)",
     "price": 20.0,
-    "image": "assets/products/herbal/te-golden-fit.jpg",
+    "image": "assets/products/herbal/te-golden-fit.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -629,7 +629,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "60 g (2.11 oz)",
     "netWeight": "60 g (2.11 oz)",
     "price": 19.0,
-    "image": "assets/products/herbal/te-dream-calm.jpg",
+    "image": "assets/products/herbal/te-dream-calm.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -657,7 +657,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "60 g (2.11 oz)",
     "netWeight": "60 g (2.11 oz)",
     "price": 19.0,
-    "image": "assets/products/herbal/te-gut-harmony.jpg",
+    "image": "assets/products/herbal/te-gut-harmony.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -685,7 +685,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "60 g (2.11 oz)",
     "netWeight": "60 g (2.11 oz)",
     "price": 30.0,
-    "image": "assets/products/herbal/herbal-ritual-collection.jpg",
+    "image": "assets/products/herbal/herbal-ritual-collection.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -713,7 +713,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 50.0,
-    "image": "assets/products/herbal/herbal-ritual-box-dream-calm.jpg",
+    "image": "assets/products/herbal/herbal-ritual-box-dream-calm.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -729,15 +729,15 @@ window.RAICES_PRODUCTS = [
     "variants": [
       {
         "name": "Dream & Calm",
-        "image": "assets/products/herbal/herbal-ritual-box-dream-calm.jpg"
+        "image": "assets/products/herbal/herbal-ritual-box-dream-calm.webp"
       },
       {
         "name": "Golden Fit",
-        "image": "assets/products/herbal/herbal-ritual-box-golden-fit.jpg"
+        "image": "assets/products/herbal/herbal-ritual-box-golden-fit.webp"
       },
       {
         "name": "Slim & Drain",
-        "image": "assets/products/herbal/herbal-ritual-box-slim-drain.jpg"
+        "image": "assets/products/herbal/herbal-ritual-box-slim-drain.webp"
       }
     ]
   },
@@ -755,7 +755,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "340 g (12 oz)",
     "netWeight": "340 g (12 oz)",
     "price": 12.0,
-    "image": "assets/products/desserts/cake-sweet-potato.jpg",
+    "image": "assets/products/desserts/cake-sweet-potato.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -783,7 +783,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "340 g (12 oz)",
     "netWeight": "340 g (12 oz)",
     "price": 13.0,
-    "image": "assets/products/desserts/cake-beet-velvet.jpg",
+    "image": "assets/products/desserts/cake-beet-velvet.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -811,7 +811,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "340 g (12 oz)",
     "netWeight": "340 g (12 oz)",
     "price": 12.0,
-    "image": "assets/products/desserts/cake-carrot.jpg",
+    "image": "assets/products/desserts/cake-carrot.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -839,7 +839,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 35.0,
-    "image": "assets/products/home/home-signature-teapot-round.jpg",
+    "image": "assets/products/home/home-signature-teapot-round.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -857,13 +857,13 @@ window.RAICES_PRODUCTS = [
         "name": "teapot-round",
         "labelEs": "Redonda",
         "labelEn": "Round Teapot",
-        "image": "assets/products/home/home-signature-teapot-round.jpg"
+        "image": "assets/products/home/home-signature-teapot-round.webp"
       },
       {
         "name": "teapot-square",
         "labelEs": "Cuadrada",
         "labelEn": "Square Teapot",
-        "image": "assets/products/home/home-signature-teapot-square.jpg"
+        "image": "assets/products/home/home-signature-teapot-square.webp"
       }
     ]
   },
@@ -881,7 +881,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 25.0,
-    "image": "assets/products/home/home-infusor-cup.jpg",
+    "image": "assets/products/home/home-infusor-cup.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -909,7 +909,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 23.0,
-    "image": "assets/products/home/home-travel-infuser.jpg",
+    "image": "assets/products/home/home-travel-infuser.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -937,7 +937,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 15.0,
-    "image": "assets/products/home/home-infusor-individual.jpg",
+    "image": "assets/products/home/home-infusor-individual.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -965,7 +965,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 19.0,
-    "image": "assets/products/home/home-mug-ceramico.jpg",
+    "image": "assets/products/home/home-mug-ceramico.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -993,7 +993,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 17.0,
-    "image": "assets/products/home/home-taza-vidrio.jpg",
+    "image": "assets/products/home/home-taza-vidrio.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -1021,7 +1021,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 20.0,
-    "image": "assets/guide-volver-esencial.jpg",
+    "image": "assets/guide-volver-esencial.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -1049,7 +1049,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 30.0,
-    "image": "assets/guide-21-dias.jpg",
+    "image": "assets/guide-21-dias.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -1077,7 +1077,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 25.0,
-    "image": "assets/guide-cocina-raiz.jpg",
+    "image": "assets/guide-cocina-raiz.webp",
     "available": true,
     "taxable": null,
     "benefits": [
@@ -1105,7 +1105,7 @@ window.RAICES_PRODUCTS = [
     "unitWeight": "",
     "netWeight": "",
     "price": 25.0,
-    "image": "assets/guide-rituales.jpg",
+    "image": "assets/guide-rituales.webp",
     "available": true,
     "taxable": null,
     "benefits": [
