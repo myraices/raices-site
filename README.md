@@ -14,3 +14,14 @@ Base aprobada de compra de v127.1 con la primera capa SEO técnica.
 
 ## Siguiente etapa
 Crear URLs indexables para colecciones y productos antes de implementar `Product` y `BreadcrumbList`.
+
+
+## v128.2 — Structured Data & Product SEO
+
+- 39 páginas estáticas e indexables de producto en `/products/<slug>/`.
+- 5 páginas indexables de colección en `/collections/<slug>/`.
+- JSON-LD `Product`, `Offer`, `CollectionPage` y `BreadcrumbList`.
+- Open Graph, Twitter Cards y canonical específicos.
+- Sitemap index separado en páginas, colecciones y productos.
+- Enlaces internos desde el catálogo y apertura del modal mediante `?product=<slug>`.
+- Sin cambios en inventario, carrito, checkout o sincronización con Nurai.

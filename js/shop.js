@@ -305,6 +305,11 @@
         activeCollection = "All";
         renderFilters();
         renderProducts();
+  const requestedProductSlug = new URLSearchParams(window.location.search).get('product');
+  if(requestedProductSlug){
+    const requestedProduct = products.find(item => item.slug === requestedProductSlug);
+    if(requestedProduct){ setTimeout(() => openProductModal(requestedProduct.sku), 180); }
+  }
         setTimeout(scrollToShopStart, 60);
       });
     });
@@ -438,7 +443,7 @@
         <div class="product-modal-image" id="modalProductImage" style="background-image:url('${p.image}')"></div>
         <div class="product-modal-info">
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
-          <h2>${p.name}</h2>
+          <h2>${p.name}</h2><a class="modal-product-page-link" href="/products/${p.slug}/">${currentLang()==='es' ? 'Ver página del producto' : 'View product page'} →</a>
           <p class="modal-description">${productDescription(p)}</p>
           <div class="product-meta modal-meta">${productMeta(p)}</div>
           ${variantBlock}
@@ -520,7 +525,7 @@
       <div class="product-body">
         <div>
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
-          <h3>${p.name}</h3>
+          <h3><a class="product-seo-link" href="/products/${p.slug}/">${p.name}</a></h3>
         </div>
         <p>${productDescription(p)}</p>
         <div class="product-meta">${productMeta(p)}</div>

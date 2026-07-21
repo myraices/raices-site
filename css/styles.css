@@ -896,3 +896,6 @@ footer{padding-top:64px;border-top:1px solid rgba(31,47,29,.09)}.footer-grid{gap
 
 /* v127.1 — verified Google delivery address */
 .checkout-address-search{position:relative}.checkout-address-status{display:block;margin-top:7px;color:var(--muted);font-size:.78rem;line-height:1.45;text-transform:none!important;letter-spacing:0!important;font-weight:600!important}.checkout-address-status[data-state="ok"]{color:var(--forest)}.checkout-address-status[data-state="error"]{color:#9a3d2e}.checkout-address-search .google-address-autocomplete-host{margin-top:0}.checkout-address-search gmp-place-autocomplete,.checkout-address-search .raices-place-autocomplete{min-height:46px}
+
+/* v128.2 product SEO links */
+.product-seo-link{color:inherit;text-decoration:none}.product-seo-link:hover{text-decoration:underline;text-underline-offset:4px}.modal-product-page-link{display:inline-block;margin-top:-8px;margin-bottom:14px;color:inherit;font-size:.88rem;text-underline-offset:4px}

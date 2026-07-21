@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://myraices.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://myraices.com/delivery-policy.html</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://myraices.com/refund-policy.html</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://myraices.com/privacy.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://myraices.com/terms.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-</urlset>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap><loc>https://myraices.com/sitemaps/pages.xml</loc><lastmod>2026-07-21</lastmod></sitemap>
+  <sitemap><loc>https://myraices.com/sitemaps/collections.xml</loc><lastmod>2026-07-21</lastmod></sitemap>
+  <sitemap><loc>https://myraices.com/sitemaps/products.xml</loc><lastmod>2026-07-21</lastmod></sitemap>
+</sitemapindex>
