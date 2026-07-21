@@ -16,7 +16,7 @@ Base aprobada de compra de v127.1 con la primera capa SEO técnica.
 Crear URLs indexables para colecciones y productos antes de implementar `Product` y `BreadcrumbList`.
 
 
-## v128.3 — Structured Data & Product SEO
+## v128.4 — Structured Data & Product SEO
 
 - 39 páginas estáticas e indexables de producto en `/products/<slug>/`.
 - 5 páginas indexables de colección en `/collections/<slug>/`.
@@ -27,7 +27,7 @@ Crear URLs indexables para colecciones y productos antes de implementar `Product
 - Sin cambios en inventario, carrito, checkout o sincronización con Nurai.
 
 
-## v128.3 — Performance & Core Web Vitals
+## v128.4 — Performance & Core Web Vitals
 - WebP delivery for visible catalog, category, hero and brand imagery.
 - Progressive recompression of JPEG source assets.
 - Hero image preload and connection hints for critical third parties.
@@ -35,3 +35,7 @@ Crear URLs indexables para colecciones y productos antes de implementar `Product
 - Long-lived immutable caching for versioned static assets.
 - `content-visibility` for below-fold sections to reduce initial rendering work.
 - No changes to inventory, cart, checkout, authentication or SEO URL structure.
+
+
+## v128.4 — Customer Nurture Foundation
+Optional marketing consent and Brevo lifecycle attributes for future registered-user nurture automations. See `docs/customer-nurture-v128.4.md`.

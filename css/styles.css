@@ -904,3 +904,6 @@ footer{padding-top:64px;border-top:1px solid rgba(31,47,29,.09)}.footer-grid{gap
 #shop, #nosotros, #contacto, .collections, .featured, footer { content-visibility:auto; contain-intrinsic-size:1px 900px; }
 .product-media, .door-bg, .ritual-card span, .cart-item-img { background-color:#eee6d9; }
 img { height:auto; }
+
+/* v128.4 — Optional marketing consent in account registration */
+.auth-consent-row{display:flex!important;align-items:flex-start;gap:10px;margin:4px 0 10px;font-size:.82rem;line-height:1.45;color:#5f6657;cursor:pointer}.auth-consent-row input{width:17px!important;height:17px;margin:2px 0 0;flex:0 0 auto;accent-color:#52654a}.auth-consent-row span{display:block}.auth-consent-row a{text-decoration:underline}

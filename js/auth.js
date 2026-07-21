@@ -376,6 +376,26 @@ function getUserDisplayName(user) {
   return "";
 }
 
+async function syncConfirmedUserToBrevo(user) {
+  if (!user || !user.email) return;
+  const meta = user.user_metadata || {};
+  if (meta.marketing_consent !== true) return;
+  const preferredLanguage = applyPreferredLanguageFromUser(user);
+  await syncBrevoContact({
+    email: user.email,
+    name: meta.full_name || meta.name || meta.first_name || getUserDisplayName(user),
+    source: "confirmed_user",
+    consent: true,
+    language: preferredLanguage,
+    accountCreatedAt: meta.account_created_at || user.created_at || "",
+    emailVerified: Boolean(user.email_confirmed_at),
+    marketingConsent: true,
+    marketingConsentAt: meta.marketing_consent_at || "",
+    totalOrders: 0,
+    firstOrderCompleted: false
+  });
+}
+
 async function checkAuthState() {
   if (isPasswordRecoveryMode) return;
   if (authResetPassword) authResetPassword.classList.add("hidden");
@@ -423,9 +443,7 @@ loginForm.addEventListener("submit", async function(e) {
     }
     return;
   }
-  const userName = data && data.user ? getUserDisplayName(data.user) : "";
-  const preferredLanguage = data && data.user ? applyPreferredLanguageFromUser(data.user) : getAuthLang();
-  syncBrevoContact({ email: email, name: userName, source: "confirmed_user", consent: true, language: preferredLanguage });
+  if (data && data.user) syncConfirmedUserToBrevo(data.user);
   setAuthPlainMessage(authText("Sesión iniciada.", "Signed in."));
   checkAuthState();
 });
@@ -436,6 +454,8 @@ signupForm.addEventListener("submit", async function(e) {
   const name = document.getElementById("signupName").value.trim().replace(/\s+/g, " ");
   const email = document.getElementById("signupEmail").value.trim().toLowerCase();
   const password = document.getElementById("signupPassword").value;
+  const marketingConsent = Boolean(document.getElementById("signupMarketingConsent") && document.getElementById("signupMarketingConsent").checked);
+  const accountCreatedAt = new Date().toISOString();
   if (!validateSignupName(name)) {
     setAuthPlainMessage(authText("Escribe un nombre real y válido.", "Enter a real, valid name."));
     return;
@@ -452,7 +472,15 @@ signupForm.addEventListener("submit", async function(e) {
       email: email,
       password: password,
       options: {
-        data: { full_name: name, first_name: name, language: getAuthLang() },
+        data: {
+          full_name: name,
+          first_name: name,
+          language: getAuthLang(),
+          preferred_language: normalizeUserLanguage(getAuthLang()),
+          marketing_consent: marketingConsent,
+          marketing_consent_at: marketingConsent ? accountCreatedAt : null,
+          account_created_at: accountCreatedAt
+        },
         emailRedirectTo: "https://myraices.com/"
       }
     });
@@ -470,6 +498,20 @@ signupForm.addEventListener("submit", async function(e) {
     }
 
     console.log("Raíces signup response:", data);
+    if (marketingConsent) {
+      syncBrevoContact({
+        email: email,
+        name: name,
+        source: "signup",
+        consent: true,
+        language: normalizeUserLanguage(getAuthLang()),
+        accountCreatedAt: accountCreatedAt,
+        emailVerified: false,
+        marketingConsent: true,
+        totalOrders: 0,
+        firstOrderCompleted: false
+      });
+    }
     signupForm.reset();
     const loginEmail = document.getElementById("loginEmail");
     if (loginEmail) loginEmail.value = email;
@@ -573,6 +615,11 @@ raicesSupabase.auth.onAuthStateChange(function(event, session) {
   }
   if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session && session.user) {
     applyPreferredLanguageFromUser(session.user);
+    if (session.user.email_confirmed_at) {
+      syncConfirmedUserToBrevo(session.user).catch(function(err){
+        console.warn("Raíces confirmed-user Brevo sync warning:", err);
+      });
+    }
   }
   checkAuthState();
 });

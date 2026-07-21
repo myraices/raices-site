@@ -89,6 +89,13 @@ exports.handler = async function(event) {
     const consent = Boolean(payload.consent || source === "waitlist" || source === "checkout_waitlist" || source === "signup");
     const cart = payload.cart || null;
     const product = payload.product || null;
+    const accountCreatedAt = String(payload.accountCreatedAt || "").trim();
+    const emailVerified = payload.emailVerified === true;
+    const marketingConsent = payload.marketingConsent === true || consent;
+    const marketingConsentAt = String(payload.marketingConsentAt || "").trim();
+    const totalOrders = Number.isFinite(Number(payload.totalOrders)) ? Number(payload.totalOrders) : 0;
+    const firstOrderCompleted = payload.firstOrderCompleted === true || totalOrders > 0;
+    const firstOrderDate = String(payload.firstOrderDate || "").trim();
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const normalizedSource = source === "newsletter_section" ? "newsletter" : (source === "checkout_waitlist" ? "waitlist" : source);
@@ -125,6 +132,14 @@ exports.handler = async function(event) {
     if (delivery.zip || customer.zip) attributes.ZIP = String(delivery.zip || customer.zip).slice(0, 20);
     const lastCart = summarizeCart(cart);
     if (lastCart) attributes.LAST_CART = lastCart;
+    // v128.4 — lifecycle attributes used by Brevo nurture automations.
+    if (accountCreatedAt) attributes.ACCOUNT_CREATED_AT = accountCreatedAt.slice(0, 10);
+    attributes.EMAIL_VERIFIED = emailVerified;
+    attributes.MARKETING_CONSENT = marketingConsent;
+    if (marketingConsentAt) attributes.MARKETING_CONSENT_AT = marketingConsentAt.slice(0, 10);
+    attributes.TOTAL_ORDERS = totalOrders;
+    attributes.FIRST_ORDER_COMPLETED = firstOrderCompleted;
+    if (firstOrderDate) attributes.FIRST_ORDER_DATE = firstOrderDate.slice(0, 10);
 
     async function getExistingContact() {
       try {
@@ -145,11 +160,29 @@ exports.handler = async function(event) {
     const existingListIds = Array.isArray(existingContact && existingContact.listIds) ? existingContact.listIds.map(Number) : [];
     const wasAlreadyInCommunity = existingListIds.includes(listId);
 
-    const contactResponse = await fetch("https://api.brevo.com/v3/contacts", {
-      method: "POST",
-      headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
-      body: JSON.stringify({ email, listIds: [listId], updateEnabled: true, attributes })
-    });
+    async function upsertContact(contactAttributes) {
+      return fetch("https://api.brevo.com/v3/contacts", {
+        method: "POST",
+        headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
+        body: JSON.stringify({ email, listIds: [listId], updateEnabled: true, attributes: contactAttributes })
+      });
+    }
+
+    let contactResponse = await upsertContact(attributes);
+    let lifecycleAttributesPending = false;
+    if (!contactResponse.ok && contactResponse.status !== 204) {
+      // Keep registration and the existing Brevo integration operational even before
+      // the new lifecycle attributes have been created in the Brevo dashboard.
+      const safeAttributes = { SOURCE: normalizedSource };
+      if (normalizedSource === "waitlist") safeAttributes.WAITLIST = true;
+      if (name) safeAttributes.FIRSTNAME = name;
+      if (language) safeAttributes.LOCALE = String(language).toLowerCase().startsWith("en") ? "en" : "es";
+      if (attributes.CITY) safeAttributes.CITY = attributes.CITY;
+      if (attributes.ZIP) safeAttributes.ZIP = attributes.ZIP;
+      if (attributes.LAST_CART) safeAttributes.LAST_CART = attributes.LAST_CART;
+      contactResponse = await upsertContact(safeAttributes);
+      lifecycleAttributesPending = true;
+    }
 
     if (!contactResponse.ok && contactResponse.status !== 204) {
       const text = await contactResponse.text();
@@ -242,7 +275,8 @@ exports.handler = async function(event) {
         wasAlreadyInCommunity,
         addedToCommunity: !wasAlreadyInCommunity,
         emailSent,
-        emailWarning
+        emailWarning,
+        lifecycleAttributesPending
       })
     };
   } catch (error) {

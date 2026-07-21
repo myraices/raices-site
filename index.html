@@ -35,7 +35,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div class="intro"><div><img src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"><p>La salud comienza desde la raíz</p></div></div>
+  <div class="intro"><div><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><p>La salud comienza desde la raíz</p></div></div>
 
   <div class="preopening-bar" role="status">
     <span class="preopening-dot" aria-hidden="true"></span>
@@ -45,7 +45,7 @@
 
   <header class="site-header">
     <div class="container nav">
-      <a class="logo" href="#inicio"><img src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"></a>
+      <a class="logo" href="#inicio"><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"></a>
       <nav class="menu" aria-label="Principal">
         <a href="#inicio" data-i18n="nav_home">Inicio</a>
         <a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a>
@@ -74,7 +74,7 @@
   </header>
 
   <aside class="drawer" id="drawer">
-    <div class="drawer-head"><img src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"><button id="closeDrawer">×</button></div>
+    <div class="drawer-head"><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><button id="closeDrawer">×</button></div>
     <a href="#usuario" class="js-auth-open drawer-account-link" id="drawerAccountLink">👤 Iniciar sesión</a><a href="#inicio" data-i18n="nav_home">Inicio</a><a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a><a href="#nosotros" data-i18n="nav_about">Nosotros</a><button class="drawer-lang" id="drawerLangBtn" type="button">ES ▾</button>
   </aside>
   <div class="backdrop" id="backdrop"></div>
@@ -82,7 +82,7 @@
   <main>
     <section id="inicio" class="hero">
       <div class="hero-copy reveal">
-        <img class="hero-logo-mark" src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async">
+        <img class="hero-logo-mark" src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async">
         <p class="eyebrow" data-i18n="hero_eyebrow">Raíces · Marca de bienestar</p>
         <h1 data-i18n="hero_title">Nutre tu cuerpo. Vuelve a tus raíces.</h1>
         <p data-i18n="hero_text">Alimentos artesanales, infusiones, objetos para el hogar y guías de bienestar creados para convertir lo cotidiano en ritual.</p>
@@ -300,6 +300,10 @@
           <label>Nombre</label><input type="text" id="signupName" required placeholder="Tu nombre"/>
           <label>Email</label><input type="email" id="signupEmail" required placeholder="tu@email.com"/>
           <label>Contraseña</label><input type="password" id="signupPassword" required minlength="6" placeholder="Mínimo 6 caracteres"/>
+          <label class="auth-consent-row" for="signupMarketingConsent">
+            <input type="checkbox" id="signupMarketingConsent" />
+            <span data-i18n="signupMarketingConsent">Quiero recibir novedades, inspiración y ofertas de Raíces por correo. Puedo cancelar la suscripción en cualquier momento.</span>
+          </label>
           <div class="turnstile-wrap"><div id="signupTurnstile"></div></div>
           <button class="btn auth-submit" type="submit">Crear cuenta</button>
           <p class="auth-small" data-i18n="confirm_email_note">Revisa tu email para confirmar el registro.</p>
@@ -335,7 +339,7 @@
 
   <footer>
     <div class="container footer-grid">
-      <div><img class="footer-logo" src="assets/raices-logo.webp" alt="Raíces" width="640" height="640" decoding="async"><p>La salud comienza desde la raíz.</p></div>
+      <div><img class="footer-logo" src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><p>La salud comienza desde la raíz.</p></div>
       <div><h3>Explore</h3><a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a></div>
       <div><h3>Account</h3><a href="#usuario" class="js-auth-open">Mi cuenta</a><a href="#" id="footerCartLink">Carrito</a><a href="#contacto">Newsletter</a><a href="delivery-policy.html">Entregas</a><a href="refund-policy.html">Cancelaciones</a></div>
       <div><h3>Raíces</h3><p>Houston, Texas</p><p><a href="https://wa.me/16577937685">WhatsApp (657) 793-7685</a></p><p>info@myraices.com</p><p><a href="terms.html">Términos</a> · <a href="privacy.html">Privacidad</a></p></div>
