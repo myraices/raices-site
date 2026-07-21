@@ -1,14 +1,16 @@
-# Raíces v127.1 — Purchase Experience
+# Raíces v128.1 — SEO Foundation
 
-Conserva la lógica validada de inventario y carrito e incorpora la experiencia completa previa a Square.
+Base aprobada de compra de v127.1 con la primera capa SEO técnica.
 
 ## Incluye
-- Checkout final de contacto, dirección, cobertura y resumen.
-- Sin pedido mínimo.
-- Entrega estimada normalmente en 24–48 horas.
-- Delivery gratis desde $100.
-- Base visual de confirmación y timeline del pedido.
-- Políticas de entrega, cancelación/reembolso, términos y privacidad.
-- Footer definitivo con enlaces operativos.
-- Plantillas documentadas de emails transaccionales.
-- Square permanece deshabilitado en `PREOPENING`.
+- títulos y meta descriptions únicos;
+- canonical por página;
+- Open Graph y Twitter Cards;
+- `noindex` en cuenta, checkout, confirmación y 404;
+- datos estructurados `Organization` y `WebSite` en Home;
+- sitemap limitado a páginas públicas indexables;
+- robots.txt enlazado al sitemap;
+- sin cambios en inventario, carrito, Google Address Validation ni modo PREOPENING.
+
+## Siguiente etapa
+Crear URLs indexables para colecciones y productos antes de implementar `Product` y `BreadcrumbList`.

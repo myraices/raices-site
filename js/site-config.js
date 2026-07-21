@@ -59,9 +59,9 @@ window.RAICES_COLLECTIONS = {
 };
 
 
-/* v127.1 — complete purchase experience foundation. Change only STORE_MODE when Raíces is ready to sell. */
+/* v128.1 — SEO foundation and complete purchase experience. Change only STORE_MODE when Raíces is ready to sell. */
 window.RAICES_STORE_CONFIG = Object.freeze({
-  VERSION: "v127.1",
+  VERSION: "v128.1",
   STORE_MODE: "PREOPENING", // PREOPENING | SALES
   DELIVERY: Object.freeze({
     currency: "USD",
