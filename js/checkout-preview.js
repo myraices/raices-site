@@ -27,13 +27,14 @@
   const left=Math.max(0,freeAt-physicalSubtotal);freeDeliveryProgress.textContent=digitalOnly?'Los productos digitales no tienen cargo de delivery.':(!freeAt?'':qualifies?'Has desbloqueado delivery gratis.':`Agrega ${money(left)} más en productos físicos para delivery gratis.`);
   const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state=addressVerified?'ok':'idle';status.textContent=addressVerified?'Dirección verificada por Google.':'Selecciona una dirección completa de las sugerencias de Google.'}
   const msg=checkoutDeliveryMessage;if(!items.length){msg.dataset.state='error';msg.textContent='Tu carrito está vacío.'}else if(digitalOnly){msg.dataset.state='ok';msg.textContent='Producto digital: no requiere dirección ni tiene cargo de delivery.'}else if(!addressVerified){msg.dataset.state='idle';msg.textContent='Selecciona primero una dirección válida de Google para confirmar la cobertura.'}else if(!zone){msg.dataset.state='error';msg.textContent=`La dirección seleccionada (ZIP ${zip}) está fuera de la cobertura configurada.`}else{msg.dataset.state='ok';msg.textContent=`Cobertura confirmada: ${zone.name}. ${qualifies?'Delivery gratis.':`Delivery estimado ${money(delivery)}.`}`}
-  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!(items.length&&(digitalOnly||(addressVerified&&zone))&&data.name&&data.email);payButton.textContent='CONTINUAR AL PAGO';}
+  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!(items.length&&(digitalOnly||(addressVerified&&zone&&data.phone))&&data.name&&data.email);payButton.textContent='CONTINUAR AL PAGO';}
   summary={...summary,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||!!zone&&addressVerified,zone:zone?.name||'',cost:delivery,digitalOnly},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:eta()};localStorage.setItem('raices_cart_summary',JSON.stringify(summary));
  }
  function applyDigitalCheckoutMode(){
-  document.querySelectorAll('[data-delivery-field]').forEach(el=>{el.hidden=digitalOnly;});
-  const deliveryBlock=document.getElementById('checkoutDeliveryBlock');if(deliveryBlock)deliveryBlock.hidden=digitalOnly;
-  const phone=document.getElementById('checkoutPhone');if(phone)phone.required=!digitalOnly;
+  document.querySelectorAll('[data-delivery-field]').forEach(el=>{el.hidden=digitalOnly;el.style.display=digitalOnly?'none':'';el.setAttribute('aria-hidden',digitalOnly?'true':'false');});
+  const deliveryBlock=document.getElementById('checkoutDeliveryBlock');if(deliveryBlock){deliveryBlock.hidden=digitalOnly;deliveryBlock.style.display=digitalOnly?'none':'';deliveryBlock.setAttribute('aria-hidden',digitalOnly?'true':'false');}
+  const phone=document.getElementById('checkoutPhone');if(phone){phone.required=!digitalOnly;if(digitalOnly)phone.value='';}
+  if(digitalOnly){['checkoutAddress','checkoutApt','checkoutCity','checkoutState','checkoutZip','checkoutNotes','checkoutPlaceId','checkoutLatitude','checkoutLongitude'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});addressVerified=false;}
   const heading=document.querySelector('.checkout-form-card h2');if(heading)heading.textContent=digitalOnly?'Información de contacto':'Contacto y entrega';
   const intro=document.querySelector('.checkout-preview-intro p:last-child');if(intro)intro.textContent=digitalOnly?'Solo necesitamos tu nombre y correo electrónico para completar la compra.':'Revisa tus datos antes de continuar al pago.';
   const progress=document.getElementById('checkoutProgressDelivery');if(progress)progress.textContent=digitalOnly?'1 · Contacto':'1 · Entrega';
@@ -50,6 +51,21 @@
    });
   }catch(err){console.error('Raíces Google Maps initialization error',err);addressVerified=false;render();const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state='error';status.textContent=err.message==='MAPS_KEY_MISSING'?'No se configuró la clave de Google Maps.':'No se pudo cargar la búsqueda de direcciones de Google.'}}
  }
+
+ async function hydrateFromAccount(){
+  if(!window.raicesSupabase)return;
+  try{
+   const {data}=await window.raicesSupabase.auth.getUser();
+   const user=data?.user;if(!user)return;
+   const meta=user.user_metadata||{};
+   const accountName=[meta.first_name,meta.last_name].filter(Boolean).join(' ').trim()||String(meta.full_name||meta.name||'').trim();
+   const nameInput=document.getElementById('checkoutName'),emailInput=document.getElementById('checkoutEmail');
+   if(nameInput&&accountName){nameInput.value=accountName;nameInput.readOnly=true;nameInput.dataset.fromAccount='true';}
+   if(emailInput&&user.email){emailInput.value=user.email;emailInput.readOnly=true;emailInput.dataset.fromAccount='true';}
+   const phoneInput=document.getElementById('checkoutPhone');if(phoneInput&&!digitalOnly&&!phoneInput.value&&meta.phone)phoneInput.value=String(meta.phone);
+   render();
+  }catch(err){console.warn('No se pudo completar el checkout desde la cuenta.',err);}
+ }
  ['checkoutName','checkoutEmail','checkoutPhone','checkoutApt','checkoutNotes'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',render);e.addEventListener('blur',render)}});
  const payButton=document.getElementById('previewPayButton');
  const payMessage=document.getElementById('checkoutPaymentMessage');
@@ -60,12 +76,12 @@
   if(payButton.disabled)return;
   payButton.disabled=true;payButton.textContent='PREPARANDO PAGO…';paymentMessage('Serás dirigido a una página de pago segura para completar tu compra.','idle');
   try{
-   const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),customer:{...data,addressVerified,placeId:document.getElementById('checkoutPlaceId')?.value||data.placeId}})});
+   const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),customer:digitalOnly?{name:data.name,email:data.email}:{...data,addressVerified,placeId:document.getElementById('checkoutPlaceId')?.value||data.placeId}})});
    const body=await res.json().catch(()=>({}));
    if(!res.ok||!body.checkoutUrl){const detail=body.details?.[0]?.detail||body.details?.[0]?.code||'';throw new Error(detail?`${body.error||'CHECKOUT_UNAVAILABLE'}: ${detail}`:(body.error||'CHECKOUT_UNAVAILABLE'));}
    sessionStorage.setItem('raices_pending_order',JSON.stringify({id:body.orderId,orderNumber:body.orderNumber,environment:body.environment}));
    window.location.assign(body.checkoutUrl);
-  }catch(err){console.error('Square checkout error',err);const messages={EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección verificada.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'};paymentMessage(messages[err.message]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='CONTINUAR AL PAGO';}
+  }catch(err){console.error('Square checkout error',err);const messages={EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección verificada.',DELIVERY_DATA_INCOMPLETE:'Completa el teléfono y todos los datos de entrega.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'};paymentMessage(messages[err.message]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='CONTINUAR AL PAGO';}
  });
- render();if(!digitalOnly)initAddressAutocomplete();
+ render();hydrateFromAccount();if(!digitalOnly)initAddressAutocomplete();
 })();

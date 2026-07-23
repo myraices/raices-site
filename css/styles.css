@@ -908,3 +908,7 @@ img { height:auto; }
 /* v128.4 — Optional marketing consent in account registration */
 .auth-consent-row{display:flex!important;align-items:flex-start;gap:10px;margin:4px 0 10px;font-size:.82rem;line-height:1.45;color:#5f6657;cursor:pointer}.auth-consent-row input{width:17px!important;height:17px;margin:2px 0 0;flex:0 0 auto;accent-color:#52654a}.auth-consent-row span{display:block}.auth-consent-row a{text-decoration:underline}
 .checkout-payment-message{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(31,43,25,.07);line-height:1.45}.checkout-payment-message[data-state="error"]{background:#fff0ed;color:#8d2e20}.checkout-payment-message[data-state="ok"]{background:#edf6ec;color:#285b2d}
+
+/* Checkout v12.4.1: hidden delivery fields must stay hidden in digital-only carts. */
+.checkout-fields [hidden], .checkout-preview-page [data-delivery-field][hidden], #checkoutDeliveryBlock[hidden]{display:none!important}
+.checkout-account-prefill{margin:0 0 14px;color:var(--muted);font-size:.88rem}

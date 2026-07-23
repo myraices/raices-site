@@ -81,6 +81,9 @@ exports.handler = async (event) => {
     const hasPhysicalItems = validated.some(i => !i.digital);
     const zone = hasPhysicalItems ? zoneFor(zip) : { name: 'Digital delivery', fee: 0 };
     if (hasPhysicalItems && !zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
+    if (hasPhysicalItems && (!safeText(customer.phone, 40) || !safeText(customer.address, 180) || !safeText(customer.city, 100) || !safeText(customer.state, 20) || zip.length !== 5)) {
+      return response(400, { error: 'DELIVERY_DATA_INCOMPLETE' }, origin);
+    }
     if (hasPhysicalItems && (!customer.addressVerified || !safeText(customer.placeId, 200))) return response(400, { error: 'ADDRESS_NOT_VERIFIED' }, origin);
     const deliveryCents = !hasPhysicalItems || physicalSubtotal >= 10000 ? 0 : cents(zone.fee);
     const totalCents = subtotal + deliveryCents;
