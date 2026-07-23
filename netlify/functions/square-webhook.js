@@ -126,8 +126,24 @@ exports.handler = async (event) => {
     }
 
     const squareStatus = String(payment.status || 'UNKNOWN').toUpperCase();
+    const refundedCents = Number(payment.refunded_money?.amount || 0);
+    const hasRefund = refundedCents > 0;
     const completed = squareStatus === 'COMPLETED';
     const failed = squareStatus === 'FAILED' || squareStatus === 'CANCELED';
+
+    // Square keeps the payment itself as COMPLETED after a refund and emits another
+    // payment.updated event. That event must never mark the NURAI order as paid again.
+    // The refund is recorded by NURAI's refund function; this webhook only ignores the
+    // post-refund payment update so it cannot overwrite cancelled/refunded states.
+    if (hasRefund) {
+      console.log('square-webhook ignored refunded payment update', {
+        orderId: order.id,
+        paymentId: payment.id,
+        refundedCents,
+        squareStatus
+      });
+      return { statusCode: 200, headers: JSON_HEADERS, body: 'Refund update ignored' };
+    }
 
     if (completed) {
       // Atomic database operation: marks paid and deducts stock once, even if Square retries the webhook.
