@@ -27,3 +27,8 @@ Esta versión añade un checkout alojado por Square y conserva la tienda en prea
 - Production queda bloqueado mientras `SQUARE_SALES_ENABLED` no sea `true`.
 - Antes de Live hay que definir impuestos, completar cocina/empaques y sustituir todas las credenciales por Production.
 - Los importes se recalculan en Netlify desde `data/products.json`; el navegador no decide precios.
+
+## v12.2
+- Corrige el delivery de productos digitales tanto en el carrito como en el checkout.
+- Añade cache-busting al JavaScript del checkout para evitar que el navegador use la versión anterior.
+- Los carritos mixtos calculan delivery solo sobre productos físicos.

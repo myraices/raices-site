@@ -2,7 +2,7 @@
  const money=n=>`$${Number(n||0).toFixed(2)}`, zipNorm=v=>String(v||'').replace(/\D/g,'').slice(0,5);
  let summary={};try{summary=JSON.parse(localStorage.getItem('raices_cart_summary')||'{}')}catch(e){}
  const items=summary.items||[], cfg=window.RAICES_STORE_CONFIG||{}, rules=cfg.ORDER_RULES||{}, zones=cfg.DELIVERY?.zones||[];
- const isDigitalItem=i=>String(i?.sku||'').startsWith('RA-LB-');
+ const isDigitalItem=i=>{const sku=String(i?.sku||'').toUpperCase();const name=String(i?.name||'');return sku.startsWith('RA-LB-')||/volver a lo esencial|21 días|21 dias|cocina desde la raíz|cocina desde la raiz|rituales/i.test(name);};
  const hasPhysicalItems=items.some(i=>!isDigitalItem(i));
  const digitalOnly=items.length>0&&!hasPhysicalItems;
  const itemsEl=document.getElementById('previewItems');

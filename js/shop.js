@@ -639,8 +639,17 @@
     const enriched = cart.map(item => ({...item, product: products.find(p => p.sku === item.sku)})).filter(i => i.product && isProductAvailable(i.product));
     const count = enriched.reduce((sum, item) => sum + item.qty, 0);
     const subtotal = enriched.reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
+    const isDigitalProduct = product => String(product?.sku || '').toUpperCase().startsWith('RA-LB-') || /producto digital|ebook|pdf/i.test(String(product?.ingredients || '') + ' ' + String(product?.conservation || ''));
+    const hasPhysicalItems = enriched.some(item => !isDigitalProduct(item.product));
+    const digitalOnly = enriched.length > 0 && !hasPhysicalItems;
+    const physicalSubtotal = enriched.filter(item => !isDigitalProduct(item.product)).reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
     const zip = getDeliveryZip();
-    const deliveryState = getDeliveryState();
+    const baseDeliveryState = getDeliveryState();
+    const freeAt = Number(window.RAICES_STORE_CONFIG?.ORDER_RULES?.freeDeliveryThreshold || 0);
+    const physicalQualifies = hasPhysicalItems && freeAt > 0 && physicalSubtotal >= freeAt;
+    const deliveryState = digitalOnly
+      ? { valid:true, zone:'Entrega digital', cost:0, digitalOnly:true }
+      : { ...baseDeliveryState, cost: physicalQualifies ? 0 : Number(baseDeliveryState.cost || 0), digitalOnly:false };
     const zone = deliveryState.valid ? { name: deliveryState.zone, cost: deliveryState.cost } : null;
     const deliveryCost = count > 0 && deliveryState.valid ? deliveryState.cost : 0;
     const total = subtotal + deliveryCost;
@@ -656,8 +665,8 @@
     localStorage.setItem('raices_cart_summary', JSON.stringify(window.RAICES_CART_SUMMARY));
     if(cartCount) cartCount.textContent = count;
     if(cartSubtotal) cartSubtotal.textContent = money(subtotal);
-    if(cartDelivery) cartDelivery.textContent = count ? (deliveryState.valid ? money(deliveryCost) : '—') : '—';
-    if(cartDeliverySummary) cartDeliverySummary.textContent = deliveryState.valid ? money(deliveryState.cost) : '—';
+    if(cartDelivery) cartDelivery.textContent = count ? (digitalOnly ? (currentLang()==='es' ? 'No aplica' : 'Not applicable') : (deliveryState.valid ? (deliveryCost===0 ? (currentLang()==='es' ? 'Gratis' : 'Free') : money(deliveryCost)) : '—')) : '—';
+    if(cartDeliverySummary) cartDeliverySummary.textContent = digitalOnly ? (currentLang()==='es' ? 'No aplica' : 'Not applicable') : (deliveryState.valid ? (deliveryState.cost===0 ? (currentLang()==='es' ? 'Gratis' : 'Free') : money(deliveryState.cost)) : '—');
     if(cartTotal) cartTotal.textContent = money(total);
     const checkoutBtn = document.getElementById('checkoutSoon');
     if(checkoutBtn){
