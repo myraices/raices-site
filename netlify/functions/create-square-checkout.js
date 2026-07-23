@@ -59,6 +59,7 @@ exports.handler = async (event) => {
 
     const payload = JSON.parse(event.body || '{}');
     const customer = payload.customer || {};
+    if (payload.acceptedTerms !== true) return response(400, { error: 'TERMS_NOT_ACCEPTED' }, origin);
     const items = Array.isArray(payload.items) ? payload.items : [];
     const zip = normalizeZip(customer.zip);
     if (!items.length) return response(400, { error: 'EMPTY_CART' }, origin);

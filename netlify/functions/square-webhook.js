@@ -42,6 +42,26 @@ async function supabasePatch(id, values) {
   if (!res.ok) throw new Error(`SUPABASE_PATCH_${res.status}:${await res.text()}`);
 }
 
+
+async function completePaidOrder(orderId, paymentId, paidAt) {
+  const { url, key } = supabaseConfig();
+  const res = await fetch(`${url}/rest/v1/rpc/complete_paid_order_and_deduct_inventory`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      p_order_id: orderId,
+      p_square_payment_id: paymentId || null,
+      p_paid_at: paidAt
+    })
+  });
+  if (!res.ok) throw new Error(`SUPABASE_COMPLETE_ORDER_${res.status}:${await res.text()}`);
+  return res.json().catch(() => null);
+}
+
 async function getSquareReferenceId(squareOrderId) {
   if (!squareOrderId) return '';
   const environment = String(process.env.SQUARE_ENVIRONMENT || 'sandbox').toLowerCase();
@@ -109,23 +129,19 @@ exports.handler = async (event) => {
     const completed = squareStatus === 'COMPLETED';
     const failed = squareStatus === 'FAILED' || squareStatus === 'CANCELED';
 
-    const values = completed
-      ? {
-          status: 'paid',
-          payment_status: 'completed',
-          square_payment_id: payment.id || null,
-          paid_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      : {
-          status: failed ? 'cancelled' : 'pending_payment',
-          payment_status: failed ? 'failed' : 'pending',
-          square_payment_id: payment.id || null,
-          updated_at: new Date().toISOString()
-        };
-
-    // Do not erase paid_at when Square sends an intermediate event.
-    await supabasePatch(order.id, values);
+    if (completed) {
+      // Atomic database operation: marks paid and deducts stock once, even if Square retries the webhook.
+      await completePaidOrder(order.id, payment.id || null, new Date().toISOString());
+    } else {
+      const values = {
+        status: failed ? 'cancelled' : 'pending_payment',
+        payment_status: failed ? 'failed' : 'pending',
+        square_payment_id: payment.id || null,
+        updated_at: new Date().toISOString()
+      };
+      // Do not erase paid_at or inventory state when Square sends an intermediate event.
+      await supabasePatch(order.id, values);
+    }
     return { statusCode: 200, headers: JSON_HEADERS, body: 'OK' };
   } catch (err) {
     console.error('square-webhook', err);
