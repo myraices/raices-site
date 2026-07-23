@@ -93,7 +93,7 @@ exports.handler = async (event) => {
       method: 'POST',
       body: JSON.stringify({
         status: 'pending_payment', payment_status: 'pending', payment_provider: 'square',
-        fulfillment_type: 'delivery',
+        fulfillment_type: hasPhysicalItems ? 'delivery' : 'digital',
         currency: 'USD',
         subtotal: subtotal / 100,
         discount_amount: 0,
@@ -107,7 +107,8 @@ exports.handler = async (event) => {
         customer_name: safeText(customer.name,120), customer_email: safeText(customer.email,180).toLowerCase(), customer_phone: safeText(customer.phone,40),
         delivery_address: hasPhysicalItems ? safeText(customer.address,180) : 'Digital delivery', delivery_apt: hasPhysicalItems ? safeText(customer.apt,60) : '', delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online', delivery_state: hasPhysicalItems ? safeText(customer.state,20) : 'N/A', delivery_zip: hasPhysicalItems ? zip : '00000',
         delivery_zone: zone.name, google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '', delivery_notes: hasPhysicalItems ? safeText(customer.notes,1000) : 'Digital product — delivery by email/account',
-        checkout_environment: environment
+        checkout_environment: environment,
+        is_test: environment !== 'production'
       })
     });
     const order = pending?.[0];
