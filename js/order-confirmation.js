@@ -1,0 +1,9 @@
+(function(){
+ const q=new URLSearchParams(location.search),fromUrl=q.get('order');let pending={};try{pending=JSON.parse(sessionStorage.getItem('raices_pending_order')||'{}')}catch(e){}
+ const id=fromUrl||pending.id;if(!id){location.replace('index.html');return}
+ const number=document.getElementById('confirmationNumber'),status=document.getElementById('confirmationStatus'),icon=document.getElementById('confirmationIcon'),title=document.getElementById('confirmationTitle'),text=document.getElementById('confirmationText'),eyebrow=document.getElementById('confirmationEyebrow'),timeline=document.getElementById('paymentTimeline');
+ if(pending.orderNumber)number.textContent='#'+pending.orderNumber;
+ let attempts=0;
+ async function check(){attempts++;try{const r=await fetch('/.netlify/functions/order-status?id='+encodeURIComponent(id),{cache:'no-store'}),d=await r.json();if(r.ok){if(d.order_number)number.textContent='#'+d.order_number;status.textContent=d.payment_status||d.status||'Pendiente';if(d.payment_status==='COMPLETED'||d.status==='paid'){icon.textContent='✓';eyebrow.textContent='Pedido recibido';title.textContent='Gracias por volver a la raíz.';text.textContent=pending.environment==='sandbox'?'La compra de prueba fue confirmada correctamente en Square Sandbox. No hubo un cargo real.':'Tu pago fue confirmado y recibimos tu pedido.';timeline.classList.add('done');sessionStorage.setItem('raices_confirmed_order',JSON.stringify({orderNumber:d.order_number,paymentStatus:'COMPLETED'}));localStorage.removeItem('raices_cart');localStorage.removeItem('raices_cart_summary');return}}}catch(e){console.error(e)}if(attempts<12)setTimeout(check,2500);else{text.textContent='El checkout terminó, pero la confirmación todavía está pendiente. Revisa Square y NURAI antes de repetir el pago.';status.textContent='Confirmación pendiente'}}
+ check();
+})();

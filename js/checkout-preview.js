@@ -24,6 +24,7 @@
   const left=Math.max(0,freeAt-subtotal);freeDeliveryProgress.textContent=!freeAt?'':qualifies?'Has desbloqueado delivery gratis.':`Agrega ${money(left)} más para delivery gratis.`;
   const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state=addressVerified?'ok':'idle';status.textContent=addressVerified?'Dirección verificada por Google.':'Selecciona una dirección completa de las sugerencias de Google.'}
   const msg=checkoutDeliveryMessage;if(!items.length){msg.dataset.state='error';msg.textContent='Tu carrito está vacío.'}else if(!addressVerified){msg.dataset.state='idle';msg.textContent='Selecciona primero una dirección válida de Google para confirmar la cobertura.'}else if(!zone){msg.dataset.state='error';msg.textContent=`La dirección seleccionada (ZIP ${zip}) está fuera de la cobertura configurada.`}else{msg.dataset.state='ok';msg.textContent=`Cobertura confirmada: ${zone.name}. ${qualifies?'Delivery gratis.':`Delivery estimado ${money(delivery)}.`}`}
+  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!(items.length&&addressVerified&&zone&&data.name&&data.email);payButton.textContent='Continuar a Square Sandbox';}
   summary={...summary,delivery:{zip,valid:!!zone&&addressVerified,zone:zone?.name||'',cost:delivery},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:eta()};localStorage.setItem('raices_cart_summary',JSON.stringify(summary));
  }
  async function initAddressAutocomplete(){
@@ -39,5 +40,20 @@
   }catch(err){console.error('Raíces Google Maps initialization error',err);addressVerified=false;render();const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state='error';status.textContent=err.message==='MAPS_KEY_MISSING'?'No se configuró la clave de Google Maps.':'No se pudo cargar la búsqueda de direcciones de Google.'}}
  }
  ['checkoutName','checkoutEmail','checkoutPhone','checkoutApt','checkoutNotes'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',render);e.addEventListener('blur',render)}});
+ const payButton=document.getElementById('previewPayButton');
+ const payMessage=document.getElementById('checkoutPaymentMessage');
+ function paymentMessage(text,state='idle'){if(!payMessage)return;payMessage.hidden=false;payMessage.dataset.state=state;payMessage.textContent=text;}
+ if(payButton)payButton.addEventListener('click',async()=>{
+  const data=save();
+  if(payButton.disabled)return;
+  payButton.disabled=true;payButton.textContent='Creando checkout seguro…';paymentMessage('Conectando con Square Sandbox…','idle');
+  try{
+   const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),customer:{...data,addressVerified,placeId:document.getElementById('checkoutPlaceId')?.value||data.placeId}})});
+   const body=await res.json().catch(()=>({}));
+   if(!res.ok||!body.checkoutUrl)throw new Error(body.error||'CHECKOUT_UNAVAILABLE');
+   sessionStorage.setItem('raices_pending_order',JSON.stringify({id:body.orderId,orderNumber:body.orderNumber,environment:body.environment}));
+   window.location.assign(body.checkoutUrl);
+  }catch(err){console.error('Square checkout error',err);const messages={EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección verificada.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'};paymentMessage(messages[err.message]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='Continuar a Square Sandbox';}
+ });
  render();initAddressAutocomplete();
 })();

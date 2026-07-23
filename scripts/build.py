@@ -57,7 +57,7 @@ def main() -> None:
         f'"{TURNSTILE_PLACEHOLDER}"', json.dumps(turnstile_key)
     )
     turnstile_config_path.write_text(turnstile_content, encoding="utf-8")
-    print("Raíces build completed: Google Maps and Turnstile browser keys injected into dist.")
+    print("Raíces v12 build completed: Google Maps and Turnstile browser keys injected; Square functions included.")
 
 
 if __name__ == "__main__":
