@@ -19,7 +19,7 @@ function supabaseConfig() {
 
 async function supabaseFind(filter) {
   const { url, key } = supabaseConfig();
-  const res = await fetch(`${url}/rest/v1/orders?${filter}&select=id,square_order_id&limit=1`, {
+  const res = await fetch(`${url}/rest/v1/orders?${filter}&select=id,square_order_id,status,payment_status,inventory_deducted_at,paid_at&limit=1`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` }
   });
   if (!res.ok) throw new Error(`SUPABASE_FIND_${res.status}:${await res.text()}`);
@@ -131,15 +131,33 @@ exports.handler = async (event) => {
 
     if (completed) {
       // Atomic database operation: marks paid and deducts stock once, even if Square retries the webhook.
-      await completePaidOrder(order.id, payment.id || null, new Date().toISOString());
+      const paidAt = payment.updated_at || payment.created_at || new Date().toISOString();
+      await completePaidOrder(order.id, payment.id || null, paidAt);
     } else {
+      // Square can deliver payment.created/payment.updated events out of order.
+      // Once an order is paid, completed or has already deducted inventory, it must never
+      // be downgraded to pending/cancelled by a delayed intermediate webhook.
+      const alreadyPaid =
+        String(order.status || '').toLowerCase() === 'paid' ||
+        String(order.payment_status || '').toLowerCase() === 'completed' ||
+        Boolean(order.inventory_deducted_at) ||
+        Boolean(order.paid_at);
+
+      if (alreadyPaid) {
+        console.log('square-webhook ignored delayed non-completed event for paid order', {
+          orderId: order.id,
+          paymentId: payment.id,
+          squareStatus
+        });
+        return { statusCode: 200, headers: JSON_HEADERS, body: 'Already paid' };
+      }
+
       const values = {
         status: failed ? 'cancelled' : 'pending_payment',
         payment_status: failed ? 'failed' : 'pending',
         square_payment_id: payment.id || null,
         updated_at: new Date().toISOString()
       };
-      // Do not erase paid_at or inventory state when Square sends an intermediate event.
       await supabasePatch(order.id, values);
     }
     return { statusCode: 200, headers: JSON_HEADERS, body: 'OK' };
