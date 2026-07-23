@@ -1,4 +1,11 @@
-# MyRaices v12 — Square Sandbox
+# MyRaices v12.1 — Square Sandbox
+
+Correcciones incluidas:
+- Los productos digitales de The Library no cobran delivery ni requieren dirección.
+- En carritos mixtos, el delivery y el umbral gratis se calculan solo con productos físicos.
+- Se corrigió la versión de Square API a `2026-07-15`.
+- Se eliminó el teléfono prellenado en Square Checkout para evitar rechazos por formato.
+- Los errores de Square muestran más detalle durante Sandbox.
 
 Esta versión añade un checkout alojado por Square y conserva la tienda en preapertura.
 

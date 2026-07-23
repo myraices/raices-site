@@ -23,6 +23,11 @@ function zoneFor(zip) {
   return zones.find(z => (z.zips || []).includes(zip) || (z.prefixes || []).some(p => zip.startsWith(p)));
 }
 function productMap() { return new Map(products.map(p => [p.sku, p])); }
+function isDigitalProduct(p) {
+  return String(p?.sku || '').startsWith('RA-LB-') ||
+    (String(p?.category || '').toLowerCase() === 'wellness' && String(p?.collection || '').toLowerCase() === 'the library') ||
+    /producto digital|ebook|pdf/i.test(String(p?.ingredients || '') + ' ' + String(p?.conservation || ''));
+}
 function safeText(v, max=500) { return String(v || '').trim().slice(0, max); }
 
 async function supabaseRequest(path, options = {}) {
@@ -56,24 +61,28 @@ exports.handler = async (event) => {
     const customer = payload.customer || {};
     const items = Array.isArray(payload.items) ? payload.items : [];
     const zip = normalizeZip(customer.zip);
-    const zone = zoneFor(zip);
     if (!items.length) return response(400, { error: 'EMPTY_CART' }, origin);
-    if (!zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
-    if (!customer.addressVerified || !safeText(customer.placeId, 200)) return response(400, { error: 'ADDRESS_NOT_VERIFIED' }, origin);
     if (!safeText(customer.name, 120) || !/^\S+@\S+\.\S+$/.test(safeText(customer.email, 180))) return response(400, { error: 'CUSTOMER_DATA_INCOMPLETE' }, origin);
 
     const map = productMap();
     let subtotal = 0;
+    let physicalSubtotal = 0;
     const validated = items.map(raw => {
       const p = map.get(safeText(raw.sku, 60));
       const qty = Math.max(1, Math.min(20, Number.parseInt(raw.qty, 10) || 0));
       if (!p || p.available === false || p.soldOut) throw new Error('PRODUCT_NOT_AVAILABLE');
       if (Number.isFinite(Number(p.stock)) && qty > Number(p.stock)) throw new Error('INSUFFICIENT_STOCK');
       const unitCents = cents(p.price);
+      const digital = isDigitalProduct(p);
       subtotal += unitCents * qty;
-      return { sku: p.sku, name: p.name, variant: safeText(raw.variant, 120), qty, unitCents };
+      if (!digital) physicalSubtotal += unitCents * qty;
+      return { sku: p.sku, name: p.name, variant: safeText(raw.variant, 120), qty, unitCents, digital };
     });
-    const deliveryCents = subtotal >= 10000 ? 0 : cents(zone.fee);
+    const hasPhysicalItems = validated.some(i => !i.digital);
+    const zone = hasPhysicalItems ? zoneFor(zip) : { name: 'Digital delivery', fee: 0 };
+    if (hasPhysicalItems && !zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
+    if (hasPhysicalItems && (!customer.addressVerified || !safeText(customer.placeId, 200))) return response(400, { error: 'ADDRESS_NOT_VERIFIED' }, origin);
+    const deliveryCents = !hasPhysicalItems || physicalSubtotal >= 10000 ? 0 : cents(zone.fee);
     const totalCents = subtotal + deliveryCents;
 
     const pending = await supabaseRequest('orders', {
@@ -82,8 +91,8 @@ exports.handler = async (event) => {
         status: 'pending_payment', payment_status: 'PENDING', payment_provider: 'square',
         currency: 'USD', subtotal_cents: subtotal, delivery_cents: deliveryCents, tax_cents: 0, total_cents: totalCents,
         customer_name: safeText(customer.name,120), customer_email: safeText(customer.email,180).toLowerCase(), customer_phone: safeText(customer.phone,40),
-        delivery_address: safeText(customer.address,180), delivery_apt: safeText(customer.apt,60), delivery_city: safeText(customer.city,100), delivery_state: safeText(customer.state,20), delivery_zip: zip,
-        delivery_zone: zone.name, google_place_id: safeText(customer.placeId,200), delivery_notes: safeText(customer.notes,1000),
+        delivery_address: hasPhysicalItems ? safeText(customer.address,180) : 'Digital delivery', delivery_apt: hasPhysicalItems ? safeText(customer.apt,60) : '', delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online', delivery_state: hasPhysicalItems ? safeText(customer.state,20) : 'N/A', delivery_zip: hasPhysicalItems ? zip : '00000',
+        delivery_zone: zone.name, google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '', delivery_notes: hasPhysicalItems ? safeText(customer.notes,1000) : 'Digital product — delivery by email/account',
         checkout_environment: environment
       })
     });
@@ -107,12 +116,12 @@ exports.handler = async (event) => {
     const squareBase = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
     const squareRes = await fetch(`${squareBase}/v2/online-checkout/payment-links`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Square-Version': '2026-07-16', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${token}`, 'Square-Version': '2026-07-15', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         idempotency_key: crypto.randomUUID(),
         order: { location_id: locationId, reference_id: order.id, line_items: lineItems },
         checkout_options: { redirect_url: `${baseUrl}/order-confirmation.html?order=${encodeURIComponent(order.id)}`, ask_for_shipping_address: false },
-        pre_populated_data: { buyer_email: safeText(customer.email,180), buyer_phone_number: safeText(customer.phone,40) }
+        pre_populated_data: { buyer_email: safeText(customer.email,180) }
       })
     });
     const squareText = await squareRes.text();

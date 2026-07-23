@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     if (!payment?.order_id) return { statusCode:200, body:'No order' };
     const environment = String(process.env.SQUARE_ENVIRONMENT || 'sandbox').toLowerCase();
     const squareBase = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
-    const res = await fetch(`${squareBase}/v2/orders/${encodeURIComponent(payment.order_id)}`, { headers:{Authorization:`Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,'Square-Version':'2026-07-16'} });
+    const res = await fetch(`${squareBase}/v2/orders/${encodeURIComponent(payment.order_id)}`, { headers:{Authorization:`Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,'Square-Version':'2026-07-15'} });
     const data = await res.json();
     const referenceId = data.order?.reference_id;
     if (!referenceId) return { statusCode:200, body:'No reference' };
