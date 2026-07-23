@@ -88,8 +88,18 @@ exports.handler = async (event) => {
     const pending = await supabaseRequest('orders', {
       method: 'POST',
       body: JSON.stringify({
-        status: 'pending_payment', payment_status: 'PENDING', payment_provider: 'square',
-        currency: 'USD', subtotal_cents: subtotal, delivery_cents: deliveryCents, tax_cents: 0, total_cents: totalCents,
+        status: 'pending_payment', payment_status: 'pending', payment_provider: 'square',
+        fulfillment_type: 'delivery',
+        currency: 'USD',
+        subtotal: subtotal / 100,
+        discount_amount: 0,
+        tax_amount: 0,
+        delivery_amount: deliveryCents / 100,
+        total_amount: totalCents / 100,
+        subtotal_cents: subtotal,
+        delivery_cents: deliveryCents,
+        tax_cents: 0,
+        total_cents: totalCents,
         customer_name: safeText(customer.name,120), customer_email: safeText(customer.email,180).toLowerCase(), customer_phone: safeText(customer.phone,40),
         delivery_address: hasPhysicalItems ? safeText(customer.address,180) : 'Digital delivery', delivery_apt: hasPhysicalItems ? safeText(customer.apt,60) : '', delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online', delivery_state: hasPhysicalItems ? safeText(customer.state,20) : 'N/A', delivery_zip: hasPhysicalItems ? zip : '00000',
         delivery_zone: zone.name, google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '', delivery_notes: hasPhysicalItems ? safeText(customer.notes,1000) : 'Digital product — delivery by email/account',
@@ -101,7 +111,18 @@ exports.handler = async (event) => {
 
     await supabaseRequest('order_items', {
       method: 'POST',
-      body: JSON.stringify(validated.map(i => ({ order_id: order.id, sku: i.sku, product_name: i.name, variant: i.variant, quantity: i.qty, unit_price_cents: i.unitCents, line_total_cents: i.unitCents * i.qty })))
+      body: JSON.stringify(validated.map(i => ({
+        order_id: order.id,
+        sku: i.sku,
+        product_name: i.name,
+        variant: i.variant,
+        variant_name: i.variant,
+        quantity: i.qty,
+        unit_price: i.unitCents / 100,
+        line_total: (i.unitCents * i.qty) / 100,
+        unit_price_cents: i.unitCents,
+        line_total_cents: i.unitCents * i.qty
+      })))
     });
 
     const lineItems = validated.map(i => ({

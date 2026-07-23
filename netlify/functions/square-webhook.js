@@ -31,7 +31,15 @@ exports.handler = async (event) => {
     if (!referenceId) return { statusCode:200, body:'No reference' };
     const status = payment.status || 'UNKNOWN';
     const completed = status === 'COMPLETED';
-    await supabasePatch(referenceId, { payment_status: status, status: completed ? 'paid' : status.toLowerCase(), square_payment_id: payment.id || null, paid_at: completed ? new Date().toISOString() : null, updated_at: new Date().toISOString() });
+    const normalizedPaymentStatus = completed ? 'completed' : (status === 'FAILED' ? 'failed' : status === 'CANCELED' ? 'failed' : 'pending');
+    const normalizedOrderStatus = completed ? 'paid' : (normalizedPaymentStatus === 'failed' ? 'cancelled' : 'pending_payment');
+    await supabasePatch(referenceId, {
+      payment_status: normalizedPaymentStatus,
+      status: normalizedOrderStatus,
+      square_payment_id: payment.id || null,
+      paid_at: completed ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString()
+    });
     return { statusCode:200, body:'OK' };
   } catch (err) { console.error('square-webhook',err); return { statusCode:500, body:'Webhook error' }; }
 };
