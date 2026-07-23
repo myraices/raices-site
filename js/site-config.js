@@ -61,7 +61,7 @@ window.RAICES_COLLECTIONS = {
 
 /* v128.1 — SEO foundation and complete purchase experience. Change only STORE_MODE when Raíces is ready to sell. */
 window.RAICES_STORE_CONFIG = Object.freeze({
-  VERSION: "v12-square-sandbox",
+  VERSION: "v12.4",
   STORE_MODE: "PREOPENING", // PREOPENING | SALES
   DELIVERY: Object.freeze({
     currency: "USD",
@@ -78,6 +78,6 @@ window.RAICES_STORE_CONFIG = Object.freeze({
   ORDER_CONFIRMATION_URL: "order-confirmation.html",
   ORDER_RULES: Object.freeze({ minimumSubtotal: 0, freeDeliveryThreshold: 100, estimatedDeliveryMinHours: 24, estimatedDeliveryMaxHours: 48 }),
   INVENTORY: Object.freeze({ enforceAvailableStock: true }),
-  PAYMENTS: Object.freeze({ provider: "SQUARE", mode: "SANDBOX", hostedCheckout: true }),
+  PAYMENTS: Object.freeze({ provider: "SQUARE", mode: "HOSTED", hostedCheckout: true }),
   TAX: Object.freeze({ mode: "TO_BE_CONFIGURED_BEFORE_LIVE" })
 });

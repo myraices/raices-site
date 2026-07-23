@@ -27,16 +27,16 @@
   const left=Math.max(0,freeAt-physicalSubtotal);freeDeliveryProgress.textContent=digitalOnly?'Los productos digitales no tienen cargo de delivery.':(!freeAt?'':qualifies?'Has desbloqueado delivery gratis.':`Agrega ${money(left)} más en productos físicos para delivery gratis.`);
   const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state=addressVerified?'ok':'idle';status.textContent=addressVerified?'Dirección verificada por Google.':'Selecciona una dirección completa de las sugerencias de Google.'}
   const msg=checkoutDeliveryMessage;if(!items.length){msg.dataset.state='error';msg.textContent='Tu carrito está vacío.'}else if(digitalOnly){msg.dataset.state='ok';msg.textContent='Producto digital: no requiere dirección ni tiene cargo de delivery.'}else if(!addressVerified){msg.dataset.state='idle';msg.textContent='Selecciona primero una dirección válida de Google para confirmar la cobertura.'}else if(!zone){msg.dataset.state='error';msg.textContent=`La dirección seleccionada (ZIP ${zip}) está fuera de la cobertura configurada.`}else{msg.dataset.state='ok';msg.textContent=`Cobertura confirmada: ${zone.name}. ${qualifies?'Delivery gratis.':`Delivery estimado ${money(delivery)}.`}`}
-  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!(items.length&&(digitalOnly||(addressVerified&&zone))&&data.name&&data.email);payButton.textContent='Continuar al pago seguro';}
+  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!(items.length&&(digitalOnly||(addressVerified&&zone))&&data.name&&data.email);payButton.textContent='CONTINUAR AL PAGO';}
   summary={...summary,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||!!zone&&addressVerified,zone:zone?.name||'',cost:delivery,digitalOnly},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:eta()};localStorage.setItem('raices_cart_summary',JSON.stringify(summary));
  }
  function applyDigitalCheckoutMode(){
-  if(!digitalOnly)return;
-  ['checkoutGoogleAddressHost','checkoutGoogleAddressStatus','checkoutAddress','checkoutPlaceId','checkoutLatitude','checkoutLongitude','checkoutApt','checkoutCity','checkoutState','checkoutZip','checkoutNotes','checkoutPhone'].forEach(id=>{const el=document.getElementById(id);const label=el?.closest('label');if(label)label.hidden=true;});
-  const heading=document.querySelector('.checkout-form-card h2');if(heading)heading.textContent='Contacto para entrega digital';
-  const intro=document.querySelector('.checkout-preview-intro p:last-child');if(intro)intro.textContent='Solo necesitamos tu nombre y correo para enviarte el acceso digital.';
-  const deliveryMessage=document.getElementById('checkoutDeliveryMessage');if(deliveryMessage)deliveryMessage.textContent='Recibirás el acceso digital en el correo indicado.';
-  const promise=document.querySelector('.checkout-promise strong');if(promise)promise.textContent='Entrega digital';
+  document.querySelectorAll('[data-delivery-field]').forEach(el=>{el.hidden=digitalOnly;});
+  const deliveryBlock=document.getElementById('checkoutDeliveryBlock');if(deliveryBlock)deliveryBlock.hidden=digitalOnly;
+  const phone=document.getElementById('checkoutPhone');if(phone)phone.required=!digitalOnly;
+  const heading=document.querySelector('.checkout-form-card h2');if(heading)heading.textContent=digitalOnly?'Información de contacto':'Contacto y entrega';
+  const intro=document.querySelector('.checkout-preview-intro p:last-child');if(intro)intro.textContent=digitalOnly?'Solo necesitamos tu nombre y correo electrónico para completar la compra.':'Revisa tus datos antes de continuar al pago.';
+  const progress=document.getElementById('checkoutProgressDelivery');if(progress)progress.textContent=digitalOnly?'1 · Contacto':'1 · Entrega';
  }
  async function initAddressAutocomplete(){
   const host=document.getElementById('checkoutGoogleAddressHost');if(!host)return;
@@ -58,14 +58,14 @@
  if(payButton)payButton.addEventListener('click',async()=>{
   const data=save();
   if(payButton.disabled)return;
-  payButton.disabled=true;payButton.textContent='Preparando pago seguro…';paymentMessage('Preparando tu pago seguro…','idle');
+  payButton.disabled=true;payButton.textContent='PREPARANDO PAGO…';paymentMessage('Serás dirigido a una página de pago segura para completar tu compra.','idle');
   try{
    const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),customer:{...data,addressVerified,placeId:document.getElementById('checkoutPlaceId')?.value||data.placeId}})});
    const body=await res.json().catch(()=>({}));
    if(!res.ok||!body.checkoutUrl){const detail=body.details?.[0]?.detail||body.details?.[0]?.code||'';throw new Error(detail?`${body.error||'CHECKOUT_UNAVAILABLE'}: ${detail}`:(body.error||'CHECKOUT_UNAVAILABLE'));}
    sessionStorage.setItem('raices_pending_order',JSON.stringify({id:body.orderId,orderNumber:body.orderNumber,environment:body.environment}));
    window.location.assign(body.checkoutUrl);
-  }catch(err){console.error('Square checkout error',err);const messages={EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección verificada.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'};paymentMessage(messages[err.message]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='Continuar al pago seguro';}
+  }catch(err){console.error('Square checkout error',err);const messages={EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección verificada.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'};paymentMessage(messages[err.message]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='CONTINUAR AL PAGO';}
  });
  render();if(!digitalOnly)initAddressAutocomplete();
 })();
