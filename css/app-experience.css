@@ -55,4 +55,5 @@
   .app-mini-card{background:#fff;border-radius:18px;overflow:hidden}.app-mini-card img{width:100%;aspect-ratio:1/1;object-fit:cover}.app-mini-body{padding:10px}.app-mini-body h3{font-size:13px;line-height:1.2;margin:0 0 8px}.app-mini-actions{display:flex;align-items:center;justify-content:space-between;font-weight:800}.app-mini-actions button{border:0;background:var(--app-accent);color:#fff;border-radius:10px;padding:7px 9px;font-weight:700}
   .app-update-toast{position:fixed;z-index:150;left:16px;right:16px;bottom:calc(88px + var(--app-safe));background:#173427;color:#fff;border-radius:18px;padding:14px;box-shadow:0 12px 36px rgba(0,0,0,.24);align-items:center;justify-content:space-between;gap:10px}.app-update-toast.show{display:flex}.app-update-toast strong{font-size:14px}.app-update-toast small{display:block;opacity:.75;margin-top:2px}.app-update-toast button{border:0;border-radius:12px;background:#fff;color:#173427;padding:10px 12px;font-weight:800}
   body.app-search-open{overflow:hidden}
+  body.app-experience.app-search-open .preopening-bar{display:none!important}
 }

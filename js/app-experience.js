@@ -101,8 +101,8 @@
   function renderSearch(q){
     const root=document.getElementById('appSearchResults'); if(!root) return;
     const term=String(q||'').trim().toLocaleLowerCase();
-    let ps=getProducts(); if(term) ps=ps.filter(p=>[p.name,p.category,p.subcategory,p.collection,p.description].join(' ').toLocaleLowerCase().includes(term)); else ps=ps.slice(0,10);
-    root.innerHTML=ps.length?ps.slice(0,30).map(miniCard).join(''):`<div class="app-search-empty">${txt('No encontramos productos con ese nombre.','No products found.')}</div>`; bindCards(root);
+    let ps=getProducts(); if(term) ps=ps.filter(p=>[p.name,p.category,p.subcategory,p.collection,p.description].join(' ').toLocaleLowerCase().includes(term)); else ps=ps;
+    root.innerHTML=ps.length?ps.map(miniCard).join(''):`<div class="app-search-empty">${txt('No encontramos productos con ese nombre.','No products found.')}</div>`; bindCards(root);
   }
   function syncCartCount(){ const src=document.getElementById('cartCount'),dst=document.getElementById('appCartCount'); if(src&&dst) dst.textContent=src.textContent||'0'; }
   function watchCart(){ const src=document.getElementById('cartCount'); if(!src)return; syncCartCount(); new MutationObserver(syncCartCount).observe(src,{childList:true,subtree:true,characterData:true}); }
