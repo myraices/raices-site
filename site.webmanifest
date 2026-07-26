@@ -1,5 +1,5 @@
 {
-  "name": "Raíces",
+  "name": "Raíces — Compra fácil",
   "short_name": "Raíces",
   "description": "Wellness begins at the root.",
   "start_url": "/",
@@ -17,5 +17,8 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "id": "/"
 }
