@@ -58,10 +58,14 @@
    const {data}=await window.raicesSupabase.auth.getUser(); const user=data?.user;if(!user)return;
    const {data:addresses,error}=await window.raicesSupabase.from('customer_addresses').select('*').eq('user_id',user.id).order('is_default',{ascending:false}).order('created_at',{ascending:true}).limit(1);
    if(error||!addresses?.length)return; const a=addresses[0];
+   const address1=a.address_line1||a.address1||'';
+   const address2=a.address_line2||a.address2||'';
+   const postalCode=zipNorm(a.postal_code||a.zip||'');
+   const placeId=a.place_id||a.google_place_id||'';
    const box=document.getElementById('checkoutAccountAddress'),text=document.getElementById('checkoutSavedAddressText'),btn=document.getElementById('useSavedAddressBtn');
-   if(!box||!text||!btn)return; text.textContent=[a.address1,a.address2,a.city,a.state,a.zip].filter(Boolean).join(', '); box.hidden=false;
+   if(!box||!text||!btn)return; text.textContent=[address1,address2,a.city,a.state,postalCode].filter(Boolean).join(', '); box.hidden=false;
    btn.onclick=()=>{
-    document.getElementById('checkoutAddress').value=a.address1||'';document.getElementById('checkoutApt').value=a.address2||'';document.getElementById('checkoutCity').value=a.city||'';document.getElementById('checkoutState').value=a.state||'TX';document.getElementById('checkoutZip').value=a.zip||'';document.getElementById('checkoutNotes').value=a.delivery_notes||'';document.getElementById('checkoutPlaceId').value=a.google_place_id||'';document.getElementById('checkoutLatitude').value=a.latitude||'';document.getElementById('checkoutLongitude').value=a.longitude||'';addressVerified=Boolean(a.google_place_id&&a.address1&&a.city&&a.zip);const host=document.querySelector('#checkoutGoogleAddressHost gmp-place-autocomplete');if(host)host.value=[a.address1,a.city,a.state,a.zip].filter(Boolean).join(', ');render();box.classList.add('used');btn.textContent='Dirección aplicada';
+    document.getElementById('checkoutAddress').value=address1;document.getElementById('checkoutApt').value=address2;document.getElementById('checkoutCity').value=a.city||'';document.getElementById('checkoutState').value=a.state||'TX';document.getElementById('checkoutZip').value=postalCode;document.getElementById('checkoutNotes').value=a.delivery_notes||'';document.getElementById('checkoutPlaceId').value=placeId;document.getElementById('checkoutLatitude').value=a.latitude||'';document.getElementById('checkoutLongitude').value=a.longitude||'';addressVerified=Boolean(placeId&&address1&&a.city&&postalCode);const host=document.querySelector('#checkoutGoogleAddressHost gmp-place-autocomplete');if(host)host.value=[address1,a.city,a.state,postalCode].filter(Boolean).join(', ');render();box.classList.add('used');btn.textContent='Dirección aplicada';
    };
   }catch(err){console.warn('No se pudo cargar la dirección predeterminada.',err);}
  }

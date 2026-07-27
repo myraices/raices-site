@@ -532,6 +532,7 @@
       return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''} ${isProductAvailable(p) ? '' : 'is-sold-out'}">
       <div class="product-media" style="background-image:url('${p.image}')">
         <span class="product-badge">${isProductAvailable(p) ? (isRitualBox ? (currentLang()==='es' ? 'Personalizable' : 'Customizable') : (p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory))) : t('sold_out')}</span>
+        <button type="button" class="product-favorite-btn ${isFavorite(p.sku) ? 'active' : ''}" data-favorite="${p.sku}" aria-pressed="${String(isFavorite(p.sku))}" aria-label="${currentLang()==='es' ? 'Guardar en favoritos' : 'Save to favorites'}">${isFavorite(p.sku) ? '♥' : '♡'}</button>
       </div>
       <div class="product-body">
         <div>
