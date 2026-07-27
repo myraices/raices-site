@@ -52,6 +52,19 @@
   }catch(err){console.error('Raíces Google Maps initialization error',err);addressVerified=false;render();const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state='error';status.textContent=err.message==='MAPS_KEY_MISSING'?'No se configuró la clave de Google Maps.':'No se pudo cargar la búsqueda de direcciones de Google.'}}
  }
 
+ async function loadDefaultAddress(){
+  if(!window.raicesSupabase||digitalOnly)return;
+  try{
+   const {data}=await window.raicesSupabase.auth.getUser(); const user=data?.user;if(!user)return;
+   const {data:addresses,error}=await window.raicesSupabase.from('customer_addresses').select('*').eq('user_id',user.id).order('is_default',{ascending:false}).order('created_at',{ascending:true}).limit(1);
+   if(error||!addresses?.length)return; const a=addresses[0];
+   const box=document.getElementById('checkoutAccountAddress'),text=document.getElementById('checkoutSavedAddressText'),btn=document.getElementById('useSavedAddressBtn');
+   if(!box||!text||!btn)return; text.textContent=[a.address1,a.address2,a.city,a.state,a.zip].filter(Boolean).join(', '); box.hidden=false;
+   btn.onclick=()=>{
+    document.getElementById('checkoutAddress').value=a.address1||'';document.getElementById('checkoutApt').value=a.address2||'';document.getElementById('checkoutCity').value=a.city||'';document.getElementById('checkoutState').value=a.state||'TX';document.getElementById('checkoutZip').value=a.zip||'';document.getElementById('checkoutNotes').value=a.delivery_notes||'';document.getElementById('checkoutPlaceId').value=a.google_place_id||'';document.getElementById('checkoutLatitude').value=a.latitude||'';document.getElementById('checkoutLongitude').value=a.longitude||'';addressVerified=Boolean(a.google_place_id&&a.address1&&a.city&&a.zip);const host=document.querySelector('#checkoutGoogleAddressHost gmp-place-autocomplete');if(host)host.value=[a.address1,a.city,a.state,a.zip].filter(Boolean).join(', ');render();box.classList.add('used');btn.textContent='Dirección aplicada';
+   };
+  }catch(err){console.warn('No se pudo cargar la dirección predeterminada.',err);}
+ }
  async function hydrateFromAccount(){
   if(!window.raicesSupabase)return;
   try{
@@ -92,5 +105,5 @@
    window.location.assign(body.checkoutUrl);
   }catch(err){console.error('Square checkout error',err);const messages={EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección de entrega completa de las sugerencias de Google.',DELIVERY_DATA_INCOMPLETE:'Completa el teléfono y todos los datos de entrega.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'};paymentMessage(messages[err.message]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='CONTINUAR AL PAGO';}
  });
- render();hydrateFromAccount();if(!digitalOnly)initAddressAutocomplete();
+ render();hydrateFromAccount();loadDefaultAddress();if(!digitalOnly)initAddressAutocomplete();
 })();

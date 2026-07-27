@@ -18,7 +18,7 @@
   <meta name="twitter:title" content="Mi cuenta | Raíces"/>
   <meta name="twitter:description" content="Acceso privado a la cuenta del cliente de Raíces."/>
   <meta name="twitter:image" content="https://myraices.com/og-image.jpg"/>
-  <link rel="stylesheet" href="css/styles.css?v=126" />
+  <link rel="stylesheet" href="css/styles.css?v=140" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/google-maps-config.js"></script>
 </head>
@@ -45,6 +45,7 @@
         <button id="navProfile" type="button" data-section="profile" class="active">👤 Perfil</button>
         <button id="navAddresses" type="button" data-section="addresses">📍 Direcciones</button>
         <button id="navOrders" type="button" data-section="orders">📦 Mis pedidos</button>
+        <button id="navFavorites" type="button" data-section="favorites">♡ Favoritos</button>
         <button id="navPreferences" type="button" data-section="preferences">🌎 Preferencias</button>
         <button id="navSecurity" type="button" data-section="security">🔒 Seguridad</button>
         <button type="button" id="logoutAccountBtn" class="logout-account">🚪 Cerrar sesión</button>
@@ -111,10 +112,20 @@
         </section>
 
         <section id="section-orders" class="account-section">
-          <div class="account-card empty-orders">
-            <h2 id="ordersTitle">Mis pedidos</h2>
-            <p id="ordersEmpty">Todavía no tienes pedidos.</p>
-            <small id="ordersSmall">Aquí aparecerá el historial de tus compras.</small>
+          <div class="account-card">
+            <div class="account-section-heading"><div><h2 id="ordersTitle">Mis pedidos</h2><p id="ordersIntro">Consulta el estado y el resumen de tus compras.</p></div><button id="refreshOrdersBtn" class="account-inline-btn" type="button">Actualizar</button></div>
+            <div id="ordersLoading" class="account-loading">Cargando pedidos…</div>
+            <div id="ordersList" class="account-orders-list"></div>
+            <div id="ordersEmptyState" class="account-empty-state hidden"><div class="account-empty-icon">📦</div><h3 id="ordersEmpty">Todavía no tienes pedidos.</h3><p id="ordersSmall">Aquí aparecerá el historial de tus compras.</p><a id="ordersShopBtn" class="btn" href="/#shop">Explorar tienda</a></div>
+            <div id="ordersError" class="account-message hidden" data-state="error"></div>
+          </div>
+        </section>
+
+        <section id="section-favorites" class="account-section">
+          <div class="account-card">
+            <div class="account-section-heading"><div><h2 id="favoritesTitle">Favoritos</h2><p id="favoritesIntro">Guarda productos para encontrarlos más rápido.</p></div><span id="favoritesCount" class="account-count-pill">0</span></div>
+            <div id="favoritesList" class="account-favorites-grid"></div>
+            <div id="favoritesEmpty" class="account-empty-state hidden"><div class="account-empty-icon">♡</div><h3 id="favoritesEmptyTitle">Aún no tienes favoritos.</h3><p id="favoritesEmptyText">Marca el corazón de un producto y aparecerá aquí.</p><a id="favoritesShopBtn" class="btn" href="/#shop">Explorar tienda</a></div>
           </div>
         </section>
 
@@ -153,6 +164,6 @@
   <div id="accountToast" class="account-toast" role="status" aria-live="polite"></div>
 
   <script src="js/supabase-config.js"></script>
-  <script src="js/account.js"></script>
+  <script src="js/account.js?v=14.0"></script>
 </body>
 </html>

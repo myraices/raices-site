@@ -35,6 +35,9 @@
   let activeCategory = "All";
   let activeCollection = "All";
   let cart = loadCart();
+  function favoriteSkus(){ try{return JSON.parse(localStorage.getItem("raices_favorites")||"[]");}catch{return [];} }
+  function isFavorite(sku){ return favoriteSkus().includes(sku); }
+  function toggleFavorite(sku){ const list=favoriteSkus();const next=list.includes(sku)?list.filter(x=>x!==sku):[...list,sku];localStorage.setItem("raices_favorites",JSON.stringify(next));document.querySelectorAll(`[data-favorite="${sku}"]`).forEach(b=>{b.classList.toggle("active",next.includes(sku));b.setAttribute("aria-pressed",String(next.includes(sku)));b.textContent=next.includes(sku)?"♥":"♡";});window.dispatchEvent(new CustomEvent("raices:favoritesChanged",{detail:{favorites:next}})); }
 
   function t(key){ return window.raicesT ? window.raicesT(key) : key; }
   function currentLang(){ return window.raicesLang || localStorage.getItem('raices_lang') || 'es'; }
@@ -861,4 +864,6 @@
   } else {
     initialize();
   }
+
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-favorite]");if(!b)return;e.preventDefault();e.stopPropagation();toggleFavorite(b.dataset.favorite);});
 })();
