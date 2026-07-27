@@ -447,13 +447,13 @@
           <p class="modal-description">${productDescription(p)}</p>
           <div class="product-meta modal-meta">${productMeta(p)}</div>
           ${variantBlock}
-          <div class="modal-price-row"><div><strong>${money(p.price)}</strong>${isProductAvailable(p) ? '' : `<span class="sold-out-label">${t('sold_out')}</span>`}</div>${isProductAvailable(p) ? `<button class="btn" data-modal-add="${p.sku}" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button>` : soldOutAction(p, 'modal')}</div>
-          <div class="modal-sections">
-            <section><h3>${t('benefits')}</h3><ul>${benefits}</ul></section>
-            <section><h3>${t('ingredients')}</h3><p>${localizedIngredients(p)}</p></section>
-            <section><h3>${t('conservation')}</h3><p>${productConservation(p)}</p></section>
-            <section><h3>${t('preparation')}</h3><p>${productPreparation(p)}</p></section>
-            <section><h3>${t('ideal_moment')}</h3><p>${currentLang()==='es' ? (p.moment || 'Un ritual cotidiano de bienestar.') : 'An everyday wellness ritual.'}</p></section>
+          <div class="modal-price-row"><div><strong>${money(p.price)}</strong>${isProductAvailable(p) ? '' : `<span class="sold-out-label">${t('sold_out')}</span>`}</div>${isProductAvailable(p) ? `<div class="modal-buy-controls"><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${p.sku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div>` : soldOutAction(p, 'modal')}</div>
+          <div class="modal-sections product-accordion">
+            <details open><summary>${t('benefits')}</summary><div><ul>${benefits}</ul></div></details>
+            <details><summary>${t('ingredients')}</summary><div><p>${localizedIngredients(p)}</p></div></details>
+            <details><summary>${t('conservation')}</summary><div><p>${productConservation(p)}</p></div></details>
+            <details><summary>${t('preparation')}</summary><div><p>${productPreparation(p)}</p></div></details>
+            <details><summary>${t('ideal_moment')}</summary><div><p>${currentLang()==='es' ? (p.moment || 'Un ritual cotidiano de bienestar.') : 'An everyday wellness ritual.'}</p></div></details>
           </div>
           <div class="ritual-complete"><h3>${t('related')}</h3><div class="ritual-grid">${related}</div></div>
         </div>
@@ -472,7 +472,15 @@
       });
     });
 
-    productModalContent.querySelectorAll('[data-modal-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.modalAdd, this.dataset.selectedVariant || ""); }));
+    let modalQty = 1;
+    const modalQtyValue = productModalContent.querySelector('#modalQtyValue');
+    productModalContent.querySelectorAll('[data-modal-qty]').forEach(btn => btn.addEventListener('click', function(){
+      const max = maxProductQty(p);
+      modalQty = Math.max(1, Math.min(Number.isFinite(max) ? max : 99, modalQty + Number(this.dataset.modalQty || 0)));
+      if(modalQtyValue) modalQtyValue.textContent = modalQty;
+      if(modalAdd) modalAdd.dataset.quantity = modalQty;
+    }));
+    productModalContent.querySelectorAll('[data-modal-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.modalAdd, this.dataset.selectedVariant || "", Number(this.dataset.quantity || 1)); }));
     productModalContent.querySelectorAll('[data-notify-product]').forEach(btn => btn.addEventListener('click', function(){ openProductWaitlist(this.dataset.notifyProduct); }));
     productModalContent.querySelectorAll('[data-related-add]').forEach(btn => btn.addEventListener('click', function(){ addToCart(this.dataset.relatedAdd); }));
     productModalContent.querySelectorAll('[data-related-view]').forEach(btn => btn.addEventListener('click', function(){ openProductModal(this.dataset.relatedView); }));
@@ -584,7 +592,7 @@
     document.body.classList.remove("cart-open");
   }
 
-  function addToCart(sku, variant){
+  function addToCart(sku, variant, quantity=1){
     const product = products.find(p => p.sku === sku);
     if(!product) return;
     if(!isProductAvailable(product)){
@@ -594,16 +602,20 @@
     const key = cartItemKey(sku, variant);
     const existing = cart.find(item => cartItemKey(item.sku, item.variant) === key);
     const maxQty = maxProductQty(product);
+    const requestedQty = Math.max(1, Number(quantity) || 1);
     if(existing){
       if(existing.qty >= maxQty){
         showCartStatus(currentLang()==='es' ? `Solo hay ${maxQty} unidad(es) disponibles de ${product.name}.` : `Only ${maxQty} unit(s) of ${product.name} are available.`, 'warning');
-        openCartDrawer();
+        if(!document.body.classList.contains('app-experience')) openCartDrawer();
         return;
       }
-      existing.qty += 1;
-    } else cart.push({ sku: product.sku, qty: 1, variant: variant || "" });
+      existing.qty = Math.min(existing.qty + requestedQty, maxQty);
+    } else cart.push({ sku: product.sku, qty: Math.min(requestedQty, maxQty), variant: variant || "" });
     saveCart();
-    openCartDrawer();
+    if(document.body.classList.contains('app-experience')){
+      closeProductModal();
+      window.dispatchEvent(new CustomEvent('raices:productAdded',{detail:{product,quantity:requestedQty}}));
+    } else openCartDrawer();
   }
 
   function updateQty(key, delta){

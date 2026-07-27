@@ -164,3 +164,30 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
 })();
+
+/* MyRaíces v13.1 — lightweight mobile add confirmation */
+(function(){
+  if(!window.matchMedia('(max-width:760px)').matches) return;
+  function language(){ return window.raicesLang || localStorage.getItem('raices_lang') || 'es'; }
+  function ensureToast(){
+    let toast=document.getElementById('appAddedToast');
+    if(toast) return toast;
+    toast=document.createElement('div');
+    toast.id='appAddedToast'; toast.className='app-added-toast';
+    toast.innerHTML='<img alt=""><div><strong></strong><small></small></div><button type="button"></button>';
+    document.body.appendChild(toast);
+    toast.querySelector('button').addEventListener('click',()=>document.getElementById('openCart')?.click());
+    return toast;
+  }
+  window.addEventListener('raices:productAdded',event=>{
+    const product=event.detail?.product; if(!product) return;
+    const qty=Number(event.detail?.quantity||1); const toast=ensureToast();
+    toast.querySelector('img').src=product.image||'/assets/raices-logo.webp';
+    toast.querySelector('img').alt=product.name||'';
+    toast.querySelector('strong').textContent=product.name||'';
+    toast.querySelector('small').textContent=language()==='es' ? `${qty} agregado${qty>1?'s':''} al carrito` : `${qty} added to cart`;
+    toast.querySelector('button').textContent=language()==='es' ? 'Ver carrito' : 'View cart';
+    toast.classList.add('show'); clearTimeout(toast._timer); toast._timer=setTimeout(()=>toast.classList.remove('show'),3600);
+    document.querySelector('.app-nav-cart')?.animate([{transform:'scale(1)'},{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:360});
+  });
+})();
