@@ -105,3 +105,32 @@
   .app-added-toast div{min-width:0;flex:1}.app-added-toast strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.app-added-toast small{display:block;opacity:.76;margin-top:3px}
   .app-added-toast button{border:0;background:#fff;color:var(--app-accent);border-radius:11px;padding:9px 10px;font-weight:800;font-size:11px}
 }
+
+/* MyRaíces v13.1.2 — sold-out card actions mobile fix */
+@media (max-width:760px){
+  body.app-experience .product-card-shop.is-sold-out .action-stack{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:7px;
+    width:100%;
+  }
+  body.app-experience .product-card-shop.is-sold-out .text-product-link,
+  body.app-experience .product-card-shop.is-sold-out .sold-out-notify-btn{
+    width:100%;
+    min-width:0;
+    min-height:38px;
+    padding:8px 6px;
+    border-radius:12px;
+    font-size:10px;
+    line-height:1.15;
+    letter-spacing:.045em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  body.app-experience .product-card-shop.is-sold-out .sold-out-notify-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+}

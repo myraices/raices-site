@@ -160,7 +160,13 @@
     let tries=0; const timer=setInterval(()=>{tries++; if(getProducts().length){clearInterval(timer);renderFeatured();renderSearch('');} if(tries>80)clearInterval(timer);},125);
     watchCart();
     window.addEventListener('raices:store-ready',()=>{ renderFeatured(); renderSearch(document.getElementById('appSearchInput')?.value||''); });
-    window.addEventListener('raices:languageChanged',()=>location.reload());
+    // v13.1.1: never force a page reload on language/auth changes.
+    // The previous reload handler could create an endless refresh loop after login
+    // when the account language and the locally stored language were reconciled.
+    window.addEventListener('raices:languageChanged',()=>{
+      renderFeatured();
+      renderSearch(document.getElementById('appSearchInput')?.value||'');
+    });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
 })();
