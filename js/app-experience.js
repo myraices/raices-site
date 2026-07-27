@@ -56,7 +56,7 @@
     const main=document.querySelector('main'); main?.parentNode.insertBefore(shell,main);
 
     const search=document.createElement('section'); search.className='app-search-screen'; search.id='appSearch';
-    search.innerHTML=`<div class="app-search-head"><button class="app-back" type="button">‹</button><label class="app-search-box"><span>⌕</span><input id="appSearchInput" type="search" autocomplete="off" placeholder="${txt('¿Qué estás buscando?','What are you looking for?')}"></label></div><div class="app-search-results" id="appSearchResults"></div>`;
+    search.setAttribute('aria-hidden','true'); search.innerHTML=`<div class="app-search-head"><button class="app-back" type="button" aria-label="${txt('Volver','Back')}">‹</button><label class="app-search-box"><span>⌕</span><input id="appSearchInput" type="search" autocomplete="off" placeholder="${txt('¿Qué estás buscando?','What are you looking for?')}"></label></div><div class="app-search-summary" id="appSearchSummary"></div><div class="app-search-results" id="appSearchResults"></div>`;
     document.body.appendChild(search);
 
     const nav=document.createElement('nav'); nav.className='app-bottom-nav'; nav.setAttribute('aria-label','App');
@@ -83,8 +83,38 @@
     if(tab==='orders'||tab==='profile'){ document.querySelector('.js-auth-open')?.click(); setActive(tab); }
   }
   function setActive(tab){ document.querySelectorAll('.app-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.appTab===tab)); }
-  function openSearch(){ document.getElementById('appSearch')?.classList.add('open'); document.body.classList.add('app-search-open'); setActive('search'); setTimeout(()=>document.getElementById('appSearchInput')?.focus(),60); renderSearch(''); }
-  function closeSearch(){ document.getElementById('appSearch')?.classList.remove('open'); document.body.classList.remove('app-search-open'); setActive('home'); }
+  function setPreopeningBannerVisible(visible){
+    document.querySelectorAll('.preopening-bar').forEach(bar=>{
+      if(visible){
+        bar.hidden=false;
+        bar.style.removeProperty('display');
+        bar.removeAttribute('aria-hidden');
+      }else{
+        bar.hidden=true;
+        bar.style.setProperty('display','none','important');
+        bar.setAttribute('aria-hidden','true');
+      }
+    });
+  }
+  function openSearch(){
+    const screen=document.getElementById('appSearch');
+    screen?.classList.add('open');
+    screen?.setAttribute('aria-hidden','false');
+    document.body.classList.add('app-search-open');
+    setPreopeningBannerVisible(false);
+    setActive('search');
+    renderSearch('');
+    requestAnimationFrame(()=>{ if(screen) screen.scrollTop=0; });
+    setTimeout(()=>document.getElementById('appSearchInput')?.focus(),60);
+  }
+  function closeSearch(){
+    const screen=document.getElementById('appSearch');
+    screen?.classList.remove('open');
+    screen?.setAttribute('aria-hidden','true');
+    document.body.classList.remove('app-search-open');
+    setPreopeningBannerVisible(true);
+    setActive('home');
+  }
   function productCard(p){
     const available=p.available!==false&&!p.soldOut;
     return `<article class="app-product-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img src="${p.image}" alt="${p.name}" loading="lazy"><div class="app-product-info"><h3>${p.name}</h3><p>${p.subcategory||p.collection||''}</p><div class="app-product-bottom"><span class="app-price">${money(p.price)}</span>${available?`<button class="app-add" type="button" data-app-add="${p.sku}">${txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></div></button></article>`;
@@ -97,12 +127,30 @@
     const root=document.getElementById('appFeatured'); if(!root) return;
     const ps=getProducts().filter(p=>p.available!==false&&!p.soldOut).slice(0,8); root.innerHTML=ps.map(productCard).join(''); bindCards(root);
   }
-  function miniCard(p){ return `<article class="app-mini-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img src="${p.image}" alt="${p.name}" loading="lazy"><div class="app-mini-body"><h3>${p.name}</h3><div class="app-mini-actions"><span>${money(p.price)}</span>${p.available!==false&&!p.soldOut?`<button data-app-add="${p.sku}">+</button>`:''}</div></div></button></article>`; }
+  function miniCard(p){
+    const available=p.available!==false&&!p.soldOut;
+    return `<article class="app-mini-card" data-search-product="${p.sku}">
+      <button class="app-mini-view" type="button" data-app-view="${p.sku}">
+        <img src="${p.image}" alt="${p.name}" loading="lazy">
+        <div class="app-mini-body"><h3>${p.name}</h3><div class="app-mini-actions"><span>${money(p.price)}</span></div></div>
+      </button>
+      ${available?`<button class="app-mini-add" type="button" data-app-add="${p.sku}" aria-label="${txt('Agregar','Add')} ${p.name}">+</button>`:''}
+    </article>`;
+  }
   function renderSearch(q){
     const root=document.getElementById('appSearchResults'); if(!root) return;
+    const summary=document.getElementById('appSearchSummary');
     const term=String(q||'').trim().toLocaleLowerCase();
-    let ps=getProducts(); if(term) ps=ps.filter(p=>[p.name,p.category,p.subcategory,p.collection,p.description].join(' ').toLocaleLowerCase().includes(term)); else ps=ps;
-    root.innerHTML=ps.length?ps.map(miniCard).join(''):`<div class="app-search-empty">${txt('No encontramos productos con ese nombre.','No products found.')}</div>`; bindCards(root);
+    const all=getProducts().filter(Boolean);
+    let ps=term ? all.filter(p=>[p.name,p.category,p.subcategory,p.collection,p.description,p.sku].join(' ').toLocaleLowerCase().includes(term)) : all.slice();
+    ps.sort((a,b)=>(Number(a.sortOrder||0)-Number(b.sortOrder||0)) || String(a.name||'').localeCompare(String(b.name||''),lang()));
+    if(summary){
+      summary.textContent=term
+        ? txt(`${ps.length} resultado${ps.length===1?'':'s'}`,`${ps.length} result${ps.length===1?'':'s'}`)
+        : txt(`Todos los productos · ${ps.length}`,`All products · ${ps.length}`);
+    }
+    root.innerHTML=ps.length?ps.map(miniCard).join(''):`<div class="app-search-empty">${txt('No encontramos productos con ese nombre.','No products found.')}</div>`;
+    bindCards(root);
   }
   function syncCartCount(){ const src=document.getElementById('cartCount'),dst=document.getElementById('appCartCount'); if(src&&dst) dst.textContent=src.textContent||'0'; }
   function watchCart(){ const src=document.getElementById('cartCount'); if(!src)return; syncCartCount(); new MutationObserver(syncCartCount).observe(src,{childList:true,subtree:true,characterData:true}); }
@@ -111,6 +159,7 @@
     createShell();
     let tries=0; const timer=setInterval(()=>{tries++; if(getProducts().length){clearInterval(timer);renderFeatured();renderSearch('');} if(tries>80)clearInterval(timer);},125);
     watchCart();
+    window.addEventListener('raices:store-ready',()=>{ renderFeatured(); renderSearch(document.getElementById('appSearchInput')?.value||''); });
     window.addEventListener('raices:languageChanged',()=>location.reload());
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
