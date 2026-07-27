@@ -854,6 +854,14 @@
     renderCart();
   });
 
+  document.addEventListener("click", function(e){
+    const button = e.target.closest("[data-favorite]");
+    if(!button) return;
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(button.dataset.favorite);
+  });
+
   renderDoors();
   renderFilters();
   renderProducts();
@@ -865,6 +873,4 @@
   } else {
     initialize();
   }
-
-  document.addEventListener("click",e=>{const b=e.target.closest("[data-favorite]");if(!b)return;e.preventDefault();e.stopPropagation();toggleFavorite(b.dataset.favorite);});
 })();
