@@ -7,3 +7,7 @@
 
 /account   /account.html 200
 /my-account /account.html 200
+
+/blog        /blog.html    200
+/blog/       /blog.html    200
+/blog/*      /article.html 200
