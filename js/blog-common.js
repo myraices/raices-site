@@ -3,7 +3,7 @@
   const fallbackImage='/assets/herbal-board.webp';
   window.RaicesBlog={
     lang(){return localStorage.getItem('raices_lang')==='en'?'en':'es';},
-    localized(row,key){const lang=this.lang();return row[`${key}_${lang}`]||row[`${key}_es`]||row[key]||'';},
+    localized(row,key){const lang=this.lang();if(lang==='en')return row[`${key}_en`]||row[key]||'';return row[`${key}_es`]||row[key]||'';},
     image(row){return row.hero_image_url||fallbackImage;},
     date(value){if(!value)return '';return new Intl.DateTimeFormat(this.lang()==='en'?'en-US':'es-US',{day:'numeric',month:'short',year:'numeric'}).format(new Date(value));},
     escape(value){return String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));},
@@ -17,7 +17,7 @@
       {id:'demo-5',slug:'rutinas-vida-consciente',title_es:'Rutinas simples para una vida más consciente',title_en:'Simple routines for a more mindful life',excerpt_es:'Pequeños cambios diarios que generan grandes transformaciones.',excerpt_en:'Small daily changes that create meaningful transformations.',category_name_es:'Estilo de vida',category_name_en:'Lifestyle',hero_image_url:'/assets/home-board.webp',author_name:'Equipo My Raíces',published_at:'2026-07-10',reading_time_minutes:4,content_blocks:[{type:'paragraph',text_es:'La constancia nace cuando una rutina cabe de verdad en nuestra vida.'}]},
       {id:'demo-6',slug:'arepas-yuca-curcuma',title_es:'Arepas de yuca y cúrcuma: sabor que nutre',title_en:'Cassava and turmeric arepas',excerpt_es:'Una forma deliciosa de llevar ingredientes esenciales a la mesa familiar.',excerpt_en:'A delicious way to bring essential ingredients to the family table.',category_name_es:'Recetas',category_name_en:'Recipes',hero_image_url:'/assets/arepa-curcuma.webp',author_name:'Equipo My Raíces',published_at:'2026-07-06',reading_time_minutes:6,content_blocks:[{type:'paragraph',text_es:'La yuca y la cúrcuma crean una combinación de sabor, color y versatilidad.'}]}
     ];},
-    async articles(){try{const client=await this.client();const {data,error}=await client.from('blog_articles_public').select('*').order('published_at',{ascending:false});if(error)throw error;return data||[];}catch(e){console.error('No fue posible cargar el Blog desde Supabase:',e.message);return [];}},
+    async articles(){try{const client=await this.client();const {data,error}=await client.from('blog_articles_public').select('*').order('published_at',{ascending:false});if(error)throw error;return (data||[]).filter(row=>this.lang()!=='en'||Boolean(row.title_en));}catch(e){console.error('No fue posible cargar el Blog desde Supabase:',e.message);return [];}},
     articleUrl(a){return `/blog/${encodeURIComponent(a.slug)}`;}
   };
 })();
