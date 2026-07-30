@@ -11,7 +11,8 @@
     search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>',
     cart:'<svg viewBox="0 0 24 24"><path d="M4 5h2l2 10h9l2-7H7M9 20h.01M17 20h.01"/></svg>',
     orders:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>',
-    profile:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.6-4.3 3.3-7 8-7s7.4 2.7 8 7"/></svg>'
+    profile:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.6-4.3 3.3-7 8-7s7.4 2.7 8 7"/></svg>',
+    blog:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5ZM20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5Z"/></svg>'
   })[name];
 
   function getProducts(){ return (window.RAICES_CATALOG && window.RAICES_CATALOG.products) || window.RAICES_PRODUCTS || []; }
@@ -64,6 +65,7 @@
       <button class="app-nav-btn active" data-app-tab="home">${icon('home')}<span>${txt('Inicio','Home')}</span></button>
       <button class="app-nav-btn" data-app-tab="search">${icon('search')}<span>${txt('Buscar','Search')}</span></button>
       <button class="app-nav-btn app-nav-cart" data-app-tab="cart">${icon('cart')}<span>${txt('Carrito','Cart')}</span><i class="app-nav-badge" id="appCartCount">0</i></button>
+      <button class="app-nav-btn" data-app-tab="blog">${icon('blog')}<span>Blog</span></button>
       <button class="app-nav-btn" data-app-tab="orders">${icon('orders')}<span>${txt('Pedidos','Orders')}</span></button>
       <button class="app-nav-btn" data-app-tab="profile">${icon('profile')}<span>${txt('Perfil','Profile')}</span></button>`;
     document.body.appendChild(nav);
@@ -80,6 +82,7 @@
     if(tab==='home'){ closeSearch(); setActive('home'); window.scrollTo({top:0,behavior:'smooth'}); }
     if(tab==='search') openSearch();
     if(tab==='cart'){ document.getElementById('openCart')?.click(); setActive('cart'); }
+    if(tab==='blog'){ location.href='/blog'; return; }
     if(tab==='orders'||tab==='profile'){ document.querySelector('.js-auth-open')?.click(); setActive(tab); }
   }
   function setActive(tab){ document.querySelectorAll('.app-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.appTab===tab)); }

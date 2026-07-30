@@ -58,3 +58,15 @@ body.blog-page{background:var(--blog-paper);color:var(--blog-ink)}
 @media(max-width:980px){.blog-hero{grid-template-columns:1fr}.blog-hero-art{min-height:340px;order:-1}.blog-content-grid{grid-template-columns:1fr}.blog-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.article-layout{grid-template-columns:1fr}.article-aside{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.blog-hero-copy{padding:42px 24px}.blog-hero h1{font-size:2.65rem}.blog-hero-art{min-height:270px}.blog-shell,.article-shell{width:min(100% - 28px,1240px)}.blog-featured-grid{grid-template-columns:1fr}.blog-card--lead .blog-card-image{height:260px}.blog-recent-grid{grid-template-columns:1fr 1fr}.blog-sidebar{grid-template-columns:1fr}.article-header{padding-top:38px}.article-header h1{font-size:2.35rem}.article-layout{padding-top:32px}.article-aside{grid-template-columns:1fr}.article-body{font-size:1.04rem}.blog-page .site-header .menu{display:none}}
 @media(max-width:480px){.blog-recent-grid{grid-template-columns:1fr}.blog-card-image{height:220px}.blog-card--lead .blog-card-image{height:245px}.blog-category-strip{padding-left:2px}.article-hero-image{border-radius:10px}}
+
+/* MyRaíces v18.1.1 — navegación visible en móvil */
+.blog-mobile-nav{display:none}
+@media(max-width:760px){
+ .blog-page{padding-bottom:78px}
+ .blog-page .site-header .nav{height:72px}
+ .blog-page .site-header .logo img{width:62px;height:62px}
+ .blog-page .site-header .nav-icons{display:flex}
+ .blog-mobile-nav{display:flex;position:fixed;z-index:500;left:10px;right:10px;bottom:calc(9px + env(safe-area-inset-bottom,0px));height:62px;align-items:center;justify-content:space-around;border-radius:20px;background:rgba(255,255,255,.97);box-shadow:0 10px 36px rgba(16,35,58,.18);backdrop-filter:blur(16px);padding:5px 8px}
+ .blog-mobile-nav a{color:#697887;text-decoration:none;font-size:.72rem;font-weight:800;padding:10px 12px;border-radius:13px}
+ .blog-mobile-nav a.active{background:#eaf3ff;color:#0d5db8}
+}
