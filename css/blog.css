@@ -59,7 +59,7 @@ body.blog-page{background:var(--blog-paper);color:var(--blog-ink)}
 @media(max-width:720px){.blog-hero-copy{padding:42px 24px}.blog-hero h1{font-size:2.65rem}.blog-hero-art{min-height:270px}.blog-shell,.article-shell{width:min(100% - 28px,1240px)}.blog-featured-grid{grid-template-columns:1fr}.blog-card--lead .blog-card-image{height:260px}.blog-recent-grid{grid-template-columns:1fr 1fr}.blog-sidebar{grid-template-columns:1fr}.article-header{padding-top:38px}.article-header h1{font-size:2.35rem}.article-layout{padding-top:32px}.article-aside{grid-template-columns:1fr}.article-body{font-size:1.04rem}.blog-page .site-header .menu{display:none}}
 @media(max-width:480px){.blog-recent-grid{grid-template-columns:1fr}.blog-card-image{height:220px}.blog-card--lead .blog-card-image{height:245px}.blog-category-strip{padding-left:2px}.article-hero-image{border-radius:10px}}
 
-/* MyRaíces v18.1.1 — navegación visible en móvil */
+/* MyRaíces v18.2 — navegación visible en móvil */
 .blog-mobile-nav{display:none}
 @media(max-width:760px){
  .blog-page{padding-bottom:78px}

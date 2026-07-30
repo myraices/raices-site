@@ -187,5 +187,5 @@
   }
 }
 
-/* v18.1.1: mobile Blog access */
+/* v18.2: mobile Blog access */
 @media(max-width:760px){.app-bottom-nav{padding-inline:5px}.app-nav-btn{font-size:9px}.app-nav-btn svg{width:20px;height:20px}}
