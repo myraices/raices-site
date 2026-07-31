@@ -167,8 +167,28 @@
     // The previous reload handler could create an endless refresh loop after login
     // when the account language and the locally stored language were reconciled.
     window.addEventListener('raices:languageChanged',()=>{
+      // Rebuild the compact mobile interface so every hardcoded app label
+      // immediately reflects the newly selected language.
+      const wasSearchOpen=document.body.classList.contains('app-search-open');
+      const currentQuery=document.getElementById('appSearchInput')?.value||'';
+      const currentTab=document.querySelector('.app-nav-btn.active')?.dataset.appTab||'home';
+
+      document.getElementById('appHome')?.remove();
+      document.getElementById('appSearch')?.remove();
+      document.querySelector('.app-bottom-nav')?.remove();
+      createShell();
+
       renderFeatured();
-      renderSearch(document.getElementById('appSearchInput')?.value||'');
+      renderSearch(currentQuery);
+      syncCartCount();
+
+      if(wasSearchOpen){
+        openSearch();
+        const input=document.getElementById('appSearchInput');
+        if(input){ input.value=currentQuery; renderSearch(currentQuery); }
+      }else{
+        setActive(currentTab);
+      }
     });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true}); else init();
