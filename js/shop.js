@@ -289,7 +289,7 @@
 
   function renderDoors(){
     if(!categoryDoors) return;
-    const order = ["Kitchen","Herbal","Desserts","Home","Wellness"];
+    const order = ["Kitchen","Herbal","Desserts","Home","Wellness"].filter(cat => categories[cat]?.cmsEnabled !== false);
     categoryDoors.innerHTML = order.map(cat => {
       const item = categories[cat];
       return `<a class="door-card" href="#shop" data-category-door="${cat}">
@@ -318,9 +318,11 @@
     });
   }
 
+  window.addEventListener("raices:siteContentUpdated", function(){ renderDoors(); renderFilters(); });
+
   function renderFilters(){
     if(!categoryFilters) return;
-    const cats = ["All","Kitchen","Herbal","Desserts","Home","Wellness"];
+    const cats = ["All",...(["Kitchen","Herbal","Desserts","Home","Wellness"].filter(cat => categories[cat]?.cmsEnabled !== false))];
     categoryFilters.innerHTML = cats.map(cat => {
       const label = categoryLabel(cat);
       return `<button class="filter-btn ${activeCategory===cat ? "active":""}" data-cat="${cat}">${label}</button>`;
