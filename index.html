@@ -21,6 +21,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://myraices.com/#organization","name":"Raíces","legalName":"MyRaices LLC","url":"https://myraices.com/","logo":{"@type":"ImageObject","url":"https://myraices.com/assets/raices-logo.png"},"image":"https://myraices.com/og-image.jpg","email":"info@myraices.com"},{"@type":"WebSite","@id":"https://myraices.com/#website","url":"https://myraices.com/","name":"Raíces","inLanguage":["es","en"],"publisher":{"@id":"https://myraices.com/#organization"}}]}</script>
   <link href="css/styles.css?v=18.7.1" rel="stylesheet"/>
   <link href="css/app-experience.css?v=18.7.1" rel="stylesheet"/>
+  <link href="css/home-first-impression.css?v=18.8.0" rel="stylesheet"/>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-28FCJQTL9R"></script>
   <script src="js/ga-init.js"></script>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -35,7 +36,7 @@
   <link href="/site.webmanifest" rel="manifest"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="home-first-impression">
   <div class="intro"><div><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><p>La salud comienza desde la raíz</p></div></div>
 
   <div class="preopening-bar" role="status">
@@ -82,18 +83,24 @@
   <div class="backdrop" id="backdrop"></div>
 
   <main>
-    <section id="inicio" class="hero">
+    <section id="inicio" class="hero hero-premium">
       <div class="hero-copy reveal">
-        <img class="hero-logo-mark" src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async">
         <p class="eyebrow" data-i18n="hero_eyebrow">Raíces · Marca de bienestar</p>
         <h1 data-i18n="hero_title">Nutre tu cuerpo. Vuelve a tus raíces.</h1>
-        <p data-i18n="hero_text">Alimentos artesanales, infusiones, objetos para el hogar y guías de bienestar creados para convertir lo cotidiano en ritual.</p>
+        <p class="hero-lead" data-i18n="hero_text">Alimentos artesanales, infusiones, objetos para el hogar y guías de bienestar creados para convertir lo cotidiano en ritual.</p>
         <div class="hero-actions">
           <a class="btn" href="#shop" data-i18n="hero_btn">Explorar colecciones</a>
           <a class="text-link" href="#nosotros" data-i18n="hero_story">Nuestra historia →</a>
         </div>
+        <div class="hero-signature" aria-hidden="true">
+          <span></span><img src="assets/raices-logo.webp" alt="" width="72" height="72" decoding="async"><span></span>
+        </div>
       </div>
-      <div class="hero-art" aria-hidden="true"></div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-photo hero-photo-main"></div>
+        <div class="hero-photo hero-photo-detail"></div>
+        <div class="hero-seal"><img src="assets/raices-logo.webp" alt="" width="140" height="140" decoding="async"></div>
+      </div>
     </section>
 
     <section class="section collection-doors" id="shop">
