@@ -24,8 +24,17 @@
     var img=hero.querySelector('#heroCmsImage');
     var position=item.content_position||'center';
     var objectPosition=position==='right'?'right center':position==='left'?'left center':'center center';
+    var art=hero.querySelector('.hero-cms-art');
+    if(art){
+      art.style.backgroundImage=safeUrl(image);
+      art.style.backgroundPosition=objectPosition;
+    }
     if(img){
-      img.onerror=function(){this.onerror=null;this.src='/assets/hero-hand-plant.webp'};
+      img.onerror=function(){
+        this.onerror=null;
+        this.src='/assets/hero-hand-plant.webp';
+        if(art)art.style.backgroundImage=safeUrl('/assets/hero-hand-plant.webp');
+      };
       if(img.getAttribute('src')!==image)img.setAttribute('src',image);
       img.style.objectPosition=objectPosition;
       img.alt=text(item,'image_alt')||'Raíces: volver a lo esencial';
