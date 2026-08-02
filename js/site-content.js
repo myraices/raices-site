@@ -19,26 +19,33 @@
     var p=hero.querySelector('.hero-actions .btn'),s=hero.querySelector('.hero-actions .text-link');
     if(p){p.textContent=text(item,'primary_label');if(item.primary_url)p.href=item.primary_url}
     if(s){s.textContent=text(item,'secondary_label');if(item.secondary_url)s.href=item.secondary_url}
-    var mobile=window.matchMedia&&window.matchMedia('(max-width:760px)').matches;
-    var image=(mobile&&item.image_mobile_url)||item.image_desktop_url||item.image_mobile_url||'/assets/hero-hand-plant.webp';
-    var visual=hero.querySelector('#heroCmsVisual');
-    var position=item.content_position||'center';
-    var objectPosition=position==='right'?'right center':position==='left'?'left center':'center center';
-    if(visual){
-      visual.style.setProperty('background-image',safeUrl(image),'important');
-      visual.style.setProperty('background-position',objectPosition,'important');
-      visual.style.setProperty('background-size','cover','important');
-      visual.style.setProperty('background-repeat','no-repeat','important');
-      visual.setAttribute('aria-label',text(item,'image_alt')||'Raíces: volver a lo esencial');
-      var probe=new Image();
-      probe.onerror=function(){visual.style.setProperty('background-image',safeUrl('assets/hero-hand-plant.webp'),'important')};
-      probe.src=image;
+
+    var fallback='/assets/hero-hand-plant.webp';
+    var desktop=item.image_desktop_url||item.image_mobile_url||fallback;
+    var mobile=item.image_mobile_url||desktop||fallback;
+    var img=document.getElementById('heroCmsImage');
+    var mobileSource=document.getElementById('heroCmsMobileSource');
+    var visual=document.getElementById('heroCmsVisual');
+    var alt=text(item,'image_alt')||'Raíces: volver a lo esencial';
+
+    if(mobileSource)mobileSource.setAttribute('srcset',mobile);
+    if(img){
+      img.onerror=function(){
+        img.onerror=null;
+        if(mobileSource)mobileSource.setAttribute('srcset',fallback);
+        img.setAttribute('src',fallback);
+      };
+      img.setAttribute('src',desktop);
+      img.setAttribute('alt',alt);
     }
-    hero.dataset.cmsHeroImage=image;
+    if(visual){visual.setAttribute('aria-label',alt)}
+
+    var position=item.content_position||'center';
+    hero.dataset.cmsHeroImage=desktop;
     var overlay=Math.max(0,Math.min(80,Number(item.overlay)||0))/100;
     hero.style.setProperty('--cms-hero-overlay',overlay);
     hero.classList.remove('cms-position-left','cms-position-center','cms-position-right','cms-height-compact','cms-height-normal','cms-height-full');
-    hero.classList.add('cms-position-'+position,'cms-height-'+(item.height||'compact'));
+    hero.classList.add('cms-position-'+position,'cms-height-'+(item.height||'normal'));
   }
   function applyTrust(item){if(!item)return;var section=document.querySelector('.confidence-strip');visible(section,item.enabled);if(!section)return;var cards=section.querySelectorAll('.confidence-grid>div');for(var i=0;i<cards.length;i++){setText(cards[i],'strong',text(item,'item'+(i+1)+'_title'));setText(cards[i],'span',text(item,'item'+(i+1)+'_text'))}}
   function applyEditorial(item){if(!item)return;var section=document.querySelector('.editorial-intro');visible(section,item.enabled);if(!section)return;setText(section,'[data-i18n="editorial_eyebrow"]',text(item,'eyebrow'));setText(section,'[data-i18n="editorial_title"]',text(item,'title'));setText(section,'[data-i18n="editorial_text"]',text(item,'description'));var a=section.querySelector('.editorial-link');if(a){a.textContent=text(item,'cta_label');if(item.cta_url)a.href=item.cta_url}var imgs=section.querySelectorAll('.editorial-image');if(imgs[0]&&item.primary_image_url)imgs[0].style.backgroundImage=safeUrl(item.primary_image_url);if(imgs[1]&&item.secondary_image_url)imgs[1].style.backgroundImage=safeUrl(item.secondary_image_url);imgs.forEach(function(el){if(item.image_alt_es)el.setAttribute('aria-label',text(item,'image_alt'))});var stats=section.querySelectorAll('.editorial-proof span');if(stats[0]){setText(stats[0],'b',item.stat1_value);setText(stats[0],'small',text(item,'stat1_label'))}if(stats[1]){setText(stats[1],'b',item.stat2_value);setText(stats[1],'small',text(item,'stat2_label'))}}
