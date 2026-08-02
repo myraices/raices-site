@@ -21,14 +21,18 @@
     if(s){s.textContent=text(item,'secondary_label');if(item.secondary_url)s.href=item.secondary_url}
     var mobile=window.matchMedia&&window.matchMedia('(max-width:760px)').matches;
     var image=(mobile&&item.image_mobile_url)||item.image_desktop_url||item.image_mobile_url||'/assets/hero-hand-plant.webp';
-    var img=hero.querySelector('#heroCmsImage');
+    var visual=hero.querySelector('#heroCmsVisual');
     var position=item.content_position||'center';
     var objectPosition=position==='right'?'right center':position==='left'?'left center':'center center';
-    if(img){
-      img.onerror=function(){this.onerror=null;this.src='/assets/hero-hand-plant.webp'};
-      if(img.getAttribute('src')!==image)img.setAttribute('src',image);
-      img.style.objectPosition=objectPosition;
-      img.alt=text(item,'image_alt')||'Raíces: volver a lo esencial';
+    if(visual){
+      visual.style.setProperty('background-image',safeUrl(image),'important');
+      visual.style.setProperty('background-position',objectPosition,'important');
+      visual.style.setProperty('background-size','cover','important');
+      visual.style.setProperty('background-repeat','no-repeat','important');
+      visual.setAttribute('aria-label',text(item,'image_alt')||'Raíces: volver a lo esencial');
+      var probe=new Image();
+      probe.onerror=function(){visual.style.setProperty('background-image',safeUrl('assets/hero-hand-plant.webp'),'important')};
+      probe.src=image;
     }
     hero.dataset.cmsHeroImage=image;
     var overlay=Math.max(0,Math.min(80,Number(item.overlay)||0))/100;

@@ -1,0 +1,75 @@
+/* MyRaíces v19.1.4 — definitive CMS Hero rendering.
+   Loaded last. The CMS image is painted twice: as a resilient background
+   and as a semantic IMG. Either layer alone is enough to display it. */
+body.home-first-impression .hero.hero-premium::before,
+body.home-first-impression .hero.hero-premium::after{
+  z-index:0;
+}
+body.home-first-impression .hero.hero-premium .hero-copy{
+  position:relative;
+  z-index:2;
+}
+body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art{
+  display:block !important;
+  position:relative !important;
+  z-index:1 !important;
+  min-width:0 !important;
+  min-height:650px !important;
+  overflow:hidden !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  background-color:#d9ccb9 !important;
+  background-image:url('/assets/hero-hand-plant.webp');
+  background-repeat:no-repeat !important;
+  background-size:cover !important;
+  background-position:center center;
+  clip-path:none !important;
+  filter:none !important;
+}
+body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art .hero-cms-media{
+  display:block !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:1 !important;
+  width:100% !important;
+  height:100% !important;
+}
+body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art #heroCmsImage{
+  display:block !important;
+  position:absolute !important;
+  inset:0 !important;
+  z-index:1 !important;
+  width:100% !important;
+  height:100% !important;
+  max-width:none !important;
+  object-fit:cover !important;
+  object-position:center center;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art .hero-cms-overlay{
+  z-index:2 !important;
+}
+body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art .hero-photo-detail{
+  z-index:3 !important;
+}
+body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art .hero-seal{
+  z-index:4 !important;
+}
+body.home-first-impression .hero.hero-premium.cms-position-left .hero-cms-art{
+  background-position:left center !important;
+}
+body.home-first-impression .hero.hero-premium.cms-position-center .hero-cms-art{
+  background-position:center center !important;
+}
+body.home-first-impression .hero.hero-premium.cms-position-right .hero-cms-art{
+  background-position:right center !important;
+}
+@media (max-width:760px){
+  body.home-first-impression .hero.hero-premium .hero-art.hero-cms-art{
+    display:block !important;
+    order:-1 !important;
+    width:100% !important;
+    min-height:54svh !important;
+  }
+}
