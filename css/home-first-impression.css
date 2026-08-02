@@ -286,3 +286,36 @@ body.home-first-impression .hero-premium .hero-photo-main{
     background-image:var(--cms-hero-image,url('../assets/hero-hand-plant.webp'))!important;
   }
 }
+
+
+/* v19.1.2 — Hero CMS image rendered as a real image element.
+   This avoids background-layer conflicts and keeps NURAI as the source of truth. */
+body.home-first-impression .hero-premium .hero-photo-main{
+  overflow:hidden;
+  background-image:none!important;
+  transform:none!important;
+}
+body.home-first-impression .hero-premium .hero-photo-main #heroCmsImage{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:100%!important;
+  min-height:100%!important;
+  object-fit:cover!important;
+  object-position:center center;
+  opacity:1!important;
+  visibility:visible!important;
+}
+body.home-first-impression .hero-premium .hero-art{
+  background:#d9ccb9!important;
+}
+body.home-first-impression .hero-premium.cms-position-left #heroCmsImage{object-position:left center}
+body.home-first-impression .hero-premium.cms-position-center #heroCmsImage{object-position:center center}
+body.home-first-impression .hero-premium.cms-position-right #heroCmsImage{object-position:right center}
+@media(max-width:760px){
+  body.home-first-impression:not(.app-experience) .hero-premium .hero-photo-main{
+    display:block!important;
+    position:absolute!important;
+    inset:0!important;
+  }
+}
