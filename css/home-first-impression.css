@@ -265,3 +265,24 @@ body.home-first-impression .hero-premium.cms-position-right .hero-photo-main{bac
 /* v19.1 CMS: las imágenes editoriales pueden ser reemplazadas desde NURAI. */
 body.home-first-impression .editorial-image-main{background-image:var(--cms-editorial-main,url('../assets/empanadas-signature-board.webp'))}
 body.home-first-impression .editorial-image-secondary{background-image:var(--cms-editorial-secondary,url('../assets/herbal-board.webp'))}
+
+/* v19.1.1 — Hero CMS synchronization fix.
+   The image published from NURAI is the source of truth on desktop and mobile. */
+body.home-first-impression .hero-premium .hero-art{
+  background-image:var(--cms-hero-image,url('../assets/hero-hand-plant.webp'))!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+body.home-first-impression .hero-premium .hero-photo-main{
+  display:block!important;
+  opacity:1!important;
+  visibility:visible!important;
+  background-image:var(--cms-hero-image,url('../assets/hero-hand-plant.webp'))!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:760px){
+  body.home-first-impression:not(.app-experience) .hero-premium .hero-art{
+    background-image:var(--cms-hero-image,url('../assets/hero-hand-plant.webp'))!important;
+  }
+}
