@@ -262,3 +262,6 @@ body.home-first-impression .hero-premium .hero-photo-main{background-image:var(-
 body.home-first-impression .hero-premium.cms-position-left .hero-photo-main{background-position:left center}
 body.home-first-impression .hero-premium.cms-position-center .hero-photo-main{background-position:center}
 body.home-first-impression .hero-premium.cms-position-right .hero-photo-main{background-position:right center}
+/* v19.1 CMS: las imágenes editoriales pueden ser reemplazadas desde NURAI. */
+body.home-first-impression .editorial-image-main{background-image:var(--cms-editorial-main,url('../assets/empanadas-signature-board.webp'))}
+body.home-first-impression .editorial-image-secondary{background-image:var(--cms-editorial-secondary,url('../assets/herbal-board.webp'))}
