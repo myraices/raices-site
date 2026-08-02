@@ -215,3 +215,50 @@ body.home-first-impression .intro{display:none!important}
 @media (prefers-reduced-motion:reduce){
   body.home-first-impression .hero-photo-main{transform:none}
 }
+
+
+/* MyRaíces Premium Conversion Edition v19.0 */
+body.home-first-impression{--premium-forest:#203c2a;--premium-cream:#f8f3e9;--premium-paper:#fffdf8;--premium-clay:#9b6845;--premium-line:rgba(32,60,42,.13);background:var(--premium-paper)}
+body.home-first-impression .site-header{background:rgba(255,253,248,.94);backdrop-filter:blur(18px);border-bottom:1px solid rgba(32,60,42,.08)}
+body.home-first-impression .site-header .nav{min-height:82px}
+body.home-first-impression .menu a{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;font-weight:750}
+body.home-first-impression .confidence-strip{background:#203c2a;color:#fffdf8;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)}
+body.home-first-impression .confidence-grid{display:grid;grid-template-columns:repeat(4,1fr);padding-top:0;padding-bottom:0}
+body.home-first-impression .confidence-grid>div{padding:25px 28px;border-right:1px solid rgba(255,255,255,.13);display:flex;flex-direction:column;gap:5px}
+body.home-first-impression .confidence-grid>div:last-child{border-right:0}
+body.home-first-impression .confidence-grid strong{font-family:Georgia,"Times New Roman",serif;font-size:1.08rem;font-weight:500}
+body.home-first-impression .confidence-grid span{font-size:.75rem;line-height:1.45;opacity:.7}
+body.home-first-impression .editorial-intro{padding:120px 0;background:#fffdf8}
+body.home-first-impression .editorial-grid{display:grid;grid-template-columns:1.1fr .82fr .52fr;gap:clamp(24px,4vw,68px);align-items:center}
+body.home-first-impression .editorial-image{background-size:cover;background-position:center;box-shadow:0 30px 80px rgba(32,60,42,.13)}
+body.home-first-impression .editorial-image-main{min-height:610px;background-image:url('../assets/empanadas-signature-board.webp');border-radius:220px 220px 18px 18px}
+body.home-first-impression .editorial-image-secondary{min-height:390px;background-image:url('../assets/herbal-board.webp');border-radius:18px 150px 150px 18px;transform:translateY(90px)}
+body.home-first-impression .editorial-copy h2{font-size:clamp(3rem,4.7vw,5.4rem);line-height:.94;letter-spacing:-.045em;color:#203c2a;margin:13px 0 27px}
+body.home-first-impression .editorial-copy>p:not(.eyebrow){color:#657066;font-size:1rem;line-height:1.75;margin-bottom:25px}
+body.home-first-impression .editorial-link{display:inline-block;color:#203c2a;font-weight:800;border-bottom:1px solid rgba(32,60,42,.32);padding-bottom:5px}
+body.home-first-impression .editorial-proof{display:flex;gap:36px;margin-top:42px;padding-top:27px;border-top:1px solid var(--premium-line)}
+body.home-first-impression .editorial-proof span{display:flex;flex-direction:column}
+body.home-first-impression .editorial-proof b{font-family:Georgia,"Times New Roman",serif;color:#203c2a;font-size:2.2rem;font-weight:500;line-height:1}
+body.home-first-impression .editorial-proof small{margin-top:6px;color:#788078;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;max-width:110px;line-height:1.35}
+body.home-first-impression .collection-doors{padding-top:110px;background:#f5efe5}
+body.home-first-impression .section-head{max-width:760px;margin-bottom:44px}
+body.home-first-impression .section-head h2{font-size:clamp(3.1rem,5.4vw,6rem);line-height:.93;letter-spacing:-.05em}
+body.home-first-impression .door-card{transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s ease!important}
+body.home-first-impression .door-card:hover{transform:translateY(-10px);box-shadow:0 35px 80px rgba(31,47,29,.18)!important}
+body.home-first-impression .shop-section{background:#fffdf8;padding-top:120px}
+body.home-first-impression .shop-header h2{font-size:clamp(2.8rem,4vw,4.8rem);line-height:.95;letter-spacing:-.04em}
+body.home-first-impression .product-card-shop{background:#fff;border-color:rgba(32,60,42,.09);box-shadow:0 12px 38px rgba(32,60,42,.06)}
+body.home-first-impression .product-card-shop:hover{box-shadow:0 30px 75px rgba(32,60,42,.13)}
+body.home-first-impression .story-band{padding:110px 0;background:#203c2a;color:#fffdf8}
+body.home-first-impression .story-band h2{color:#fffdf8;font-size:clamp(3rem,5vw,5.5rem);line-height:.93}
+body.home-first-impression .story-band p{color:rgba(255,253,248,.74)}
+body.home-first-impression .newsletter-section{padding:100px 0;background:#efe6d8}
+body.home-first-impression .newsletter-premium{background:#fffdf8;border:1px solid rgba(32,60,42,.1);box-shadow:0 35px 90px rgba(32,60,42,.12)}
+@media(max-width:1000px){body.home-first-impression .confidence-grid{grid-template-columns:repeat(2,1fr)}body.home-first-impression .confidence-grid>div:nth-child(2){border-right:0}body.home-first-impression .confidence-grid>div:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.13)}body.home-first-impression .editorial-grid{grid-template-columns:1fr 1fr}.editorial-image-secondary{display:none!important}}
+@media(max-width:760px){body.home-first-impression .confidence-grid{grid-template-columns:1fr 1fr}body.home-first-impression .confidence-grid>div{padding:18px 15px}body.home-first-impression .confidence-grid strong{font-size:.93rem}body.home-first-impression .confidence-grid span{font-size:.66rem}body.home-first-impression .editorial-intro{padding:62px 0}body.home-first-impression .editorial-grid{grid-template-columns:1fr;gap:38px}body.home-first-impression .editorial-image-main{min-height:430px;border-radius:150px 150px 14px 14px}body.home-first-impression .editorial-copy h2{font-size:3.4rem}body.home-first-impression .editorial-copy{padding:0 5px}body.home-first-impression .editorial-proof{margin-top:30px}body.home-first-impression .collection-doors{padding-top:70px}body.home-first-impression .shop-section{padding-top:75px}}
+@media(max-width:760px){body.app-experience.home-first-impression .confidence-strip,body.app-experience.home-first-impression .editorial-intro{display:none}}
+/* CRM Web compatibility: CMS hero image remains the visual source of truth. */
+body.home-first-impression .hero-premium .hero-photo-main{background-image:var(--cms-hero-image,url('../assets/arepas-board.webp'))}
+body.home-first-impression .hero-premium.cms-position-left .hero-photo-main{background-position:left center}
+body.home-first-impression .hero-premium.cms-position-center .hero-photo-main{background-position:center}
+body.home-first-impression .hero-premium.cms-position-right .hero-photo-main{background-position:right center}
