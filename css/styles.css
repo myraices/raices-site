@@ -994,3 +994,7 @@ img { height:auto; }
 @media(max-width:700px){.hero.cms-height-compact{min-height:640px}.hero.cms-height-normal{min-height:760px}.hero.cms-height-full{min-height:100svh}}
 
 .hero:before{background:linear-gradient(rgba(23,38,21,var(--cms-hero-overlay,.35)),rgba(23,38,21,calc(var(--cms-hero-overlay,.35) + .10))),var(--cms-hero-image,url('../assets/hero-hand-plant.webp')) center/cover}
+
+/* Product cards managed from NURAI v20 */
+.product-card-shop .price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.product-card-shop .compare-price{font-size:.82rem;color:rgba(31,47,29,.48);font-weight:600}
