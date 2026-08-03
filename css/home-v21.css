@@ -1711,3 +1711,10 @@ body.home-first-impression .cms-image-fit-soft #heroCmsImage.hero-media-image{ob
 body.home-first-impression .cms-image-fit-soft #heroCmsVisual.hero-media-cms::before{opacity:.58}
 body.home-first-impression #heroCmsVisual .hero-cms-overlay,body.home-first-impression #heroCmsVisual .hero-seal{z-index:2}
 @media(max-width:760px){body.home-first-impression .cms-image-fit-soft #heroCmsImage.hero-media-image{padding:0}body.home-first-impression #heroCmsVisual.hero-media-cms::before{filter:blur(16px)}}
+
+/* v21.2 — Modo de vista previa real para NURAI */
+html.cms-preview-mode,html.cms-preview-mode body{margin:0!important;padding:0!important;background:#f4efe5!important;overflow:auto!important}
+html.cms-preview-mode body>header,html.cms-preview-mode .preopening-bar,html.cms-preview-mode #shop,html.cms-preview-mode #nosotros,html.cms-preview-mode .confidence-strip,html.cms-preview-mode .editorial-intro,html.cms-preview-mode .collection-doors,html.cms-preview-mode .newsletter-section,html.cms-preview-mode footer,html.cms-preview-mode .whatsapp-float,html.cms-preview-mode .cookie-banner{display:none!important}
+html.cms-preview-mode main{margin:0!important;padding:0!important}
+html.cms-preview-mode #inicio{margin:0!important;min-height:100vh!important;height:auto!important}
+html.cms-preview-mode #inicio .hero-inner{min-height:100vh!important}
