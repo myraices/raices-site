@@ -31,8 +31,12 @@
       soldOut: row.stock !== null && Number(row.stock) <= 0, status: normalize(row.status),
       featured: Boolean(row.featured), sortOrder: Number(row.sort_order || 0), stock: row.stock === null ? null : Number(row.stock),
       tags: Array.isArray(row.tags) ? row.tags : [], taxable: row.taxable,
-      benefits: Array.isArray(row.benefits) ? row.benefits : [], ingredients: normalize(row.ingredients_text), conservation: normalize(row.conservation_text),
-      preparation: normalize(row.preparation_text), moment: normalize(row.moment_text), relatedHint: normalize(row.related_hint) || "Combina con otros productos Raíces",
+      benefits: currentLanguage() === "en" ? (Array.isArray(row.benefits_en) && row.benefits_en.length ? row.benefits_en : (Array.isArray(row.benefits) ? row.benefits : [])) : (Array.isArray(row.benefits_es) && row.benefits_es.length ? row.benefits_es : (Array.isArray(row.benefits) ? row.benefits : [])),
+      ingredients: localized(row,"ingredients_text_es","ingredients_text_en") || normalize(row.ingredients_text),
+      conservation: localized(row,"conservation_text_es","conservation_text_en") || normalize(row.conservation_text),
+      preparation: localized(row,"preparation_text_es","preparation_text_en") || normalize(row.preparation_text),
+      moment: localized(row,"moment_text_es","moment_text_en") || normalize(row.moment_text),
+      relatedHint: localized(row,"related_hint_es","related_hint_en") || normalize(row.related_hint) || "Combina con otros productos Raíces",
       variants: Array.isArray(row.variants) ? row.variants : [], source: "supabase"
     };
   }
