@@ -28,14 +28,14 @@
     var visual=document.getElementById('heroCmsVisual');
     var alt=text(item,'image_alt')||'Raíces: volver a lo esencial';
 
-    if(mobileSource)mobileSource.setAttribute('srcset',mobile);
+    if(mobileSource&&mobileSource.getAttribute('srcset')!==mobile)mobileSource.setAttribute('srcset',mobile);
     if(img){
       img.onerror=function(){
         img.onerror=null;
         if(mobileSource)mobileSource.setAttribute('srcset',fallback);
         img.setAttribute('src',fallback);
       };
-      img.setAttribute('src',desktop);
+      if(img.getAttribute('src')!==desktop&&img.src!==desktop)img.setAttribute('src',desktop);
       img.setAttribute('alt',alt);
     }
     if(visual){visual.setAttribute('aria-label',alt)}
@@ -54,5 +54,5 @@
   function applyNewsletter(item){if(!item)return;var section=document.querySelector('.newsletter-section');visible(section,item.enabled);if(!section)return;setText(section,'[data-i18n="community_eyebrow"]',text(item,'eyebrow'));setText(section,'[data-i18n="community_title"]',text(item,'title'));setText(section,'[data-i18n="community_text"]',text(item,'description'));setText(section,'[data-i18n="newsletter_benefit_1"]',text(item,'benefit1'));setText(section,'[data-i18n="newsletter_benefit_2"]',text(item,'benefit2'));setText(section,'[data-i18n="newsletter_benefit_3"]',text(item,'benefit3'))}
   function apply(){applyAnnouncement(content.announcement);applyHero(content.hero);applyTrust(content.trust);applyEditorial(content.editorial);applyCollectionsHeader(content.collections_header);applyCollections();applyNewsletter(content.newsletter)}
   async function load(){apply();try{var client=window.raicesSupabase;if(!client)return;var result=await client.from('site_content_public').select('content_key,content,sort_order').order('sort_order');if(result.error)throw result.error;(result.data||[]).forEach(function(row){if(row&&row.content_key&&row.content)content[row.content_key]=row.content});window.RAICES_SITE_CONTENT=content;apply()}catch(err){console.warn('[Raíces CMS] Se usará el contenido incorporado.',err&&err.message?err.message:err)}}
-  window.addEventListener('raices:languageChanged',function(){if(Object.keys(content).length)apply()});window.addEventListener('resize',function(){if(content.hero)applyHero(content.hero)},{passive:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+  window.addEventListener('raices:languageChanged',function(){if(Object.keys(content).length)apply()});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
 })();

@@ -293,7 +293,7 @@
     categoryDoors.innerHTML = order.map(cat => {
       const item = categories[cat];
       return `<a class="door-card" href="#shop" data-category-door="${cat}">
-        <span class="door-bg" style="background-image:url('${item.image}')"></span>
+        <span class="door-bg"><img class="door-bg-img" src="${item.image}" alt="" loading="lazy" decoding="async"></span>
         <span class="door-content">
           <span class="eyebrow">${categoryLabel(cat)}</span>
           <h3>${currentLang()==='es' ? (item.spanish || item.title) : item.title}</h3>
@@ -532,7 +532,7 @@
             : `<button class="text-product-link" data-view="${p.sku}">${p.cardCta || (p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product'))}</button>
              <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>`;
       return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''} ${isProductAvailable(p) ? '' : 'is-sold-out'}">
-      <div class="product-media" style="background-image:url('${p.image}');background-position:${p.imagePosition || 'center'}">
+      <div class="product-media"><img class="product-media-img" src="${p.image}" alt="${p.name}" loading="lazy" decoding="async" style="object-position:${p.imagePosition || 'center'}">
         <span class="product-badge">${isProductAvailable(p) ? (p.badge || (isRitualBox ? (currentLang()==='es' ? 'Personalizable' : 'Customizable') : (p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory)))) : t('sold_out')}</span>
         <button type="button" class="product-favorite-btn ${isFavorite(p.sku) ? 'active' : ''}" data-favorite="${p.sku}" aria-pressed="${String(isFavorite(p.sku))}" aria-label="${currentLang()==='es' ? 'Guardar en favoritos' : 'Save to favorites'}">${isFavorite(p.sku) ? '♥' : '♡'}</button>
       </div>

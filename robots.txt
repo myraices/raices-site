@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /.netlify/
 Allow: /
 Disallow: /account.html
 Disallow: /checkout-preview.html
