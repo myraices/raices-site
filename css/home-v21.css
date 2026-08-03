@@ -1699,3 +1699,15 @@ body.home-first-impression .newsletter-section{
 .product-media-img{object-fit:contain;background:#f6ecdf;}
 .door-bg-img{z-index:-2;transition:transform .9s;}
 .door-card:hover .door-bg-img{transform:scale(1.06)}
+
+/* v21.1 Hero CMS framing */
+body.home-first-impression #heroCmsVisual.hero-media-cms{background:#d9ccb9;isolation:isolate}
+body.home-first-impression #heroCmsVisual.hero-media-cms::before{content:"";position:absolute;inset:-18px;z-index:0;background-image:var(--cms-hero-bg);background-size:cover;background-position:var(--cms-hero-pos-x,50%) var(--cms-hero-pos-y,50%);filter:blur(22px) saturate(.9);transform:scale(1.08);opacity:0;transition:opacity .2s ease}
+body.home-first-impression #heroCmsVisual .hero-media-picture{position:absolute;inset:0;z-index:1}
+body.home-first-impression #heroCmsImage.hero-media-image{object-position:var(--cms-hero-pos-x,50%) var(--cms-hero-pos-y,50%) !important;transform:scale(var(--cms-hero-zoom,1));transform-origin:var(--cms-hero-pos-x,50%) var(--cms-hero-pos-y,50%);transition:transform .2s ease,object-position .2s ease}
+body.home-first-impression .cms-image-fit-cover #heroCmsImage.hero-media-image{object-fit:cover}
+body.home-first-impression .cms-image-fit-contain #heroCmsImage.hero-media-image{object-fit:contain}
+body.home-first-impression .cms-image-fit-soft #heroCmsImage.hero-media-image{object-fit:contain;padding:clamp(0px,1.2vw,18px)}
+body.home-first-impression .cms-image-fit-soft #heroCmsVisual.hero-media-cms::before{opacity:.58}
+body.home-first-impression #heroCmsVisual .hero-cms-overlay,body.home-first-impression #heroCmsVisual .hero-seal{z-index:2}
+@media(max-width:760px){body.home-first-impression .cms-image-fit-soft #heroCmsImage.hero-media-image{padding:0}body.home-first-impression #heroCmsVisual.hero-media-cms::before{filter:blur(16px)}}
