@@ -4,6 +4,7 @@
  const number=document.getElementById('confirmationNumber'),status=document.getElementById('confirmationStatus'),icon=document.getElementById('confirmationIcon'),eyebrow=document.getElementById('confirmationEyebrow'),title=document.getElementById('confirmationTitle'),text=document.getElementById('confirmationText'),timeline=document.getElementById('paymentTimeline');
  if(pending.orderNumber)number.textContent='#'+pending.orderNumber;
  let attempts=0;
+ function clearCart(){localStorage.removeItem('raices_cart');localStorage.removeItem('raices_cart_summary');sessionStorage.removeItem('raices_pending_order');window.dispatchEvent(new CustomEvent('raices:cart-cleared'));}
  async function check(){
   attempts++;
   try{
@@ -14,11 +15,11 @@
     if(String(d.payment_status).toLowerCase()==='completed'||String(d.status).toLowerCase()==='paid'){
      icon.textContent='✓';eyebrow.textContent='Pedido recibido';title.textContent='Gracias por volver a la raíz.';text.textContent='Tu pago fue confirmado y recibimos tu pedido.';timeline.classList.add('done');
      sessionStorage.setItem('raices_confirmed_order',JSON.stringify({orderNumber:d.order_number,paymentStatus:'completed'}));
-     localStorage.removeItem('raices_cart');localStorage.removeItem('raices_cart_summary');return;
+     clearCart();return;
     }
    }
   }catch(e){console.error(e)}
-  if(attempts<12)setTimeout(check,2500);else{text.textContent='Tu compra fue recibida y la confirmación del pago continúa procesándose. Evita repetir el pago.';status.textContent='Confirmación en proceso';}
+  if(attempts<40)setTimeout(check,2500);else{text.textContent='Tu compra fue recibida y la confirmación del pago continúa procesándose. Evita repetir el pago.';status.textContent='Confirmación en proceso';}
  }
  if(id||pending.id)check();else{text.textContent='No encontramos la referencia del pedido. Regresa a la tienda o contáctanos para ayudarte.';status.textContent='Referencia no disponible';}
 })();

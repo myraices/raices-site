@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const products = require('../../data/products.json');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 const allowedOrigins = new Set(['https://myraices.com', 'https://www.myraices.com']);
@@ -22,7 +21,14 @@ function zoneFor(zip) {
   ];
   return zones.find(z => (z.zips || []).includes(zip) || (z.prefixes || []).some(p => zip.startsWith(p)));
 }
-function productMap() { return new Map(products.map(p => [p.sku, p])); }
+async function productMap() {
+  console.log('[checkout] load_products:start');
+  const rows = await supabaseRequest('products?select=*&status=in.(active,sold_out)');
+  const map = new Map((rows || []).map(p => [String(p.sku || '').trim(), p]));
+  console.log('[checkout] load_products:finish', { count: map.size });
+  return map;
+}
+function productName(p) { return safeText(p?.name_es || p?.name_en || p?.name || p?.sku, 180); }
 function isDigitalProduct(p) {
   return String(p?.sku || '').startsWith('RA-LB-') ||
     (String(p?.category || '').toLowerCase() === 'wellness' && String(p?.collection || '').toLowerCase() === 'the library') ||
@@ -65,19 +71,20 @@ exports.handler = async (event) => {
     if (!items.length) return response(400, { error: 'EMPTY_CART' }, origin);
     if (!safeText(customer.name, 120) || !/^\S+@\S+\.\S+$/.test(safeText(customer.email, 180))) return response(400, { error: 'CUSTOMER_DATA_INCOMPLETE' }, origin);
 
-    const map = productMap();
+    console.log('[checkout] validate_request:start', { itemCount: items.length });
+    const map = await productMap();
     let subtotal = 0;
     let physicalSubtotal = 0;
     const validated = items.map(raw => {
       const p = map.get(safeText(raw.sku, 60));
       const qty = Math.max(1, Math.min(20, Number.parseInt(raw.qty, 10) || 0));
-      if (!p || p.available === false || p.soldOut) throw new Error('PRODUCT_NOT_AVAILABLE');
-      if (Number.isFinite(Number(p.stock)) && qty > Number(p.stock)) throw new Error('INSUFFICIENT_STOCK');
+      if (!p || !['active','sold_out'].includes(String(p.status || '').toLowerCase()) || String(p.status || '').toLowerCase() === 'sold_out') throw new Error('PRODUCT_NOT_AVAILABLE');
+      if (p.stock !== null && p.stock !== undefined && Number.isFinite(Number(p.stock)) && qty > Number(p.stock)) throw new Error('INSUFFICIENT_STOCK');
       const unitCents = cents(p.price);
       const digital = isDigitalProduct(p);
       subtotal += unitCents * qty;
       if (!digital) physicalSubtotal += unitCents * qty;
-      return { sku: p.sku, name: p.name, variant: safeText(raw.variant, 120), qty, unitCents, digital };
+      return { sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120), qty, unitCents, digital };
     });
     const hasPhysicalItems = validated.some(i => !i.digital);
     const zone = hasPhysicalItems ? zoneFor(zip) : { name: 'Digital delivery', fee: 0 };
@@ -89,6 +96,7 @@ exports.handler = async (event) => {
     const deliveryCents = !hasPhysicalItems || physicalSubtotal >= 10000 ? 0 : cents(zone.fee);
     const totalCents = subtotal + deliveryCents;
 
+    console.log('[checkout] create_order:start', { subtotalCents: subtotal, deliveryCents, totalCents });
     const pending = await supabaseRequest('orders', {
       method: 'POST',
       body: JSON.stringify({
@@ -112,12 +120,15 @@ exports.handler = async (event) => {
       })
     });
     const order = pending?.[0];
+    console.log('[checkout] create_order:finish', { orderId: order?.id, orderNumber: order?.order_number });
     if (!order?.id) throw new Error('ORDER_CREATION_FAILED');
 
+    console.log('[checkout] save_order_items:start', { orderId: order.id, count: validated.length });
     await supabaseRequest('order_items', {
       method: 'POST',
       body: JSON.stringify(validated.map(i => ({
         order_id: order.id,
+        product_id: i.productId,
         sku: i.sku,
         product_name: i.name,
         variant: i.variant,
@@ -130,6 +141,7 @@ exports.handler = async (event) => {
       })))
     });
 
+    console.log('[checkout] save_order_items:finish', { orderId: order.id });
     const lineItems = validated.map(i => ({
       name: i.variant ? `${i.name} · ${i.variant}` : i.name,
       quantity: String(i.qty),
@@ -140,6 +152,7 @@ exports.handler = async (event) => {
 
     const baseUrl = process.env.URL || 'https://myraices.com';
     const squareBase = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
+    console.log('[checkout] create_square_link:start', { orderId: order.id });
     const squareRes = await fetch(`${squareBase}/v2/online-checkout/payment-links`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Square-Version': '2026-07-15', 'Content-Type': 'application/json' },
@@ -153,11 +166,14 @@ exports.handler = async (event) => {
     const squareText = await squareRes.text();
     const squareData = squareText ? JSON.parse(squareText) : {};
     if (!squareRes.ok || !squareData.payment_link?.url) {
-      await supabaseRequest(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'checkout_error', provider_error: JSON.stringify(squareData).slice(0,2000) }) });
+      console.log('[checkout] create_square_link:finish', { orderId: order.id, squareOrderId: squareData.payment_link.order_id });
+    await supabaseRequest(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'checkout_error', provider_error: JSON.stringify(squareData).slice(0,2000) }) });
       return response(502, { error: 'SQUARE_CHECKOUT_FAILED', details: squareData.errors || [] }, origin);
     }
 
+    console.log('[checkout] create_square_link:finish', { orderId: order.id, squareOrderId: squareData.payment_link.order_id });
     await supabaseRequest(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ square_order_id: squareData.payment_link.order_id, square_payment_link_id: squareData.payment_link.id }) });
+    console.log('[checkout] finish_checkout', { orderId: order.id });
     return response(200, { checkoutUrl: squareData.payment_link.url, orderId: order.id, orderNumber: order.order_number, environment }, origin);
   } catch (err) {
     console.error('create-square-checkout', err);

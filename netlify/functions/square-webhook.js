@@ -19,7 +19,7 @@ function supabaseConfig() {
 
 async function supabaseFind(filter) {
   const { url, key } = supabaseConfig();
-  const res = await fetch(`${url}/rest/v1/orders?${filter}&select=id,square_order_id,status,payment_status,inventory_deducted_at,paid_at&limit=1`, {
+  const res = await fetch(`${url}/rest/v1/orders?${filter}&select=id,square_order_id,status,payment_status,inventory_deducted_at,paid_at,confirmation_email_sent_at&limit=1`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` }
   });
   if (!res.ok) throw new Error(`SUPABASE_FIND_${res.status}:${await res.text()}`);
@@ -60,6 +60,60 @@ async function completePaidOrder(orderId, paymentId, paidAt) {
   });
   if (!res.ok) throw new Error(`SUPABASE_COMPLETE_ORDER_${res.status}:${await res.text()}`);
   return res.json().catch(() => null);
+}
+
+
+async function supabaseGetOrderDetails(orderId) {
+  const { url, key } = supabaseConfig();
+  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,subtotal,delivery_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,order_items(product_name,variant_name,quantity,unit_price,line_total,sku)`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` }
+  });
+  if (!res.ok) throw new Error(`SUPABASE_ORDER_DETAILS_${res.status}:${await res.text()}`);
+  const rows = await res.json();
+  return rows?.[0] || null;
+}
+
+async function createOrderNotification(order) {
+  if (!order?.id) return;
+  const { url, key } = supabaseConfig();
+  const number = order.order_number || String(order.id).slice(0, 8);
+  const payload = {
+    type: 'order_paid',
+    title: 'Pago confirmado',
+    message: `#${number} · ${order.customer_name || 'Cliente'} · $${Number(order.total_amount || 0).toFixed(2)}`,
+    order_id: order.id,
+    action_url: `/orders?order=${order.id}`,
+    dedupe_key: `order-paid:${order.id}`,
+    metadata: { order_number: number, total: Number(order.total_amount || 0) }
+  };
+  const res = await fetch(`${url}/rest/v1/app_notifications`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok && res.status !== 409) throw new Error(`SUPABASE_NOTIFICATION_${res.status}:${await res.text()}`);
+}
+
+function money(value) { return `$${Number(value || 0).toFixed(2)}`; }
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function sendOrderConfirmation(order) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey || !order?.customer_email) {
+    console.warn('[square-webhook] send_confirmation:omitted', { reason: !apiKey ? 'BREVO_API_KEY_MISSING' : 'CUSTOMER_EMAIL_MISSING', orderId: order?.id });
+    return;
+  }
+  const senderName = process.env.BREVO_SENDER_NAME || 'Raíces';
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@myraices.com';
+  const items = (order.order_items || []).map(item => `<tr><td style="padding:8px 0;border-bottom:1px solid #e7ece9">${escapeHtml(item.product_name)}${item.variant_name ? ` · ${escapeHtml(item.variant_name)}` : ''} × ${Number(item.quantity || 0)}</td><td style="padding:8px 0;border-bottom:1px solid #e7ece9;text-align:right">${money(item.line_total)}</td></tr>`).join('');
+  const address = order.delivery_zip === '00000' ? 'Entrega digital' : [order.delivery_address, order.delivery_apt, order.delivery_city, order.delivery_state, order.delivery_zip].filter(Boolean).map(escapeHtml).join(', ');
+  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: Pago confirmado · En preparación</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr><tr><td>Entrega</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table><p style="margin-top:22px"><strong>Entrega:</strong><br>${address}</p><p>Te mantendremos informado cuando tu pedido avance.</p></div></body></html>`;
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json', 'api-key': apiKey },
+    body: JSON.stringify({ sender: { name: senderName, email: senderEmail }, to: [{ email: order.customer_email, name: order.customer_name || order.customer_email }], subject: `Pedido #${order.order_number || ''} confirmado`, htmlContent })
+  });
+  if (!res.ok) throw new Error(`BREVO_CONFIRMATION_${res.status}:${await res.text()}`);
 }
 
 async function getSquareReferenceId(squareOrderId) {
@@ -146,9 +200,32 @@ exports.handler = async (event) => {
     }
 
     if (completed) {
-      // Atomic database operation: marks paid and deducts stock once, even if Square retries the webhook.
-      const paidAt = payment.updated_at || payment.created_at || new Date().toISOString();
-      await completePaidOrder(order.id, payment.id || null, paidAt);
+      const wasAlreadyPaid =
+        String(order.status || '').toLowerCase() === 'paid' ||
+        String(order.payment_status || '').toLowerCase() === 'completed' ||
+        Boolean(order.inventory_deducted_at) ||
+        Boolean(order.paid_at);
+      if (!wasAlreadyPaid) {
+        // Atomic database operation: marks paid and deducts stock once, even if Square retries the webhook.
+        const paidAt = payment.updated_at || payment.created_at || new Date().toISOString();
+        console.log('[square-webhook] complete_order:start', { orderId: order.id, paymentId: payment.id });
+        await completePaidOrder(order.id, payment.id || null, paidAt);
+        console.log('[square-webhook] complete_order:finish', { orderId: order.id });
+      } else {
+        console.log('[square-webhook] complete_order:already_paid', { orderId: order.id, paymentId: payment.id });
+      }
+      const paidOrder = await supabaseGetOrderDetails(order.id);
+      console.log('[square-webhook] notification:start', { orderId: order.id });
+      await createOrderNotification(paidOrder);
+      console.log('[square-webhook] notification:finish', { orderId: order.id });
+      if (!paidOrder?.confirmation_email_sent_at) {
+        console.log('[square-webhook] confirmation_email:start', { orderId: order.id });
+        await sendOrderConfirmation(paidOrder);
+        await supabasePatch(order.id, { confirmation_email_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        console.log('[square-webhook] confirmation_email:finish', { orderId: order.id });
+      } else {
+        console.log('[square-webhook] confirmation_email:already_sent', { orderId: order.id });
+      }
     } else {
       // Square can deliver payment.created/payment.updated events out of order.
       // Once an order is paid, completed or has already deducted inventory, it must never
