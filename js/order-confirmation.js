@@ -1,10 +1,10 @@
 (function(){
  const params=new URLSearchParams(location.search),id=params.get('order');
- let pending={};try{pending=JSON.parse(sessionStorage.getItem('raices_pending_order')||'{}')}catch(e){}
+ let pending={};try{pending=JSON.parse(sessionStorage.getItem('raices_pending_order')||localStorage.getItem('raices_pending_order')||'{}')}catch(e){}
  const number=document.getElementById('confirmationNumber'),status=document.getElementById('confirmationStatus'),icon=document.getElementById('confirmationIcon'),eyebrow=document.getElementById('confirmationEyebrow'),title=document.getElementById('confirmationTitle'),text=document.getElementById('confirmationText'),timeline=document.getElementById('paymentTimeline');
  if(pending.orderNumber)number.textContent='#'+pending.orderNumber;
  let attempts=0;
- function clearCart(){localStorage.removeItem('raices_cart');localStorage.removeItem('raices_cart_summary');sessionStorage.removeItem('raices_pending_order');window.dispatchEvent(new CustomEvent('raices:cart-cleared'));}
+ function clearCart(){localStorage.removeItem('raices_cart');localStorage.removeItem('raices_cart_summary');sessionStorage.removeItem('raices_pending_order');localStorage.removeItem('raices_pending_order');window.dispatchEvent(new CustomEvent('raices:cart-cleared'));}
  async function check(){
   attempts++;
   try{

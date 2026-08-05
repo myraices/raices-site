@@ -35,6 +35,34 @@
   let activeCategory = "All";
   let activeCollection = "All";
   let cart = loadCart();
+  let pendingOrderCheckRunning = false;
+  function readPendingOrder(){
+    try{return JSON.parse(sessionStorage.getItem('raices_pending_order')||localStorage.getItem('raices_pending_order')||'{}')}catch{return {}}
+  }
+  function clearPaidCart(){
+    localStorage.removeItem('raices_cart');
+    localStorage.removeItem('raices_cart_summary');
+    localStorage.removeItem('raices_pending_order');
+    sessionStorage.removeItem('raices_pending_order');
+    cart=[];
+    window.dispatchEvent(new CustomEvent('raices:cart-cleared'));
+    renderCart();
+  }
+  async function reconcilePendingPaidOrder(){
+    const pending=readPendingOrder();
+    if(!pending?.id||pendingOrderCheckRunning)return;
+    pendingOrderCheckRunning=true;
+    try{
+      const response=await fetch('/.netlify/functions/order-status?id='+encodeURIComponent(pending.id),{cache:'no-store'});
+      const order=await response.json();
+      const paid=String(order.payment_status||'').toLowerCase()==='completed'||String(order.status||'').toLowerCase()==='paid';
+      if(response.ok&&paid){
+        console.log('[cart] paid_order_confirmed',{orderId:pending.id,orderNumber:order.order_number});
+        clearPaidCart();
+      }
+    }catch(error){console.error('[cart] pending_order_check_failed',{orderId:pending.id,error})}
+    finally{pendingOrderCheckRunning=false}
+  }
   function favoriteSkus(){ try{return JSON.parse(localStorage.getItem("raices_favorites")||"[]");}catch{return [];} }
   function isFavorite(sku){ return favoriteSkus().includes(sku); }
   function toggleFavorite(sku){ const list=favoriteSkus();const next=list.includes(sku)?list.filter(x=>x!==sku):[...list,sku];localStorage.setItem("raices_favorites",JSON.stringify(next));document.querySelectorAll(`[data-favorite="${sku}"]`).forEach(b=>{b.classList.toggle("active",next.includes(sku));b.setAttribute("aria-pressed",String(next.includes(sku)));b.textContent=next.includes(sku)?"♥":"♡";});window.dispatchEvent(new CustomEvent("raices:favoritesChanged",{detail:{favorites:next}})); }
@@ -868,6 +896,9 @@
   renderFilters();
   renderProducts();
   renderCart();
+  reconcilePendingPaidOrder();
+  window.addEventListener("pageshow",reconcilePendingPaidOrder);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reconcilePendingPaidOrder()});
 
   }
   if(document.readyState === "loading"){

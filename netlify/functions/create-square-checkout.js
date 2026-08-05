@@ -84,7 +84,11 @@ exports.handler = async (event) => {
       const digital = isDigitalProduct(p);
       subtotal += unitCents * qty;
       if (!digital) physicalSubtotal += unitCents * qty;
-      return { sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120), qty, unitCents, digital };
+      const productionCost = Number(p.production_cost || 0);
+      const packagingCost = Number(p.packaging_cost || 0);
+      const logisticsCost = Number(p.logistics_cost || 0);
+      const unitCost = Math.max(0, productionCost + packagingCost + logisticsCost);
+      return { sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120), qty, unitCents, unitCost, digital };
     });
     const hasPhysicalItems = validated.some(i => !i.digital);
     const zone = hasPhysicalItems ? zoneFor(zip) : { name: 'Digital delivery', fee: 0 };
@@ -137,7 +141,8 @@ exports.handler = async (event) => {
         unit_price: i.unitCents / 100,
         line_total: (i.unitCents * i.qty) / 100,
         unit_price_cents: i.unitCents,
-        line_total_cents: i.unitCents * i.qty
+        line_total_cents: i.unitCents * i.qty,
+        unit_cost_snapshot: i.unitCost
       })))
     });
 
