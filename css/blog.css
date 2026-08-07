@@ -76,3 +76,6 @@ body.blog-page{background:var(--blog-paper);color:var(--blog-ink)}
 
 /* MyRaices v18.5 CMS tags */
 .article-tags{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0}.article-tags span{display:inline-flex;padding:7px 12px;border-radius:999px;background:#eef4f1;color:#315c50;font-size:.86rem;font-weight:700}
+
+/* v23.2.0 · blog language selector */
+.blog-header .blog-lang{display:inline-flex;align-items:center;justify-content:center;min-width:58px;height:40px;border:1px solid var(--blog-line);border-radius:999px;background:#fff;color:#183148;font-weight:800;cursor:pointer}.blog-header .nav-icons{gap:10px}.blog-header .blog-read-more{white-space:nowrap}@media(max-width:720px){.blog-header .blog-lang{min-width:52px;height:38px;font-size:12px}.article-header+.blog-header .blog-read-more{display:none}}

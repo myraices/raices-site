@@ -18,6 +18,7 @@
       {id:'demo-6',slug:'arepas-yuca-curcuma',title_es:'Arepas de yuca y cúrcuma: sabor que nutre',title_en:'Cassava and turmeric arepas',excerpt_es:'Una forma deliciosa de llevar ingredientes esenciales a la mesa familiar.',excerpt_en:'A delicious way to bring essential ingredients to the family table.',category_name_es:'Recetas',category_name_en:'Recipes',hero_image_url:'/assets/arepa-curcuma.webp',author_name:'Equipo My Raíces',published_at:'2026-07-06',reading_time_minutes:6,content_blocks:[{type:'paragraph',text_es:'La yuca y la cúrcuma crean una combinación de sabor, color y versatilidad.'}]}
     ];},
     async articles(){try{const client=await this.client();const {data,error}=await client.from('blog_articles_public').select('*').order('published_at',{ascending:false});if(error)throw error;return (data||[]).filter(row=>this.lang()!=='en'||Boolean(row.title_en));}catch(e){console.error('No fue posible cargar el Blog desde Supabase:',e.message);return [];}},
+    async home(){try{const client=await this.client();const {data,error}=await client.from('blog_home_public').select('*').eq('id','main').maybeSingle();if(error)throw error;return data||null;}catch(e){console.warn('Portada del Blog: usando contenido de respaldo.',e.message);return null;}},
     articleUrl(a){return `/blog/${encodeURIComponent(a.slug)}`;}
   };
 })();
