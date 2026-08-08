@@ -1,12 +1,12 @@
 /* Loads catalog-dependent scripts only after the Supabase catalog bridge resolves. */
 (function () {
   const essentialScripts = [
-    "js/catalog.js?v=21.0",
-    "js/shop.js?v=21.0",
+    "js/catalog.js?v=23.2.4",
+    "js/shop.js?v=23.2.4",
   ];
   const deferredScripts = [
-    "js/analytics.js?v=21.0",
-    "js/auth.js?v=21.0",
+    "js/analytics.js?v=23.2.4",
+    "js/auth.js?v=23.2.4",
   ];
 
   function loadScript(src) {

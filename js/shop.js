@@ -878,6 +878,7 @@
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeWaitlistModal(); });
 
   window.addEventListener('raices:languageChanged', function(){
+    window.RAICES_RELOCALIZE_PRODUCTS?.();
     renderDoors();
     renderFilters();
     renderProducts();
