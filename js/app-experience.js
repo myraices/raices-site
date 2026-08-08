@@ -33,6 +33,23 @@
     setTimeout(()=>document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
   }
   function pulseCart(){ document.querySelector('.app-nav-cart')?.animate([{transform:'scale(1)'},{transform:'scale(1.13)'},{transform:'scale(1)'}],{duration:360}); }
+  function categoryImage(cat,fallback){
+    const value=window.RAICES_CATEGORIES?.[cat]?.image;
+    return value || fallback;
+  }
+  function updateMobileCategoryImages(){
+    document.querySelectorAll('.app-intent[data-cat]').forEach(button=>{
+      const cat=button.dataset.cat;
+      const fallbacks={
+        Kitchen:'/assets/categories/category-kitchen.webp',
+        Herbal:'/assets/categories/category-herbal.webp',
+        Desserts:'/assets/categories/category-desserts.webp',
+        Wellness:'/assets/categories/category-wellness.webp'
+      };
+      const image=categoryImage(cat,fallbacks[cat]||'');
+      if(image) button.style.backgroundImage=`url(${JSON.stringify(image)})`;
+    });
+  }
 
   function createShell(){
     const shell=document.createElement('section'); shell.className='app-shell'; shell.id='appHome';
@@ -41,10 +58,10 @@
       <button class="app-search-trigger" type="button"><span>⌕</span><span>${txt('Buscar arepas, tés, proteínas...','Search arepas, teas, proteins...')}</span></button>
       <div class="app-prompt"><h2>${txt('Compra según tu momento','Shop for your moment')}</h2></div>
       <div class="app-intent-grid">
-        <button class="app-intent" data-cat="Kitchen" style="background-image:url('/assets/categories/category-kitchen.webp')"><span>${txt('Comer fácil','Easy meals')}<small>${txt('Arepas, empanadas y proteínas','Arepas, empanadas & proteins')}</small></span></button>
-        <button class="app-intent" data-cat="Herbal" style="background-image:url('/assets/categories/category-herbal.webp')"><span>${txt('Un momento de calma','A moment of calm')}<small>${txt('Tés e infusiones','Teas & infusions')}</small></span></button>
-        <button class="app-intent" data-cat="Desserts" style="background-image:url('/assets/categories/category-desserts.webp')"><span>${txt('Algo dulce','Something sweet')}<small>${txt('Postres artesanales','Handcrafted desserts')}</small></span></button>
-        <button class="app-intent" data-cat="Wellness" style="background-image:url('/assets/categories/category-wellness.webp')"><span>${txt('Volver a mí','Come back to me')}<small>${txt('Guías y rituales','Guides & rituals')}</small></span></button>
+        <button class="app-intent" data-cat="Kitchen" style="background-image:url('${categoryImage('Kitchen','/assets/categories/category-kitchen.webp')}')"><span>${txt('Comer fácil','Easy meals')}<small>${txt('Arepas, empanadas y proteínas','Arepas, empanadas & proteins')}</small></span></button>
+        <button class="app-intent" data-cat="Herbal" style="background-image:url('${categoryImage('Herbal','/assets/categories/category-herbal.webp')}')"><span>${txt('Un momento de calma','A moment of calm')}<small>${txt('Tés e infusiones','Teas & infusions')}</small></span></button>
+        <button class="app-intent" data-cat="Desserts" style="background-image:url('${categoryImage('Desserts','/assets/categories/category-desserts.webp')}')"><span>${txt('Algo dulce','Something sweet')}<small>${txt('Postres artesanales','Handcrafted desserts')}</small></span></button>
+        <button class="app-intent" data-cat="Wellness" style="background-image:url('${categoryImage('Wellness','/assets/categories/category-wellness.webp')}')"><span>${txt('Volver a mí','Come back to me')}<small>${txt('Guías y rituales','Guides & rituals')}</small></span></button>
       </div>
       <div class="app-section-row"><h2 class="app-section-title">${txt('Para comenzar','Start here')}</h2><button data-see-all>${txt('Ver todo','See all')}</button></div>
       <div class="app-product-rail" id="appFeatured"></div>
@@ -163,6 +180,10 @@
     let tries=0; const timer=setInterval(()=>{tries++; if(getProducts().length){clearInterval(timer);renderFeatured();renderSearch('');} if(tries>80)clearInterval(timer);},125);
     watchCart();
     window.addEventListener('raices:store-ready',()=>{ renderFeatured(); renderSearch(document.getElementById('appSearchInput')?.value||''); });
+    // CMS collections are loaded asynchronously. Keep the conversion-focused mobile
+    // cards synchronized with the same images published from NURAI Contenido Web.
+    window.addEventListener('raices:siteContentUpdated',updateMobileCategoryImages);
+    updateMobileCategoryImages();
     // v13.1.1: never force a page reload on language/auth changes.
     // The previous reload handler could create an endless refresh loop after login
     // when the account language and the locally stored language were reconciled.
