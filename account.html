@@ -18,7 +18,7 @@
   <meta name="twitter:title" content="Mi cuenta | Raíces"/>
   <meta name="twitter:description" content="Acceso privado a la cuenta del cliente de Raíces."/>
   <meta name="twitter:image" content="https://myraices.com/og-image.jpg"/>
-  <link rel="stylesheet" href="css/styles.css?v=140" />
+  <link rel="stylesheet" href="css/styles.css?v=234" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/google-maps-config.js"></script>
 </head>
@@ -140,6 +140,11 @@
                   <option value="en">English</option>
                 </select>
               </label>
+              <div class="account-marketing-preference">
+                <div class="account-marketing-copy"><strong id="marketingTitle">Comunicaciones de Raíces</strong><span id="marketingIntro">Recibe contenido, recetas, novedades, productos y promociones. Puedes cancelar cuando quieras.</span><small id="marketingStatus">Consultando tu estado…</small></div>
+                <label class="account-switch" aria-label="Comunicaciones de marketing"><input id="marketingConsentToggle" type="checkbox"/><span></span></label>
+              </div>
+              <div id="marketingMessage" class="account-message"></div>
               <button id="savePreferencesBtn" class="btn" type="submit">Guardar preferencias</button>
               <div id="preferencesMessage" class="account-message"></div>
             </form>
@@ -164,6 +169,6 @@
   <div id="accountToast" class="account-toast" role="status" aria-live="polite"></div>
 
   <script src="js/supabase-config.js"></script>
-  <script src="js/account.js?v=14.0.1"></script>
+  <script src="js/account.js?v=23.4"></script>
 </body>
 </html>

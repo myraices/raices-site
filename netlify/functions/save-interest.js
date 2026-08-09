@@ -28,6 +28,38 @@ async function verifyTurnstile(event, token, action) {
   return Boolean(result.success && (!result.action || result.action === action));
 }
 
+
+async function upsertMarketingSubscriber({ supabaseUrl, serviceRoleKey, email, name, language, source, userId = null }) {
+  const now = new Date().toISOString();
+  const locale = String(language || "es").toLowerCase().startsWith("en") ? "en" : "es";
+  const lookup = await fetch(`${supabaseUrl}/rest/v1/marketing_subscribers?email=ilike.${encodeURIComponent(email)}&select=id,status,consent_at,consent_source&limit=1`, {
+    headers: { apikey: serviceRoleKey, authorization: `Bearer ${serviceRoleKey}` }
+  });
+  if (!lookup.ok) throw new Error(`marketing_subscribers lookup failed: ${await lookup.text()}`);
+  const existing = await lookup.json();
+  const row = Array.isArray(existing) && existing[0] ? existing[0] : null;
+  const record = {
+    email,
+    name: name || null,
+    preferred_language: locale,
+    status: "subscribed",
+    consent_source: row && row.status === "subscribed" ? row.consent_source : source,
+    consent_at: row && row.status === "subscribed" ? row.consent_at : now,
+    unsubscribed_at: null,
+    updated_at: now
+  };
+  if (userId) record.user_id = userId;
+  const endpoint = row ? `${supabaseUrl}/rest/v1/marketing_subscribers?id=eq.${row.id}` : `${supabaseUrl}/rest/v1/marketing_subscribers`;
+  const response = await fetch(endpoint, {
+    method: row ? "PATCH" : "POST",
+    headers: { apikey: serviceRoleKey, authorization: `Bearer ${serviceRoleKey}`, "content-type": "application/json", prefer: "return=representation" },
+    body: JSON.stringify(record)
+  });
+  if (!response.ok) throw new Error(`marketing_subscribers write failed: ${await response.text()}`);
+  const data = await response.json().catch(() => []);
+  return { isNewSubscription: !row || row.status !== "subscribed", consentAt: record.consent_at, data };
+}
+
 async function syncBrevoInternally(event, payload) {
   const secret = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
   const configuredBase = String(process.env.URL || process.env.DEPLOY_PRIME_URL || "").replace(/\/$/, "");
@@ -75,16 +107,16 @@ exports.handler = async function(event) {
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const product = payload.product || null;
-    const protectedSource = source === "waitlist" || source === "checkout_waitlist" || source === "product_back_in_stock" || source === "newsletter" || source === "newsletter_section";
+    const protectedSource = source === "waitlist" || source === "checkout_waitlist" || source === "product_back_in_stock" || source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter";
 
     if (protectedSource) {
       if (String(payload.honeypot || "").trim()) {
         return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Invalid submission." }) };
       }
-      if (!validHumanName(name)) {
+      if (source !== "blog_newsletter" && !validHumanName(name)) {
         return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Nombre inválido." }) };
       }
-      const verificationAction = source === "newsletter" || source === "newsletter_section" ? "newsletter" : "waitlist";
+      const verificationAction = source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter" ? "newsletter" : "waitlist";
       const verified = await verifyTurnstile(event, String(payload.turnstile_token || "").trim(), verificationAction);
       if (!verified) {
         return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Verificación de seguridad inválida." }) };
@@ -129,7 +161,7 @@ exports.handler = async function(event) {
         body: JSON.stringify(waitlistRecord)
       });
       if (!waitlistResponse.ok) return { statusCode: waitlistResponse.status, headers: corsHeaders, body: JSON.stringify({ message: await waitlistResponse.text() }) };
-      const brevo = await syncBrevoInternally(event, { email, name, source, language, consent: true, product, cart });
+      const brevo = await syncBrevoInternally(event, { email, name, source, language, consent: true, marketingConsent: false, product, cart });
       return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: existing.length ? "Updated" : "Saved", duplicate: Boolean(existing.length), brevo }) };
     }
 
@@ -170,8 +202,19 @@ exports.handler = async function(event) {
     }
 
     const data = await response.json().catch(() => []);
-    const brevo = await syncBrevoInternally(event, { email, name: name || customer.name || "", source, language, consent: true, cart, product });
-    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Saved", data, brevo }) };
+    const marketingSource = source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter";
+    let marketing = null;
+    if (marketingSource) {
+      if (payload.consent !== true) {
+        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Consentimiento de marketing requerido." }) };
+      }
+      marketing = await upsertMarketingSubscriber({ supabaseUrl, serviceRoleKey, email, name: name || customer.name || "", language, source: source === "blog_newsletter" ? "blog" : "home", userId });
+    }
+    const brevo = await syncBrevoInternally(event, {
+      email, name: name || customer.name || "", source, language, consent: true,
+      marketingConsent: Boolean(marketingSource), marketingConsentAt: marketing?.consentAt || "", cart, product
+    });
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ message: "Saved", data, marketing, brevo }) };
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ message: error.message }) };
   }

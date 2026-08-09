@@ -998,3 +998,7 @@ img { height:auto; }
 /* Product cards managed from NURAI v20 */
 .product-card-shop .price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .product-card-shop .compare-price{font-size:.82rem;color:rgba(31,47,29,.48);font-weight:600}
+
+/* v23.4 · My Account marketing communications */
+.account-marketing-preference{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:18px 20px;border:1px solid rgba(35,59,32,.12);border-radius:22px;background:rgba(247,242,232,.75);text-transform:none;letter-spacing:0}.account-marketing-copy{display:grid;gap:5px}.account-marketing-copy strong{color:var(--forest);font-size:1rem}.account-marketing-copy span{color:var(--muted);font-size:.92rem;line-height:1.45}.account-marketing-copy small{color:var(--forest);font-weight:800}.account-switch{position:relative;display:block!important;flex:0 0 54px;width:54px;height:30px;cursor:pointer}.account-switch input{position:absolute;opacity:0;pointer-events:none}.account-switch>span{position:absolute!important;inset:0;border-radius:999px;background:#c9c9c1;transition:.2s}.account-switch>span:after{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.18);transition:.2s}.account-switch input:checked+span{background:var(--forest)}.account-switch input:checked+span:after{transform:translateX(24px)}.account-switch input:disabled+span{opacity:.55;cursor:wait}
+@media(max-width:620px){.account-marketing-preference{align-items:flex-start}.account-switch{margin-top:3px}}

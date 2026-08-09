@@ -358,13 +358,24 @@ signupTab.addEventListener("click", showSignup);
 
 async function syncBrevoContact(payload) {
   try {
-    await fetch("/.netlify/functions/brevo-subscribe", {
+    const { data } = await raicesSupabase.auth.getSession();
+    const token = data && data.session ? data.session.access_token : "";
+    // With email confirmation enabled, signUp can legitimately return no session.
+    // The consent is preserved in user_metadata and will sync on the first confirmed session.
+    if (!token) return;
+    await fetch("/.netlify/functions/marketing-profile-sync", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        reason: payload.source === "profile_update" ? "profile_update" : "confirmed_user",
+        language: payload.language,
+        name: payload.name,
+        totalOrders: payload.totalOrders || 0,
+        firstOrderDate: payload.firstOrderDate || ""
+      })
     });
   } catch (err) {
-    console.warn("Raíces Brevo sync warning:", err);
+    console.warn("Raíces marketing profile sync warning:", err);
   }
 }
 

@@ -44,6 +44,7 @@ body.blog-page{background:var(--blog-paper);color:var(--blog-ink)}
 .blog-subscribe input{width:100%;min-height:48px;border:1px solid #d5e0eb;border-radius:7px;padding:0 13px;font:inherit;background:#fff}
 .blog-subscribe button{min-height:48px;border:0;border-radius:7px;background:var(--blog-blue);color:#fff;font-weight:800;cursor:pointer}
 .blog-subscribe-message{min-height:1.2em;margin:0!important;font-size:.82rem}.blog-subscribe-message[data-state="ok"]{color:#20733a}.blog-subscribe-message[data-state="error"]{color:#a6322b}
+.blog-consent{display:grid;grid-template-columns:18px 1fr;gap:9px;align-items:start;color:#566679;font-size:.78rem;line-height:1.45}.blog-consent input{width:16px!important;min-height:16px!important;height:16px;margin:2px 0 0;padding:0}.blog-honeypot{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important}.blog-turnstile-wrap{justify-content:flex-start;overflow:visible}.blog-subscribe button:disabled{opacity:.62;cursor:not-allowed}@media(max-width:390px){.blog-turnstile-wrap{transform:scale(.88);transform-origin:left center;width:113%}}
 .blog-popular-list{display:grid;gap:16px}
 .blog-popular-item{display:grid;grid-template-columns:70px 1fr;gap:12px;padding-bottom:15px;border-bottom:1px solid var(--blog-line);color:inherit;text-decoration:none}
 .blog-popular-item:last-child{border-bottom:0;padding-bottom:0}

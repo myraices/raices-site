@@ -4,7 +4,7 @@ const raicesSupabase = window.raicesSupabase || window.supabase.createClient(
 );
 window.raicesSupabase = raicesSupabase;
 
-const state = { user: null, meta: {}, section: "profile", lang: localStorage.getItem("raices_lang") || "es", addresses: [], orders: [], products: [], favorites: [], autocomplete: null, toastTimer: null, ordersLoaded: false };
+const state = { user: null, meta: {}, section: "profile", lang: localStorage.getItem("raices_lang") || "es", addresses: [], orders: [], products: [], favorites: [], autocomplete: null, toastTimer: null, ordersLoaded: false, marketing: { loaded:false, subscribed:false, status:"not_subscribed" }, marketingSaving:false };
 const $ = (id) => document.getElementById(id);
 
 const copy = {
@@ -14,7 +14,7 @@ const copy = {
     profileTitle:"Perfil", profileIntro:"Actualiza tus datos principales para futuras órdenes.", firstName:"Nombre", lastName:"Apellidos", phone:"Teléfono", saveProfile:"Guardar cambios",
     addressTitle:"Mis direcciones", addressIntro:"Guarda varias direcciones y elige una como predeterminada.", addAddress:"+ Agregar dirección", addressName:"Nombre de la dirección", addressSearch:"Dirección", addressSearchHelp:"Empieza a escribir y selecciona una sugerencia de Google.", address1:"Dirección", address2:"Apt / Suite", optional:"opcional", city:"Ciudad", state:"Estado", country:"País", deliveryNotes:"Notas para la entrega", deliveryNotesPlaceholder:"Ej. Portón azul, dejar en la puerta", defaultAddress:"Usar como dirección predeterminada", saveAddress:"Guardar dirección", cancel:"Cancelar", noAddresses:"Todavía no tienes direcciones guardadas.", edit:"Editar", remove:"Eliminar", defaultBadge:"Predeterminada", confirmDelete:"¿Eliminar esta dirección?",
     ordersTitle:"Mis pedidos", ordersIntro:"Consulta el estado y el resumen de tus compras.", ordersEmpty:"Todavía no tienes pedidos.", ordersSmall:"Aquí aparecerá el historial de tus compras.", refreshOrders:"Actualizar", shopNow:"Explorar tienda", favoritesTitle:"Favoritos", favoritesIntro:"Guarda productos para encontrarlos más rápido.", favoritesEmptyTitle:"Aún no tienes favoritos.", favoritesEmptyText:"Marca el corazón de un producto y aparecerá aquí.", orderError:"No pudimos cargar tus pedidos. Intenta nuevamente.",
-    preferencesTitle:"Preferencias", preferencesIntro:"Este idioma se usará para la experiencia de la web y futuras comunicaciones.", language:"Idioma preferido", savePreferences:"Guardar preferencias",
+    preferencesTitle:"Preferencias", preferencesIntro:"Administra el idioma de tu experiencia y tus comunicaciones.", language:"Idioma preferido", savePreferences:"Guardar preferencias", marketingTitle:"Comunicaciones de Raíces", marketingIntro:"Recibe contenido, recetas, novedades, productos y promociones. Puedes cancelar cuando quieras.", marketingLoading:"Consultando tu estado…", marketingOn:"Suscripción activa", marketingOff:"No estás suscrito a marketing", marketingEnabled:"Te has suscrito a las comunicaciones de Raíces.", marketingDisabled:"Tu suscripción de marketing fue cancelada.", marketingError:"No pudimos actualizar tu suscripción. Intenta nuevamente.",
     securityTitle:"Seguridad", securityIntro:"Cambia tu contraseña cuando lo necesites.", newPassword:"Nueva contraseña", confirmPassword:"Confirmar contraseña", updatePassword:"Actualizar contraseña",
     saving:"Guardando...", error:"No se pudo guardar. Intenta de nuevo.", addressTableError:"Primero debes ejecutar el archivo supabase/customer_addresses.sql en Supabase.", notSigned:"Necesitas iniciar sesión para ver Mi Cuenta.", redirect:"Volver al inicio",
     passwordMin:"La contraseña debe tener al menos 6 caracteres.", passwordMismatch:"Las contraseñas no coinciden.", passwordSaved:"Contraseña actualizada.",
@@ -26,7 +26,7 @@ const copy = {
     profileTitle:"Profile", profileIntro:"Update your main details for future orders.", firstName:"First name", lastName:"Last name", phone:"Phone", saveProfile:"Save changes",
     addressTitle:"My addresses", addressIntro:"Save multiple addresses and choose one as your default.", addAddress:"+ Add address", addressName:"Address name", addressSearch:"Address", addressSearchHelp:"Start typing and select a Google suggestion.", address1:"Address", address2:"Apt / Suite", optional:"optional", city:"City", state:"State", country:"Country", deliveryNotes:"Delivery notes", deliveryNotesPlaceholder:"E.g. Blue gate, leave at the door", defaultAddress:"Use as default address", saveAddress:"Save address", cancel:"Cancel", noAddresses:"You do not have any saved addresses yet.", edit:"Edit", remove:"Delete", defaultBadge:"Default", confirmDelete:"Delete this address?",
     ordersTitle:"My orders", ordersIntro:"Check the status and summary of your purchases.", ordersEmpty:"You do not have any orders yet.", ordersSmall:"Your purchase history will appear here.", refreshOrders:"Refresh", shopNow:"Explore shop", favoritesTitle:"Favorites", favoritesIntro:"Save products to find them faster.", favoritesEmptyTitle:"You do not have favorites yet.", favoritesEmptyText:"Tap the heart on a product and it will appear here.", orderError:"We could not load your orders. Try again.",
-    preferencesTitle:"Preferences", preferencesIntro:"This language will be used for the website experience and future communications.", language:"Preferred language", savePreferences:"Save preferences",
+    preferencesTitle:"Preferences", preferencesIntro:"Manage the language of your experience and your communications.", language:"Preferred language", savePreferences:"Save preferences", marketingTitle:"Raíces communications", marketingIntro:"Receive content, recipes, news, products and promotions. You can unsubscribe at any time.", marketingLoading:"Checking your status…", marketingOn:"Subscription active", marketingOff:"You are not subscribed to marketing", marketingEnabled:"You are now subscribed to Raíces communications.", marketingDisabled:"Your marketing subscription was cancelled.", marketingError:"We could not update your subscription. Please try again.",
     securityTitle:"Security", securityIntro:"Change your password whenever you need to.", newPassword:"New password", confirmPassword:"Confirm password", updatePassword:"Update password",
     saving:"Saving...", error:"We could not save. Try again.", addressTableError:"First run supabase/customer_addresses.sql in Supabase.", notSigned:"You need to sign in to view My Account.", redirect:"Back to home",
     passwordMin:"Password must be at least 6 characters.", passwordMismatch:"Passwords do not match.", passwordSaved:"Password updated.",
@@ -64,7 +64,7 @@ function applyAccountLanguage(){
   setText("profileTitle",t("profileTitle")); setText("profileIntro",t("profileIntro")); setText("labelFirstName",t("firstName")); setText("labelLastName",t("lastName")); setText("labelPhone",t("phone")); setText("saveProfileBtn",t("saveProfile"));
   setText("addressTitle",t("addressTitle")); setText("addressIntro",t("addressIntro")); setText("addAddressBtn",t("addAddress")); setText("labelAddressName",t("addressName")); setText("labelAddressSearch",t("addressSearch")); setText("labelAddress1",t("address1")); setText("labelAddress2",t("address2")); setText("optionalText",t("optional")); setText("labelCity",t("city")); setText("labelState",t("state")); setText("labelCountry",t("country")); setText("labelDeliveryNotes",t("deliveryNotes")); setText("deliveryNotesOptional",t("optional")); if($("deliveryNotes")) $("deliveryNotes").placeholder=t("deliveryNotesPlaceholder"); if(state.autocompleteElement) state.autocompleteElement.placeholder=state.lang==="en"?"Start typing an address":"Empieza a escribir una dirección"; setText("labelDefaultAddress",t("defaultAddress")); setText("saveAddressBtn",t("saveAddress")); setText("cancelAddressBtn",t("cancel")); setText("addressesEmptyText",t("noAddresses"));
   setText("ordersTitle",t("ordersTitle")); setText("ordersIntro",t("ordersIntro")); setText("ordersEmpty",t("ordersEmpty")); setText("ordersSmall",t("ordersSmall")); setText("refreshOrdersBtn",t("refreshOrders")); setText("ordersShopBtn",t("shopNow")); setText("favoritesTitle",t("favoritesTitle")); setText("favoritesIntro",t("favoritesIntro")); setText("favoritesEmptyTitle",t("favoritesEmptyTitle")); setText("favoritesEmptyText",t("favoritesEmptyText")); setText("favoritesShopBtn",t("shopNow"));
-  setText("preferencesTitle",t("preferencesTitle")); setText("preferencesIntro",t("preferencesIntro")); setText("labelLanguage",t("language")); setText("savePreferencesBtn",t("savePreferences"));
+  setText("preferencesTitle",t("preferencesTitle")); setText("preferencesIntro",t("preferencesIntro")); setText("labelLanguage",t("language")); setText("savePreferencesBtn",t("savePreferences")); setText("marketingTitle",t("marketingTitle")); setText("marketingIntro",t("marketingIntro")); renderMarketingPreference();
   setText("securityTitle",t("securityTitle")); setText("securityIntro",t("securityIntro")); setText("labelNewPassword",t("newPassword")); setText("labelConfirmPassword",t("confirmPassword")); setText("updatePasswordBtn",t("updatePassword"));
   const langBtn=$("accountLangBtn"); if(langBtn) langBtn.textContent=state.lang==="es"?"ES":"EN";
   const pref=$("preferredLanguage"); if(pref) pref.value=state.lang;
@@ -268,25 +268,54 @@ function renderFavorites(){
   list.innerHTML=products.map(p=>`<article class="account-favorite-card"><a href="/products/${escapeHtml(p.slug)}/"><img src="/${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy"><div><h3>${escapeHtml(p.name)}</h3><strong>${new Intl.NumberFormat(state.lang==="en"?"en-US":"es-US",{style:"currency",currency:"USD"}).format(Number(p.price||0))}</strong></div></a><button type="button" data-remove-favorite="${escapeHtml(p.sku)}" aria-label="${state.lang==="en"?"Remove favorite":"Eliminar favorito"}">×</button></article>`).join("");
 }
 
+
+function renderMarketingPreference(){
+  const toggle=$("marketingConsentToggle"), status=$("marketingStatus");
+  if(toggle){ toggle.checked=Boolean(state.marketing.subscribed); toggle.disabled=!state.marketing.loaded||state.marketingSaving; }
+  if(status) status.textContent=!state.marketing.loaded?t("marketingLoading"):(state.marketing.subscribed?t("marketingOn"):t("marketingOff"));
+}
+async function loadMarketingPreference(){
+  try{
+    const {data}=await raicesSupabase.auth.getSession(); const token=data?.session?.access_token; if(!token) return;
+    const res=await fetch("/.netlify/functions/marketing-preferences",{headers:{authorization:`Bearer ${token}`}}); const body=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(body.message||"MARKETING_STATUS");
+    state.marketing={...body,loaded:true,subscribed:body.subscribed===true}; renderMarketingPreference();
+  }catch(err){ console.warn("Raíces marketing preference load warning",err); state.marketing.loaded=true; renderMarketingPreference(); }
+}
+async function setMarketingPreference(subscribed){
+  if(state.marketingSaving) return; state.marketingSaving=true; renderMarketingPreference(); msg("marketingMessage",t("saving"));
+  try{
+    const {data}=await raicesSupabase.auth.getSession(); const token=data?.session?.access_token; if(!token) throw new Error("NO_SESSION");
+    const m=currentMeta(); const name=[safe(m.first_name),safe(m.last_name)].filter(Boolean).join(" ").trim()||safe(m.full_name);
+    const res=await fetch("/.netlify/functions/marketing-preferences",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({subscribed:Boolean(subscribed),language:state.lang,name})}); const body=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(body.message||"MARKETING_UPDATE");
+    state.marketing={...body,loaded:true,subscribed:body.subscribed===true}; state.meta={...state.meta,marketing_consent:state.marketing.subscribed,marketing_consent_at:state.marketing.subscribed?(body.consent_at||new Date().toISOString()):state.meta.marketing_consent_at};
+    msg("marketingMessage",state.marketing.subscribed?t("marketingEnabled"):t("marketingDisabled"));
+  }catch(err){ console.error("Raíces marketing preference error",err); msg("marketingMessage",t("marketingError"),false); } finally { state.marketingSaving=false; renderMarketingPreference(); }
+}
+
 async function syncBrevoLocale(lang){
   if(!state.user || !state.user.email) return;
   const m=currentMeta();
   const name=[safe(m.first_name),safe(m.last_name)].filter(Boolean).join(" ").trim() || safe(m.full_name) || state.user.email.split("@")[0];
   try{
-    await fetch("/.netlify/functions/brevo-subscribe",{
+    const {data}=await raicesSupabase.auth.getSession();
+    const token=data&&data.session?data.session.access_token:"";
+    if(!token) return;
+    await fetch("/.netlify/functions/marketing-profile-sync",{
       method:"POST",
-      headers:{"content-type":"application/json"},
-      body:JSON.stringify({email:state.user.email,name,source:"profile_update",consent:true,language:lang})
+      headers:{"content-type":"application/json",authorization:`Bearer ${token}`},
+      body:JSON.stringify({name,reason:"profile_update",language:lang})
     });
   }catch(err){
-    console.warn("Raíces Brevo locale sync warning:",err);
+    console.warn("Raíces marketing locale sync warning:",err);
   }
 }
 
 async function init(){
   const {data}=await raicesSupabase.auth.getUser();
   if(!data||!data.user){ applyAccountLanguage(); $("accountApp").innerHTML=`<div class="account-shell single"><div class="account-card"><h1>${t("notSigned")}</h1><a class="btn" href="/">${t("redirect")}</a></div></div>`; return; }
-  state.user=data.user; state.meta=currentMeta(); fillForms(); $("accountApp").classList.remove("loading");
+  state.user=data.user; state.meta=currentMeta(); fillForms(); $("accountApp").classList.remove("loading"); await loadMarketingPreference();
   document.querySelectorAll(".account-nav button[data-section]").forEach(btn=>btn.addEventListener("click",()=>{setActive(btn.dataset.section);if(btn.dataset.section==="orders")loadOrders();}));
   setActive("profile"); state.favorites=loadFavoriteSkus(); await Promise.all([loadAddresses(),loadProducts()]); await initAddressAutocomplete();
 }
@@ -299,6 +328,7 @@ document.addEventListener("DOMContentLoaded",function(){
   $("addAddressBtn").addEventListener("click",()=>openAddressForm()); $("cancelAddressBtn").addEventListener("click",resetAddressForm);
   $("addressForm").addEventListener("submit",async e=>{e.preventDefault();msg("addressMessage",t("saving"));try{await saveAddress();}catch(err){console.error(err);msg("addressMessage",err.message==="ADDRESS_NOT_SELECTED"?t("selectGoogleAddress"):(err.code==="42P01"?t("addressTableError"):t("error")),false);}});
   $("addressesList").addEventListener("click",async e=>{const btn=e.target.closest("button[data-action]");if(!btn)return;const card=btn.closest(".address-card"),id=card?.dataset.id,address=state.addresses.find(a=>String(a.id)===String(id));if(btn.dataset.action==="edit"&&address)openAddressForm(address);if(btn.dataset.action==="delete"&&id&&confirm(t("confirmDelete"))){try{await deleteAddress(id);}catch(err){console.error(err);msg("addressMessage",t("error"),false);}}});
+  $("marketingConsentToggle")?.addEventListener("change",async e=>{const next=e.target.checked; await setMarketingPreference(next);});
   $("preferencesForm").addEventListener("submit",async e=>{e.preventDefault();msg("preferencesMessage",t("saving"));try{const lang=$("preferredLanguage").value;state.lang=lang;localStorage.setItem("raices_lang",lang);applyAccountLanguage();await updateMetadata({language:lang});await syncBrevoLocale(lang);msg("preferencesMessage",t("prefSaved"));}catch(err){console.error(err);msg("preferencesMessage",t("error"),false);}});
   $("passwordForm").addEventListener("submit",async e=>{e.preventDefault();const p1=$("newAccountPassword").value,p2=$("confirmAccountPassword").value;if(p1.length<6)return msg("passwordMessage",t("passwordMin"),false);if(p1!==p2)return msg("passwordMessage",t("passwordMismatch"),false);msg("passwordMessage",t("saving"));const{error}=await raicesSupabase.auth.updateUser({password:p1});if(error)return msg("passwordMessage",error.message||t("error"),false);$("passwordForm").reset();msg("passwordMessage",t("passwordSaved"));});
   $("refreshOrdersBtn")?.addEventListener("click",()=>loadOrders(true));

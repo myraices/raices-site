@@ -399,16 +399,6 @@
     function getLang(){ return window.raicesLang || localStorage.getItem('raices_lang') || 'es'; }
     function txt(es, en){ return getLang()==='es' ? es : en; }
     function validEmail(email){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email||'').trim()); }
-    async function subscribe(payload){
-      // Brevo is useful for marketing, but it should not block saving the lead in Supabase.
-      const res = await fetch('/.netlify/functions/brevo-subscribe', {
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      if(!res.ok){ throw new Error('Brevo subscribe failed'); }
-      return await res.json();
-    }
     async function getCurrentUserId(){
       try{
         const client = window.raicesSupabase || (typeof raicesSupabase !== 'undefined' ? raicesSupabase : null);

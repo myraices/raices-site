@@ -91,15 +91,16 @@ exports.handler = async function(event) {
     const product = payload.product || null;
     const accountCreatedAt = String(payload.accountCreatedAt || "").trim();
     const emailVerified = payload.emailVerified === true;
-    const marketingConsent = payload.marketingConsent === true || consent;
     const marketingConsentAt = String(payload.marketingConsentAt || "").trim();
     const totalOrders = Number.isFinite(Number(payload.totalOrders)) ? Number(payload.totalOrders) : 0;
     const firstOrderCompleted = payload.firstOrderCompleted === true || totalOrders > 0;
     const firstOrderDate = String(payload.firstOrderDate || "").trim();
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
-    const normalizedSource = source === "newsletter_section" ? "newsletter" : (source === "checkout_waitlist" ? "waitlist" : source);
-    const protectedSources = new Set(["newsletter", "waitlist", "product_back_in_stock"]);
+    const normalizedSource = source === "newsletter_section" ? "newsletter" : (source === "blog_newsletter" ? "newsletter" : (source === "checkout_waitlist" ? "waitlist" : source));
+    const marketingSources = new Set(["newsletter", "signup", "confirmed_user", "profile_update", "account_preferences"]);
+    const marketingConsent = payload.marketingConsent === true || (marketingSources.has(normalizedSource) && consent);
+    const protectedSources = new Set(["newsletter", "waitlist", "product_back_in_stock", "signup", "confirmed_user", "profile_update", "account_preferences"]);
     const internalSecret = String(event.headers["x-raices-internal-secret"] || "").trim();
     const expectedSecret = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
     if (protectedSources.has(normalizedSource) && (!expectedSecret || internalSecret !== expectedSecret)) {
@@ -132,14 +133,17 @@ exports.handler = async function(event) {
     if (delivery.zip || customer.zip) attributes.ZIP = String(delivery.zip || customer.zip).slice(0, 20);
     const lastCart = summarizeCart(cart);
     if (lastCart) attributes.LAST_CART = lastCart;
-    // v128.4 — lifecycle attributes used by Brevo nurture automations.
-    if (accountCreatedAt) attributes.ACCOUNT_CREATED_AT = accountCreatedAt.slice(0, 10);
-    attributes.EMAIL_VERIFIED = emailVerified;
-    attributes.MARKETING_CONSENT = marketingConsent;
-    if (marketingConsentAt) attributes.MARKETING_CONSENT_AT = marketingConsentAt.slice(0, 10);
-    attributes.TOTAL_ORDERS = totalOrders;
-    attributes.FIRST_ORDER_COMPLETED = firstOrderCompleted;
-    if (firstOrderDate) attributes.FIRST_ORDER_DATE = firstOrderDate.slice(0, 10);
+    // Lifecycle/marketing attributes are only changed by an explicit marketing action.
+    // Waitlists, orders and internal NURAI mail must never manufacture marketing consent.
+    if (marketingSources.has(normalizedSource)) {
+      if (accountCreatedAt) attributes.ACCOUNT_CREATED_AT = accountCreatedAt.slice(0, 10);
+      attributes.EMAIL_VERIFIED = emailVerified;
+      attributes.MARKETING_CONSENT = marketingConsent;
+      if (marketingConsentAt) attributes.MARKETING_CONSENT_AT = marketingConsentAt.slice(0, 10);
+      attributes.TOTAL_ORDERS = totalOrders;
+      attributes.FIRST_ORDER_COMPLETED = firstOrderCompleted;
+      if (firstOrderDate) attributes.FIRST_ORDER_DATE = firstOrderDate.slice(0, 10);
+    }
 
     async function getExistingContact() {
       try {
@@ -161,10 +165,12 @@ exports.handler = async function(event) {
     const wasAlreadyInCommunity = existingListIds.includes(listId);
 
     async function upsertContact(contactAttributes) {
+      const body = { email, updateEnabled: true, attributes: contactAttributes };
+      if (marketingSources.has(normalizedSource) && marketingConsent) body.listIds = [listId];
       return fetch("https://api.brevo.com/v3/contacts", {
         method: "POST",
         headers: { "accept": "application/json", "content-type": "application/json", "api-key": apiKey },
-        body: JSON.stringify({ email, listIds: [listId], updateEnabled: true, attributes: contactAttributes })
+        body: JSON.stringify(body)
       });
     }
 
@@ -273,7 +279,7 @@ exports.handler = async function(event) {
         listId,
         wasExisting,
         wasAlreadyInCommunity,
-        addedToCommunity: !wasAlreadyInCommunity,
+        addedToCommunity: marketingSources.has(normalizedSource) && marketingConsent ? !wasAlreadyInCommunity : false,
         emailSent,
         emailWarning,
         lifecycleAttributesPending
