@@ -80,3 +80,8 @@ body.blog-page{background:var(--blog-paper);color:var(--blog-ink)}
 
 /* v23.2.0 · blog language selector */
 .blog-header .blog-lang{display:inline-flex;align-items:center;justify-content:center;min-width:58px;height:40px;border:1px solid var(--blog-line);border-radius:999px;background:#fff;color:#183148;font-weight:800;cursor:pointer}.blog-header .nav-icons{gap:10px}.blog-header .blog-read-more{white-space:nowrap}@media(max-width:720px){.blog-header .blog-lang{min-width:52px;height:38px;font-size:12px}.article-header+.blog-header .blog-read-more{display:none}}
+
+
+/* v23.6.0 — audio narration */
+.article-audio{max-width:760px;margin:0 auto 34px;padding:17px 18px;border:1px solid var(--blog-line);border-radius:14px;background:linear-gradient(135deg,#f7fafc,#fff);box-shadow:0 10px 28px rgba(22,48,73,.06);display:grid;grid-template-columns:minmax(220px,.85fr) minmax(280px,1.15fr);gap:18px;align-items:center}.article-audio-copy{display:flex;align-items:center;gap:11px;color:#183148}.article-audio-icon{font-size:1.35rem}.article-audio-copy strong,.article-audio-copy small{display:block}.article-audio-copy strong{font-family:Georgia,'Times New Roman',serif;font-size:1.03rem}.article-audio-copy small{margin-top:3px;color:#718092;font-size:.72rem}.article-audio audio{width:100%;height:40px}
+@media(max-width:720px){.article-audio{grid-template-columns:1fr;margin-bottom:24px;padding:15px}.article-audio audio{height:38px}}
