@@ -42,6 +42,42 @@ async function supabasePatch(id, values) {
   if (!res.ok) throw new Error(`SUPABASE_PATCH_${res.status}:${await res.text()}`);
 }
 
+async function completeDigitalOrder(order) {
+  if (!order?.id || order.fulfillment_type !== 'digital') return order;
+  if (String(order.status || '').toLowerCase() === 'completed') return order;
+
+  const completedAt = new Date().toISOString();
+  const fromStatus = order.status || 'paid';
+  await supabasePatch(order.id, {
+    status: 'completed',
+    completed_at: completedAt,
+    updated_at: completedAt
+  });
+
+  const { url, key } = supabaseConfig();
+  const history = await fetch(`${url}/rest/v1/order_status_history`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    },
+    body: JSON.stringify({
+      order_id: order.id,
+      from_status: fromStatus,
+      to_status: 'completed',
+      note: 'Entrega digital completada automáticamente tras confirmar el pago y habilitar la descarga.',
+      changed_at: completedAt
+    })
+  });
+  if (!history.ok && history.status !== 409) {
+    console.warn('[square-webhook] digital_history_failed', history.status, await history.text());
+  }
+
+  return { ...order, status: 'completed', completed_at: completedAt };
+}
+
 
 async function completePaidOrder(orderId, paymentId, paidAt) {
   const { url, key } = supabaseConfig();
@@ -65,7 +101,7 @@ async function completePaidOrder(orderId, paymentId, paidAt) {
 
 async function supabaseGetOrderDetails(orderId) {
   const { url, key } = supabaseConfig();
-  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,fulfillment_type,subtotal,delivery_amount,tax_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,order_items(id,product_id,product_name,variant_name,quantity,unit_price,line_total,sku)`, {
+  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,fulfillment_type,subtotal,delivery_amount,tax_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,completed_at,order_items(id,product_id,product_name,variant_name,quantity,unit_price,line_total,sku)`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` }
   });
   if (!res.ok) throw new Error(`SUPABASE_ORDER_DETAILS_${res.status}:${await res.text()}`);
@@ -138,7 +174,10 @@ async function sendOrderConfirmation(order, entitlements = []) {
   const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@myraices.com';
   const items = (order.order_items || []).map(item => `<tr><td style="padding:8px 0;border-bottom:1px solid #e7ece9">${escapeHtml(item.product_name)}${item.variant_name ? ` · ${escapeHtml(item.variant_name)}` : ''} × ${Number(item.quantity || 0)}</td><td style="padding:8px 0;border-bottom:1px solid #e7ece9;text-align:right">${money(item.line_total)}</td></tr>`).join('');
   const address = order.fulfillment_type === 'digital' ? 'Entrega digital' : [order.delivery_address, order.delivery_apt, order.delivery_city, order.delivery_state, order.delivery_zip].filter(Boolean).map(escapeHtml).join(', ');
-  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: Pago confirmado · En preparación</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr><tr><td>Entrega</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td>Sales tax</td><td style="text-align:right">${money(order.tax_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table>${entitlements.length ? `<div style="margin-top:22px;padding:18px;background:#f3f7f5;border-radius:12px"><strong>Tus descargas digitales</strong><p style="margin:8px 0 12px">Accede a tus ebooks desde estos enlaces seguros:</p>${entitlements.map(e=>`<p style="margin:8px 0"><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/.netlify/functions/digital-download?token='+e.token)}" style="display:inline-block;padding:10px 16px;background:#174f45;color:#fff;text-decoration:none;border-radius:8px">Descargar ${escapeHtml(e.name)}</a></p>`).join('')}</div>` : ''}<p style="margin-top:22px"><strong>Entrega:</strong><br>${address}</p><p>${order.fulfillment_type === 'digital' ? 'También encontrarás tus descargas en Mi Cuenta si compraste con una cuenta de Raíces.' : 'Te mantendremos informado cuando tu pedido avance.'}</p></div></body></html>`;
+  const orderStatusText = order.fulfillment_type === 'digital' && String(order.status || '').toLowerCase() === 'completed'
+    ? 'Pago confirmado · Entrega digital completada'
+    : 'Pago confirmado · En preparación';
+  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: ${escapeHtml(orderStatusText)}</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr><tr><td>Entrega</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td>Sales tax</td><td style="text-align:right">${money(order.tax_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table>${entitlements.length ? `<div style="margin-top:22px;padding:18px;background:#f3f7f5;border-radius:12px"><strong>Tus descargas digitales</strong><p style="margin:8px 0 12px">Accede a tus ebooks desde estos enlaces seguros:</p>${entitlements.map(e=>`<p style="margin:8px 0"><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/.netlify/functions/digital-download?token='+e.token)}" style="display:inline-block;padding:10px 16px;background:#174f45;color:#fff;text-decoration:none;border-radius:8px">Descargar ${escapeHtml(e.name)}</a></p>`).join('')}</div>` : ''}<p style="margin-top:22px"><strong>Entrega:</strong><br>${address}</p><p>${order.fulfillment_type === 'digital' ? 'También encontrarás tus descargas en Mi Cuenta si compraste con una cuenta de Raíces.' : 'Te mantendremos informado cuando tu pedido avance.'}</p></div></body></html>`;
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { accept: 'application/json', 'content-type': 'application/json', 'api-key': apiKey },
@@ -271,8 +310,12 @@ exports.handler = async (event) => {
       } else {
         console.log('[square-webhook] complete_order:already_paid', { orderId: order.id, paymentId: payment.id });
       }
-      const paidOrder = await supabaseGetOrderDetails(order.id);
+      let paidOrder = await supabaseGetOrderDetails(order.id);
       const digitalEntitlements = await ensureDigitalEntitlements(paidOrder);
+      if (paidOrder?.fulfillment_type === 'digital') {
+        await completeDigitalOrder(paidOrder);
+        paidOrder = await supabaseGetOrderDetails(order.id);
+      }
       console.log('[square-webhook] notification:start', { orderId: order.id });
       await createOrderNotification(paidOrder);
       console.log('[square-webhook] notification:finish', { orderId: order.id });
