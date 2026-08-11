@@ -151,13 +151,38 @@
     return String(value || '').replace(/\D/g,'').slice(0,5);
   }
 
-  const configuredZones = window.RAICES_STORE_CONFIG?.DELIVERY?.zones || [];
-  const deliveryZones = configuredZones.map(zone => ({
-    name: zone.name,
-    cost: Number(zone.fee || zone.cost || 0),
-    zips: zone.zips || [],
-    prefix: zone.prefixes || zone.prefix || []
-  }));
+  let deliveryZones = [];
+  let deliveryConfigReady = false;
+
+  function normalizeDeliveryZones(zones){
+    const list=value=>Array.isArray(value)?value.flatMap(list):String(value||'').split(/[,;\n]+/).map(v=>v.trim()).filter(Boolean);
+    return (Array.isArray(zones) ? zones : []).map(zone => {
+      const coverage=[...list(zone?.zips ?? zone?.zip_codes ?? zone?.zipCodes),...list(zone?.coverage)];
+      const zips=coverage.filter(v=>!String(v).endsWith('*')).map(normalizeZip).filter(v=>v.length===5);
+      const prefix=[...coverage.filter(v=>String(v).endsWith('*')).map(v=>String(v).replace(/\D/g,'').slice(0,5)),...list(zone?.prefixes ?? zone?.prefix).map(v=>String(v).replace(/\D/g,'').slice(0,5))].filter(Boolean);
+      return {name:String(zone?.name||zone?.label||'').trim(),cost:Number(zone?.fee ?? zone?.cost ?? zone?.price ?? 0),zips:[...new Set(zips)],prefix:[...new Set(prefix)]};
+    }).filter(zone => zone.name && (zone.zips.length || zone.prefix.length));
+  }
+
+  async function loadDeliveryConfig(){
+    try{
+      const res = await fetch('/.netlify/functions/delivery-config', { cache:'no-store' });
+      const body = await res.json().catch(()=>({}));
+      if(!res.ok || !Array.isArray(body.zones)) throw new Error(body.error || 'DELIVERY_CONFIG_UNAVAILABLE');
+      deliveryZones = normalizeDeliveryZones(body.zones);
+      deliveryConfigReady = true;
+      window.RAICES_DELIVERY_ZONES = deliveryZones;
+      if(getDeliveryZip()) buildDeliveryState(getDeliveryZip());
+      renderCart();
+    }catch(err){
+      console.error('Raíces delivery configuration error', err);
+      deliveryZones = [];
+      deliveryConfigReady = false;
+      localStorage.removeItem('raices_delivery_state');
+      renderCart();
+      showCartStatus(currentLang()==='es' ? 'No se pudo cargar la cobertura de delivery. Intenta de nuevo en unos segundos.' : 'Delivery coverage could not be loaded. Please try again in a few seconds.', 'error');
+    }
+  }
 
   function buildDeliveryState(zip){
     const clean = normalizeZip(zip);
@@ -211,6 +236,7 @@
 
 
   function deliveryPromptText(zip, zone, hasItems){
+    if(!deliveryConfigReady) return currentLang()==='es' ? 'Cargando cobertura de delivery…' : 'Loading delivery coverage…';
     if(zip.length === 5 && zone){
       return currentLang()==='es'
         ? `${zone.name}: se agregará ${money(zone.cost)} de delivery al total${hasItems ? '.' : '. Agrega productos para ver el total.'}`
@@ -897,6 +923,7 @@
   renderFilters();
   renderProducts();
   renderCart();
+  loadDeliveryConfig();
   reconcilePendingPaidOrder();
   window.addEventListener("pageshow",reconcilePendingPaidOrder);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reconcilePendingPaidOrder()});

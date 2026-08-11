@@ -65,7 +65,7 @@ async function completePaidOrder(orderId, paymentId, paidAt) {
 
 async function supabaseGetOrderDetails(orderId) {
   const { url, key } = supabaseConfig();
-  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,subtotal,delivery_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,order_items(product_name,variant_name,quantity,unit_price,line_total,sku)`, {
+  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,fulfillment_type,subtotal,delivery_amount,tax_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,order_items(id,product_id,product_name,variant_name,quantity,unit_price,line_total,sku)`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` }
   });
   if (!res.ok) throw new Error(`SUPABASE_ORDER_DETAILS_${res.status}:${await res.text()}`);
@@ -97,7 +97,38 @@ async function createOrderNotification(order) {
 function money(value) { return `$${Number(value || 0).toFixed(2)}`; }
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-async function sendOrderConfirmation(order) {
+async function ensureDigitalEntitlements(order) {
+  const items = (order?.order_items || []).filter(item => item.product_id);
+  if (!items.length) return [];
+  const ids = [...new Set(items.map(item => item.product_id))];
+  const products = await (async()=>{
+    const { url, key } = supabaseConfig();
+    const res = await fetch(`${url}/rest/v1/products?id=in.(${ids.join(',')})&select=id,operational_type,product_type,digital_file_path,digital_file_name`, { headers:{apikey:key,Authorization:`Bearer ${key}`} });
+    if(!res.ok) throw new Error(`SUPABASE_DIGITAL_PRODUCTS_${res.status}:${await res.text()}`);
+    return res.json();
+  })();
+  const digital = products.filter(p => (p.operational_type === 'digital' || p.product_type === 'digital') && p.digital_file_path);
+  if (!digital.length) return [];
+  const { url, key } = supabaseConfig();
+  const results=[];
+  for (const product of digital) {
+    let res = await fetch(`${url}/rest/v1/digital_entitlements?order_id=eq.${encodeURIComponent(order.id)}&product_id=eq.${encodeURIComponent(product.id)}&select=download_token,product_id,revoked_at&limit=1`, {headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let rows = res.ok ? await res.json() : [];
+    let row = rows?.[0];
+    if (!row) {
+      res = await fetch(`${url}/rest/v1/digital_entitlements`, {method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({order_id:order.id,product_id:product.id,customer_email:String(order.customer_email||'').toLowerCase()})});
+      if(!res.ok) throw new Error(`SUPABASE_ENTITLEMENT_${res.status}:${await res.text()}`);
+      row=(await res.json())?.[0];
+    }
+    if(row?.download_token && !row.revoked_at){
+      const item=items.find(i=>String(i.product_id)===String(product.id));
+      results.push({productId:product.id,name:item?.product_name||product.digital_file_name||'Producto digital',token:row.download_token});
+    }
+  }
+  return results;
+}
+
+async function sendOrderConfirmation(order, entitlements = []) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey || !order?.customer_email) {
     console.warn('[square-webhook] send_confirmation:omitted', { reason: !apiKey ? 'BREVO_API_KEY_MISSING' : 'CUSTOMER_EMAIL_MISSING', orderId: order?.id });
@@ -106,8 +137,8 @@ async function sendOrderConfirmation(order) {
   const senderName = process.env.BREVO_SENDER_NAME || 'Raíces';
   const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@myraices.com';
   const items = (order.order_items || []).map(item => `<tr><td style="padding:8px 0;border-bottom:1px solid #e7ece9">${escapeHtml(item.product_name)}${item.variant_name ? ` · ${escapeHtml(item.variant_name)}` : ''} × ${Number(item.quantity || 0)}</td><td style="padding:8px 0;border-bottom:1px solid #e7ece9;text-align:right">${money(item.line_total)}</td></tr>`).join('');
-  const address = order.delivery_zip === '00000' ? 'Entrega digital' : [order.delivery_address, order.delivery_apt, order.delivery_city, order.delivery_state, order.delivery_zip].filter(Boolean).map(escapeHtml).join(', ');
-  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: Pago confirmado · En preparación</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr><tr><td>Entrega</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table><p style="margin-top:22px"><strong>Entrega:</strong><br>${address}</p><p>Te mantendremos informado cuando tu pedido avance.</p></div></body></html>`;
+  const address = order.fulfillment_type === 'digital' ? 'Entrega digital' : [order.delivery_address, order.delivery_apt, order.delivery_city, order.delivery_state, order.delivery_zip].filter(Boolean).map(escapeHtml).join(', ');
+  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: Pago confirmado · En preparación</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr><tr><td>Entrega</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td>Sales tax</td><td style="text-align:right">${money(order.tax_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table>${entitlements.length ? `<div style="margin-top:22px;padding:18px;background:#f3f7f5;border-radius:12px"><strong>Tus descargas digitales</strong><p style="margin:8px 0 12px">Accede a tus ebooks desde estos enlaces seguros:</p>${entitlements.map(e=>`<p style="margin:8px 0"><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/.netlify/functions/digital-download?token='+e.token)}" style="display:inline-block;padding:10px 16px;background:#174f45;color:#fff;text-decoration:none;border-radius:8px">Descargar ${escapeHtml(e.name)}</a></p>`).join('')}</div>` : ''}<p style="margin-top:22px"><strong>Entrega:</strong><br>${address}</p><p>${order.fulfillment_type === 'digital' ? 'También encontrarás tus descargas en Mi Cuenta si compraste con una cuenta de Raíces.' : 'Te mantendremos informado cuando tu pedido avance.'}</p></div></body></html>`;
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { accept: 'application/json', 'content-type': 'application/json', 'api-key': apiKey },
@@ -134,6 +165,22 @@ async function getSquareReferenceId(squareOrderId) {
   }
   const data = await res.json();
   return data.order?.reference_id || '';
+}
+
+async function getSquareOrderAmounts(squareOrderId) {
+  if (!squareOrderId) return null;
+  const environment = String(process.env.SQUARE_ENVIRONMENT || 'sandbox').toLowerCase();
+  const squareBase = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
+  const res = await fetch(`${squareBase}/v2/orders/${encodeURIComponent(squareOrderId)}`, {
+    headers: { Authorization: `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`, 'Square-Version': '2026-07-15' }
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const sq = data.order || {};
+  return {
+    taxCents: Number(sq.total_tax_money?.amount || sq.net_amounts?.tax_money?.amount || 0),
+    totalCents: Number(sq.total_money?.amount || sq.net_amounts?.total_money?.amount || 0)
+  };
 }
 
 async function resolveInternalOrder(payment) {
@@ -200,6 +247,16 @@ exports.handler = async (event) => {
     }
 
     if (completed) {
+      const finalAmounts = await getSquareOrderAmounts(payment.order_id);
+      if (finalAmounts && finalAmounts.totalCents > 0) {
+        await supabasePatch(order.id, {
+          tax_amount: finalAmounts.taxCents / 100,
+          tax_cents: finalAmounts.taxCents,
+          total_amount: finalAmounts.totalCents / 100,
+          total_cents: finalAmounts.totalCents,
+          updated_at: new Date().toISOString()
+        });
+      }
       const wasAlreadyPaid =
         String(order.status || '').toLowerCase() === 'paid' ||
         String(order.payment_status || '').toLowerCase() === 'completed' ||
@@ -215,12 +272,13 @@ exports.handler = async (event) => {
         console.log('[square-webhook] complete_order:already_paid', { orderId: order.id, paymentId: payment.id });
       }
       const paidOrder = await supabaseGetOrderDetails(order.id);
+      const digitalEntitlements = await ensureDigitalEntitlements(paidOrder);
       console.log('[square-webhook] notification:start', { orderId: order.id });
       await createOrderNotification(paidOrder);
       console.log('[square-webhook] notification:finish', { orderId: order.id });
       if (!paidOrder?.confirmation_email_sent_at) {
         console.log('[square-webhook] confirmation_email:start', { orderId: order.id });
-        await sendOrderConfirmation(paidOrder);
+        await sendOrderConfirmation(paidOrder, digitalEntitlements);
         await supabasePatch(order.id, { confirmation_email_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() });
         console.log('[square-webhook] confirmation_email:finish', { orderId: order.id });
       } else {

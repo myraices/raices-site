@@ -65,14 +65,8 @@ window.RAICES_STORE_CONFIG = Object.freeze({
   STORE_MODE: "PREOPENING", // PREOPENING | SALES
   DELIVERY: Object.freeze({
     currency: "USD",
-    zones: [
-      { name: "Katy / Cinco Ranch", fee: 5, zips: ["77449","77450","77491","77493","77494"] },
-      { name: "Fulshear", fee: 8, zips: ["77441"] },
-      { name: "Richmond", fee: 8, zips: ["77406","77407","77469"] },
-      { name: "Sugar Land", fee: 15, zips: ["77478","77479","77498"] },
-      { name: "Cypress", fee: 15, zips: ["77429","77433"] },
-      { name: "Houston", fee: 15, prefixes: ["770"] }
-    ]
+    source: "NURAI_SUPABASE",
+    zones: []
   }),
   CHECKOUT_PREVIEW_URL: "checkout-preview.html",
   ORDER_CONFIRMATION_URL: "order-confirmation.html",
