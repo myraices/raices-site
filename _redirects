@@ -1,9 +1,9 @@
-/arepas    /#arepas    200
-/empanadas /#empanadas 200
-/proteinas /#proteinas 200
-/teas      /#tes       200
-/about     /#nosotros  200
-/contact   /#contacto  200
+/arepas    /#arepas    301
+/empanadas /#empanadas 301
+/proteinas /#proteinas 301
+/teas      /#tes       301
+/about     /#nosotros  301
+/contact   /#contacto  301
 
 /account   /account.html 200
 /my-account /account.html 200
@@ -11,3 +11,5 @@
 /blog        /blog.html    200
 /blog/       /blog.html    200
 /blog/*      /article.html 200
+
+/sitemaps/articles.xml /.netlify/functions/sitemap-articles 200

@@ -10,29 +10,34 @@
 [[redirects]]
   from = "/arepas"
   to = "/#arepas"
-  status = 200
+  status = 301
 
 [[redirects]]
   from = "/empanadas"
   to = "/#empanadas"
-  status = 200
+  status = 301
 
 [[redirects]]
   from = "/proteinas"
   to = "/#proteinas"
-  status = 200
+  status = 301
 
 [[redirects]]
   from = "/teas"
   to = "/#tes"
-  status = 200
+  status = 301
 
 [[redirects]]
   from = "/about"
   to = "/#nosotros"
-  status = 200
+  status = 301
 
 [[redirects]]
   from = "/contact"
   to = "/#contacto"
+  status = 301
+
+[[redirects]]
+  from = "/sitemaps/articles.xml"
+  to = "/.netlify/functions/sitemap-articles"
   status = 200
