@@ -249,7 +249,12 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         idempotency_key: crypto.randomUUID(),
         order: { ...squareOrderPayload, reference_id: order.id },
-        checkout_options: { redirect_url: `${baseUrl}/order-confirmation.html?order=${encodeURIComponent(order.id)}`, ask_for_shipping_address: false },
+        checkout_options: {
+          redirect_url: `${baseUrl}/order-confirmation.html?order=${encodeURIComponent(order.id)}`,
+          ask_for_shipping_address: false,
+          allow_tipping: false,
+          enable_coupon: false,
+        },
         pre_populated_data: { buyer_email: safeText(customer.email,180) }
       })
     });
