@@ -9,10 +9,44 @@
   const t=k=>T[lang][k]||k; const money=n=>new Intl.NumberFormat(lang==='en'?'en-US':'es-US',{style:'currency',currency:'USD'}).format(Number(n||0));
   function statusLabel(s){const m={pending:lang==='en'?'Pending review':'Pendiente de revisión',approved:lang==='en'?'Approved':'Aprobada',awaiting_return:lang==='en'?'Waiting for return':'Esperando devolución',received:lang==='en'?'Received':'Recibida',inspection:lang==='en'?'Inspection':'En inspección',refunded:lang==='en'?'Refunded':'Reembolsada',replacement:lang==='en'?'Replacement approved':'Reemplazo aprobado',rejected:lang==='en'?'Rejected':'Rechazada',closed:lang==='en'?'Closed':'Cerrada'};return m[s]||s;}
   function typeLabel(s){return {cancellation:lang==='en'?'Cancellation':'Cancelación',home_return:lang==='en'?'Home return':'Devolución Home',issue:lang==='en'?'Issue':'Incidencia'}[s]||s;}
+  function orderStateMessage(){
+    const o=state?.order||{};
+    const orderStatus=String(o.status||'').toLowerCase();
+    const paymentStatus=String(o.payment_status||'').toLowerCase();
+    const refunded=Number(o.refunded_amount||0);
+    const total=Number(o.total_amount||0);
+
+    if(paymentStatus==='refunded'||(refunded>0&&total>0&&refunded>=total-0.001)){
+      return lang==='en'
+        ? 'This order has been fully refunded. No further cancellation request is needed.'
+        : 'Este pedido ya fue reembolsado completamente. No es necesario solicitar una cancelación adicional.';
+    }
+    if(paymentStatus==='partially_refunded'||refunded>0){
+      return lang==='en'
+        ? 'This order has a partial refund. You can review any existing post-sale requests below.'
+        : 'Este pedido tiene un reembolso parcial. Puedes revisar las solicitudes postventa existentes más abajo.';
+    }
+    if(['cancelled','canceled'].includes(orderStatus)){
+      return lang==='en'
+        ? 'This order has been cancelled and no further cancellation request can be submitted.'
+        : 'Este pedido fue cancelado y ya no se puede enviar otra solicitud de cancelación.';
+    }
+    if(orderStatus==='out_for_delivery'||state.routeActive||state.delivery?.departed_at){
+      return t('cancelBlocked');
+    }
+    if(['delivered','completed'].includes(orderStatus)||state.delivered){
+      return lang==='en'
+        ? 'This order has already been delivered. Use the available post-sale options below if you need assistance.'
+        : 'Este pedido ya fue entregado. Si necesitas ayuda, utiliza las opciones postventa disponibles más abajo.';
+    }
+    return lang==='en'
+      ? 'Cancellation is not available for this order in its current state.'
+      : 'La cancelación no está disponible para este pedido en su estado actual.';
+  }
   function render(){if(!state)return; document.documentElement.lang=lang; $('manageEs').classList.toggle('active',lang==='es');$('manageEn').classList.toggle('active',lang==='en');
     const o=state.order, home=o.order_items.filter(i=>i.is_home), physical=o.order_items.filter(i=>i.operational_type!=='digital');
     $('manageContent').innerHTML=`<section class="manage-card"><h1>${t('title')}</h1><div class="manage-summary"><div><span>${t('order')}</span><strong>#${esc(o.order_number||'')}</strong></div><div><span>${t('status')}</span><strong>${esc(o.status||'')}</strong></div><div><span>${t('total')}</span><strong>${money(o.total_amount)}</strong></div></div></section>
-    <section class="manage-card"><h2>${lang==='en'?'Available options':'Opciones disponibles'}</h2>${state.cancellationEligible?`<div class="manage-alert">${t('cancelInfo')}</div><div class="manage-actions"><button class="manage-btn" data-action="cancellation">${t('cancel')}</button></div>`:(state.delivered?'':`<div class="manage-alert">${t('cancelBlocked')}</div>`)}
+    <section class="manage-card"><h2>${lang==='en'?'Available options':'Opciones disponibles'}</h2>${state.cancellationEligible?`<div class="manage-alert">${t('cancelInfo')}</div><div class="manage-actions"><button class="manage-btn" data-action="cancellation">${t('cancel')}</button></div>`:`<div class="manage-alert">${orderStateMessage()}</div>`}
     ${state.delivered?`${home.length?(state.withinReturnWindow?`<p>${t('returnInfo')}</p><button class="manage-btn secondary" data-action="home_return">${t('return')}</button>`:`<div class="manage-alert">${t('noReturn')}</div>`):''}<p class="manage-muted">${t('foodNote')}</p><button class="manage-btn secondary" data-action="issue">${t('issue')}</button>`:''}</section>
     <section class="manage-card"><h2>${t('pending')}</h2><div class="manage-status-list">${(state.requests||[]).length?state.requests.map(r=>`<article><strong>${typeLabel(r.request_type)}</strong><br><span>${statusLabel(r.status)}</span><br><small>${new Date(r.created_at).toLocaleString(lang==='en'?'en-US':'es-US')}</small></article>`).join(''):`<p>${t('noRequests')}</p>`}</div></section>
     <a class="manage-btn secondary" href="/">${t('back')}</a>`;
