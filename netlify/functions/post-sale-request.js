@@ -117,6 +117,11 @@ async function createRequest(state,body){
 
   const reason=clean(body.reason).slice(0,120);
   const note=clean(body.customer_note).slice(0,1800);
+  if(type==='cancellation'){
+    const allowed=new Set(['change_mind','ordered_by_mistake','duplicate_order','change_items','delivery_timing','other']);
+    if(!allowed.has(reason))return reply(400,{error:'INVALID_CANCELLATION_REASON'});
+    if(reason==='other'&&!note)return reply(400,{error:'CANCELLATION_NOTE_REQUIRED'});
+  }
   const needPhoto=type==='issue'&&['damaged','broken'].includes(lower(reason));
   if(needPhoto&&!(body.images||[]).length)return reply(400,{error:'PHOTO_REQUIRED'});
 
