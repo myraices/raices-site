@@ -217,11 +217,19 @@ async function initAddressAutocomplete(){
 
 
 function moneyFromCents(cents){ return new Intl.NumberFormat(state.lang==="en"?"en-US":"es-US",{style:"currency",currency:"USD"}).format(Number(cents||0)/100); }
+function orderStatusKey(order){
+  const refunded=Number(order.refunded_amount||0), total=Number(order.total_amount||0);
+  if(refunded>0 && total>0 && refunded>=total-0.001) return "refunded";
+  if(refunded>0) return "partially_refunded";
+  const payment=String(order.payment_status||"").toLowerCase();
+  if(payment==="refunded"||payment==="partially_refunded") return payment;
+  return String(order.status||payment||"").toLowerCase();
+}
 function orderStatusLabel(order){
-  const raw=String(order.status||order.payment_status||"").toLowerCase();
+  const raw=orderStatusKey(order);
   const labels={
-    es:{pending_payment:"Pendiente de pago",paid:"Pagado",completed:"Pagado",processing:"En preparación",preparing:"En preparación",ready:"Listo",out_for_delivery:"En ruta",delivered:"Entregado",cancelled:"Cancelado",canceled:"Cancelado",refunded:"Reembolsado"},
-    en:{pending_payment:"Payment pending",paid:"Paid",completed:"Paid",processing:"Preparing",preparing:"Preparing",ready:"Ready",out_for_delivery:"Out for delivery",delivered:"Delivered",cancelled:"Cancelled",canceled:"Cancelled",refunded:"Refunded"}
+    es:{pending_payment:"Pendiente de pago",paid:"Pagado",completed:"Pagado",processing:"En preparación",preparing:"En preparación",ready:"Listo",ready_to_prepare:"Listo para preparar",ready_for_delivery:"Listo para entregar",out_for_delivery:"En ruta",delivered:"Entregado",cancelled:"Cancelado",canceled:"Cancelado",refunded:"Reembolsado",partially_refunded:"Reembolso parcial",production_required:"Pendiente de producción"},
+    en:{pending_payment:"Payment pending",paid:"Paid",completed:"Paid",processing:"Preparing",preparing:"Preparing",ready:"Ready",ready_to_prepare:"Ready to prepare",ready_for_delivery:"Ready for delivery",out_for_delivery:"Out for delivery",delivered:"Delivered",cancelled:"Cancelled",canceled:"Cancelled",refunded:"Refunded",partially_refunded:"Partial refund",production_required:"Production required"}
   };
   return labels[state.lang][raw] || (raw ? raw.replaceAll("_"," ") : (state.lang==="en"?"Order received":"Pedido recibido"));
 }
@@ -236,8 +244,8 @@ function renderOrders(){
     const created=o.created_at?new Intl.DateTimeFormat(state.lang==="en"?"en-US":"es-US",{dateStyle:"medium"}).format(new Date(o.created_at)):"";
     const items=(o.items||[]).map(i=>`${Number(i.quantity||1)}× ${escapeHtml(i.product_name||i.sku||"")}${i.download_url?` <a class="account-digital-download" href="${escapeHtml(i.download_url)}">${escapeHtml(t('downloadDigital'))}</a>`:''}`).join(" · ");
     const status=orderStatusLabel(o);
-    const statusClass=String(o.status||o.payment_status||"").toLowerCase().replace(/[^a-z_]/g,"");
-    return `<article class="account-order-card"><div class="account-order-top"><div><small>${state.lang==="en"?"Order":"Pedido"}</small><h3>#${escapeHtml(o.order_number||"")}</h3></div><span class="account-order-status ${statusClass}">${escapeHtml(status)}</span></div><div class="account-order-meta"><span>${escapeHtml(created)}</span><strong>${moneyFromCents(o.total_cents)}</strong></div>${items?`<p>${items}</p>`:""}${o.manage_token?`<p><a class="account-manage-order" href="/manage-order.html?token=${encodeURIComponent(o.manage_token)}">${state.lang==="en"?"Manage order":"Gestionar pedido"}</a></p>`:""}</article>`;
+    const statusClass=orderStatusKey(o).replace(/[^a-z_]/g,"");
+    return `<article class="account-order-card"><div class="account-order-top"><div><small>${o.source==="nurai_replacement"?(state.lang==="en"?"Replacement":"Reemplazo"):(state.lang==="en"?"Order":"Pedido")}</small><h3>#${escapeHtml(o.order_number||"")}</h3></div><span class="account-order-status ${statusClass}">${escapeHtml(status)}</span></div><div class="account-order-meta"><span>${escapeHtml(created)}</span><strong>${moneyFromCents(o.total_cents)}</strong></div>${items?`<p>${items}</p>`:""}${o.manage_token?`<p><a class="account-manage-order" href="/manage-order.html?token=${encodeURIComponent(o.manage_token)}">${state.lang==="en"?"Manage order":"Gestionar pedido"}</a></p>`:""}</article>`;
   }).join("");
 }
 async function loadOrders(force=false){

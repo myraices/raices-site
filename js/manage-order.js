@@ -28,7 +28,12 @@
   async function submitForm(e,type){e.preventDefault();if(requestBusy)return;const msg=$('postMessage');msg.className='';msg.textContent=''; const ids=type==='cancellation'?[]:[...document.querySelectorAll('input[name=item]:checked')].map(x=>x.value);if(type!=='cancellation'&&!ids.length){msg.className='manage-alert error';msg.textContent=t('selectItems');return;}requestBusy=true;try{const files=$('postImages')?.files||[];const images=await filesToData(files);const reason=$('postReason')?.value||(type==='cancellation'?'change_mind':'');const customerNote=$('postNote')?.value?.trim()||'';if(type==='cancellation'&&reason==='other'&&!customerNote){msg.className='manage-alert error';msg.textContent=t('otherExplain');requestBusy=false;return;}if(type==='issue'&&['damaged','broken'].includes(reason)&&!images.length){throw new Error('PHOTO_REQUIRED')}const res=await fetch('/.netlify/functions/post-sale-request',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token,request_type:type,order_item_ids:ids,reason,customer_note:customerNote,images})});const body=await res.json().catch(()=>({}));if(!res.ok)throw new Error(body.error||'REQUEST_ERROR');msg.className='manage-alert success';msg.textContent=t('sent');await load();setTimeout(closeModal,1500);}catch(err){
     msg.className='manage-alert error';
     if(err.message==='PHOTO_REQUIRED') msg.textContent=t('photoRequired');
-    else if(type==='cancellation'&&err.message==='CANCELLATION_NOT_AVAILABLE'){
+    else if(err.message==='REQUEST_ALREADY_OPEN'){
+      msg.textContent=lang==='en'
+        ? 'There is already an open request of this type for this order. You can review its status here in Manage order.'
+        : 'Ya existe una solicitud abierta de este tipo para este pedido. Puedes consultar su estado aquí en Gestionar pedido.';
+      await load();
+    } else if(type==='cancellation'&&err.message==='CANCELLATION_NOT_AVAILABLE'){
       msg.textContent=t('cancelBlocked');
       await load();
     } else msg.textContent=t('error');

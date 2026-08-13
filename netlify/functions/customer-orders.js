@@ -19,7 +19,7 @@ exports.handler=async(event)=>{
     const user=await userRes.json(); const email=String(user.email||'').trim().toLowerCase();
     if(!email)return response(200,{orders:[]});
     const encoded=encodeURIComponent(email);
-    const orders=await serviceRequest(`orders?select=id,order_number,status,payment_status,total_cents,created_at,fulfillment_type,manage_token&customer_email=eq.${encoded}&order=created_at.desc&limit=50`);
+    const orders=await serviceRequest(`orders?select=id,order_number,status,payment_status,total_cents,total_amount,refunded_amount,refunded_at,created_at,fulfillment_type,manage_token,source&customer_email=eq.${encoded}&order=created_at.desc&limit=50`);
     if(!orders.length)return response(200,{orders:[]});
     const ids=orders.map(o=>o.id).filter(Boolean);
     const items=await serviceRequest(`order_items?select=order_id,product_id,sku,product_name,variant,quantity,line_total_cents&order_id=in.(${ids.join(',')})&order=created_at.asc`);
