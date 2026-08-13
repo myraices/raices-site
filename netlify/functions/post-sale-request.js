@@ -36,7 +36,7 @@ async function loadOrder(token){
   const rows=await rest(`orders?manage_token=eq.${encodeURIComponent(token)}&select=id,order_number,customer_name,customer_email,fulfillment_type,status,payment_status,subtotal,delivery_amount,tax_amount,total_amount,refunded_amount,created_at,completed_at,cancellation_requested_at,order_items(id,product_id,product_name,sku,quantity,unit_price,line_total)&limit=1`);
   const order=rows?.[0];
   if(!order)return null;
-  const deliveryRows=await rest(`deliveries?order_id=eq.${encodeURIComponent(order.id)}&select=id,status,departed_at,delivered_at,completed_at&order=created_at.desc&limit=1`).catch(()=>[]);
+  const deliveryRows=await rest(`deliveries?order_id=eq.${encodeURIComponent(order.id)}&select=id,status,departed_at,delivered_at&order=created_at.desc&limit=1`).catch(()=>[]);
   const delivery=deliveryRows?.[0]||null;
   const stops=await rest(`delivery_route_stops?order_id=eq.${encodeURIComponent(order.id)}&select=id,route_id,loaded_at,delivery_routes(status)&order=created_at.desc`).catch(()=>[]);
   const productIds=[...new Set((order.order_items||[]).map(i=>i.product_id).filter(Boolean))];
@@ -49,14 +49,17 @@ async function loadOrder(token){
     const p=productMap.get(String(item.product_id))||{};
     return {...item,collection:p.collection||'',category:p.category||'',operational_type:p.operational_type||'',is_home:isHome(p.collection)};
   });
-  const routeActive=(stops||[]).some(s=>lower(s.delivery_routes?.status)==='active');
-  const routeLoading=(stops||[]).some(s=>['planned','loading'].includes(lower(s.delivery_routes?.status)));
+  const routeStatuses=(stops||[]).map(s=>lower(s.delivery_routes?.status)).filter(Boolean);
+  const routeActive=routeStatuses.some(status=>['active','started','in_progress','out_for_delivery'].includes(status));
+  const routeLoading=routeStatuses.some(status=>['planned','loading'].includes(status));
   const deliveryStatus=lower(delivery?.status||order.status);
+  const departed=Boolean(delivery?.departed_at);
   const deliveredAt=deliveryTimestamp(order,delivery);
   const digital=lower(order.fulfillment_type)==='digital';
   const cancellationEligible=!digital
     && ['completed','partially_refunded'].includes(lower(order.payment_status))
     && !['cancelled','out_for_delivery','delivered','completed'].includes(deliveryStatus)
+    && !departed
     && !routeActive;
   const delivered=['delivered','completed'].includes(deliveryStatus)||Boolean(deliveredAt);
   const withinReturnWindow=delivered && daysSince(deliveredAt)<=14.0001;
@@ -96,6 +99,25 @@ async function uploadEvidence(requestId,images){
   }
   return saved;
 }
+async function cancellationStillAvailable(order){
+  // Authoritative last-moment gate. Use only fields known to exist so a schema
+  // mismatch cannot silently reopen cancellation once delivery has departed.
+  const deliveryRows=await rest(
+    `deliveries?order_id=eq.${encodeURIComponent(order.id)}&select=id,status,departed_at,delivered_at&order=created_at.desc&limit=1`
+  ).catch(()=>[]);
+  const currentDelivery=deliveryRows?.[0]||null;
+  const currentStops=await rest(
+    `delivery_route_stops?order_id=eq.${encodeURIComponent(order.id)}&select=id,route_id,loaded_at,delivery_routes(status)&order=created_at.desc`
+  ).catch(()=>[]);
+  const deliveryStatus=lower(currentDelivery?.status||order.status);
+  const routeStatuses=(currentStops||[]).map(stop=>lower(stop.delivery_routes?.status)).filter(Boolean);
+  const routeStarted=routeStatuses.some(status=>['active','started','in_progress','out_for_delivery','completed'].includes(status));
+  const departed=Boolean(currentDelivery?.departed_at);
+  return !departed
+    && !routeStarted
+    && !['cancelled','out_for_delivery','delivered','completed'].includes(deliveryStatus);
+}
+
 async function createRequest(state,body){
   const {order,delivery,stops}=state;
   const type=clean(body.request_type);
@@ -108,6 +130,11 @@ async function createRequest(state,body){
 
   if(type==='cancellation'){
     if(!state.cancellationEligible)return reply(409,{error:'CANCELLATION_NOT_AVAILABLE'});
+    // Re-check immediately before creating the case. This prevents a customer
+    // from submitting a cancellation from a page opened before the route started.
+    if(!(await cancellationStillAvailable(order))){
+      return reply(409,{error:'CANCELLATION_NOT_AVAILABLE',reason:'ORDER_ALREADY_OUT_FOR_DELIVERY'});
+    }
   }
   if(type==='home_return'){
     if(!state.withinReturnWindow)return reply(409,{error:'RETURN_WINDOW_CLOSED'});
