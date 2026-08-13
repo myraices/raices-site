@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Gestionar pedido | Raíces</title>
+  <link rel="stylesheet" href="css/styles.css?v=23.7.24">
+  <style>
+    body.manage-order-page{background:#f8f3ea;color:#173d38}.manage-shell{width:min(920px,calc(100% - 32px));margin:40px auto 80px}.manage-head{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:24px}.manage-head img{width:86px;height:86px;object-fit:contain}.manage-lang{display:flex;gap:8px}.manage-lang button{border:1px solid #d8c9ba;background:#fff;border-radius:999px;padding:8px 12px;font:inherit;font-weight:700}.manage-lang button.active{background:#173f35;color:#fff}.manage-card{background:#fff;border:1px solid #e5d9cc;border-radius:22px;padding:26px;margin-bottom:18px;box-shadow:0 12px 40px rgba(37,50,43,.05)}.manage-card h1,.manage-card h2{margin-top:0}.manage-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.manage-summary div{background:#faf7f1;border-radius:14px;padding:14px}.manage-summary span,.manage-summary strong{display:block}.manage-summary span{font-size:.78rem;color:#777}.manage-items{display:grid;gap:10px}.manage-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid #eee3d8;border-radius:14px}.manage-item input{margin-top:4px}.manage-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.manage-btn{border:0;background:#174f45;color:#fff;border-radius:999px;padding:12px 18px;font:inherit;font-weight:800;cursor:pointer}.manage-btn.secondary{background:#fff;color:#174f45;border:1px solid #174f45}.manage-alert{padding:14px 16px;border-radius:14px;margin:14px 0;background:#fff3d8;color:#79551d}.manage-alert.error{background:#fde8e5;color:#a2372a}.manage-alert.success{background:#e7f5ea;color:#245f41}.manage-form{display:grid;gap:12px}.manage-form label{display:grid;gap:6px;font-weight:700}.manage-form select,.manage-form textarea,.manage-form input[type=file]{font:inherit;padding:11px;border:1px solid #d9cfc4;border-radius:12px;background:#fff}.manage-form textarea{min-height:110px}.manage-modal[hidden]{display:none}.manage-modal{position:fixed;inset:0;background:rgba(10,30,24,.52);display:grid;place-items:center;padding:18px;z-index:9999}.manage-modal-box{width:min(620px,100%);max-height:88vh;overflow:auto;background:#fff;border-radius:22px;padding:24px}.manage-close{float:right;border:0;background:none;font-size:28px;cursor:pointer}.manage-status-list{display:grid;gap:8px}.manage-status-list article{padding:12px;border-radius:12px;background:#faf7f1}.manage-muted{color:#777;font-size:.92rem}@media(max-width:650px){.manage-shell{margin-top:20px}.manage-summary{grid-template-columns:1fr}.manage-card{padding:19px}.manage-head img{width:72px;height:72px}}
+  </style>
+</head>
+<body class="manage-order-page">
+  <main class="manage-shell">
+    <header class="manage-head"><a href="/"><img src="assets/raices-logo.webp" alt="Raíces"></a><div class="manage-lang"><button id="manageEs" class="active">ES</button><button id="manageEn">EN</button></div></header>
+    <section class="manage-card" id="manageLoading"><h1>Gestionar pedido</h1><p>Cargando información segura del pedido…</p></section>
+    <section id="manageContent" hidden></section>
+  </main>
+  <div class="manage-modal" id="manageModal" hidden><div class="manage-modal-box"><button class="manage-close" id="manageClose" aria-label="Cerrar">×</button><div id="manageModalBody"></div></div></div>
+  <script src="js/manage-order.js?v=23.7.24"></script>
+</body>
+</html>

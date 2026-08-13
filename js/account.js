@@ -237,7 +237,7 @@ function renderOrders(){
     const items=(o.items||[]).map(i=>`${Number(i.quantity||1)}× ${escapeHtml(i.product_name||i.sku||"")}${i.download_url?` <a class="account-digital-download" href="${escapeHtml(i.download_url)}">${escapeHtml(t('downloadDigital'))}</a>`:''}`).join(" · ");
     const status=orderStatusLabel(o);
     const statusClass=String(o.status||o.payment_status||"").toLowerCase().replace(/[^a-z_]/g,"");
-    return `<article class="account-order-card"><div class="account-order-top"><div><small>${state.lang==="en"?"Order":"Pedido"}</small><h3>#${escapeHtml(o.order_number||"")}</h3></div><span class="account-order-status ${statusClass}">${escapeHtml(status)}</span></div><div class="account-order-meta"><span>${escapeHtml(created)}</span><strong>${moneyFromCents(o.total_cents)}</strong></div>${items?`<p>${items}</p>`:""}</article>`;
+    return `<article class="account-order-card"><div class="account-order-top"><div><small>${state.lang==="en"?"Order":"Pedido"}</small><h3>#${escapeHtml(o.order_number||"")}</h3></div><span class="account-order-status ${statusClass}">${escapeHtml(status)}</span></div><div class="account-order-meta"><span>${escapeHtml(created)}</span><strong>${moneyFromCents(o.total_cents)}</strong></div>${items?`<p>${items}</p>`:""}${o.manage_token?`<p><a class="account-manage-order" href="/manage-order.html?token=${encodeURIComponent(o.manage_token)}">${state.lang==="en"?"Manage order":"Gestionar pedido"}</a></p>`:""}</article>`;
   }).join("");
 }
 async function loadOrders(force=false){
