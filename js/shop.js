@@ -82,40 +82,19 @@
   }
 
   function productDescription(product){
-    if(currentLang()==='es') return product.longDescription || product.description || '';
-    const map = {
-      'Arepas': `${product.name} is part of Raíces' Signature Arepas Collection: handcrafted root-based arepas made with real ingredients, created to heat, serve and enjoy at home.`,
-      'Empanadas': `${product.name} is part of Raíces' Signature Empanadas Collection: handmade cassava-based empanadas with honest fillings and natural colors inspired by the root.`,
-      'Proteínas': `${product.name} belongs to the Protein Craft Collection: slow-cooked, ready-to-enjoy proteins designed to simplify nourishing meals.`,
-      'Herbal': `${product.name} is a herbal ritual created to accompany your day with intention, balance and calm.`,
-      'Postres': `${product.name} is part of the Signature Desserts Collection: sweetness with a more natural, thoughtful and handcrafted approach.`,
-      'Home': `${product.name} belongs to Home Rituals: simple objects created to turn an everyday pause into a meaningful ritual.`,
-      'Guías': `${product.name} is part of The Library: a digital guide created to support habits, conscious living and everyday wellbeing.`
-    };
-    return map[product.subcategory] || product.longDescription || product.description || '';
+    return product.longDescription || product.description || '';
   }
 
   function productBenefit(product){
-    if(currentLang()==='es') return product.benefits && product.benefits[0] ? product.benefits[0] : 'Ingredientes reales';
-    const map = {Kitchen:'Made with real ingredients',Herbal:'Created for daily rituals',Desserts:'Handcrafted sweetness',Home:'Designed for mindful rituals',Wellness:'Practical digital content'};
-    return map[product.category] || 'Created with intention';
+    return product.benefits && product.benefits[0] ? product.benefits[0] : (currentLang()==='es' ? 'Ingredientes reales' : 'Created with intention');
   }
 
   function productConservation(product){
-    if(currentLang()==='es') return product.conservation || 'Conservación según etiqueta';
-    if(product.category==='Kitchen') return 'Keep frozen. Heat before serving.';
-    if(product.category==='Wellness') return 'Digital product. No physical storage required.';
-    if(product.category==='Home') return 'Care according to material.';
-    return 'Store according to label instructions.';
+    return product.conservation || (currentLang()==='es' ? 'Conservación según etiqueta' : 'Store according to label instructions.');
   }
 
   function productPreparation(product){
-    if(currentLang()==='es') return product.preparation || 'Listo para disfrutar';
-    if(product.category==='Kitchen') return 'Heat in air fryer, pan or oven.';
-    if(product.category==='Herbal') return 'Prepare as a warm or iced ritual.';
-    if(product.category==='Wellness') return 'Download, read and apply at your own pace.';
-    if(product.category==='Home') return 'Use as part of your tea or home ritual.';
-    return 'Ready to enjoy.';
+    return product.preparation || (currentLang()==='es' ? 'Listo para disfrutar' : 'Ready to enjoy.');
   }
 
   function money(value){
@@ -418,25 +397,12 @@
   }
 
   function localizedIngredients(product){
-    if(currentLang()==='es') return product.ingredients || 'Ingredientes reales según variedad.';
-    if(product.category==='Kitchen') return 'Root-based dough and filling according to variety.';
-    if(product.category==='Herbal') return 'Herbal blend according to formulation.';
-    if(product.category==='Desserts') return 'Handcrafted ingredients according to flavor.';
-    if(product.category==='Home') return 'Material and care details according to product.';
-    if(product.category==='Wellness') return 'Digital guide content.';
-    return product.ingredients || '';
+    return product.ingredients || (currentLang()==='es' ? 'Ingredientes reales según variedad.' : 'Real ingredients according to variety.');
   }
 
   function benefitList(product){
-    if(currentLang()==='es' && Array.isArray(product.benefits) && product.benefits.length) return product.benefits;
-    const byCategory = {
-      Kitchen:['Made with real ingredients','Practical for everyday meals','Created to nourish with simplicity'],
-      Herbal:['Created for daily rituals','A mindful pause for balance','Designed to accompany your routine'],
-      Desserts:['Handcrafted sweetness','Inspired by natural ingredients','A thoughtful way to enjoy dessert'],
-      Home:['Designed for meaningful rituals','Simple objects for everyday use','Created to elevate small moments'],
-      Wellness:['Practical guidance','Designed for self-paced learning','Created to support better habits']
-    };
-    return byCategory[product.category] || ['Created with intention'];
+    if(Array.isArray(product.benefits) && product.benefits.length) return product.benefits;
+    return [currentLang()==='es' ? 'Creado con intención' : 'Created with intention'];
   }
 
   function relatedProducts(product){
@@ -512,7 +478,7 @@
             <details><summary>${t('ingredients')}</summary><div><p>${localizedIngredients(p)}</p></div></details>
             <details><summary>${t('conservation')}</summary><div><p>${productConservation(p)}</p></div></details>
             <details><summary>${t('preparation')}</summary><div><p>${productPreparation(p)}</p></div></details>
-            <details><summary>${t('ideal_moment')}</summary><div><p>${currentLang()==='es' ? (p.moment || 'Un ritual cotidiano de bienestar.') : 'An everyday wellness ritual.'}</p></div></details>
+            <details><summary>${t('ideal_moment')}</summary><div><p>${p.moment || (currentLang()==='es' ? 'Un ritual cotidiano de bienestar.' : 'An everyday wellness ritual.')}</p></div></details>
           </div>
           <div class="ritual-complete"><h3>${t('related')}</h3><div class="ritual-grid">${related}</div></div>
         </div>
