@@ -632,7 +632,6 @@
     if(existing){
       if(existing.qty >= maxQty){
         showCartStatus(currentLang()==='es' ? `Solo hay ${maxQty} unidad(es) disponibles de ${product.name}.` : `Only ${maxQty} unit(s) of ${product.name} are available.`, 'warning');
-        if(!document.body.classList.contains('app-experience')) openCartDrawer();
         return;
       }
       existing.qty = Math.min(existing.qty + requestedQty, maxQty);
@@ -640,8 +639,8 @@
     saveCart();
     if(document.body.classList.contains('app-experience')){
       closeProductModal();
-      window.dispatchEvent(new CustomEvent('raices:productAdded',{detail:{product,quantity:requestedQty}}));
-    } else openCartDrawer();
+    }
+    window.dispatchEvent(new CustomEvent('raices:productAdded',{detail:{product,quantity:requestedQty}}));
   }
 
   function updateQty(key, delta){
@@ -889,6 +888,17 @@
   renderFilters();
   renderProducts();
   renderCart();
+
+  // Returning from checkout to review the cart should open the cart drawer once.
+  const returnParams = new URLSearchParams(window.location.search);
+  if(returnParams.get('cart') === 'open'){
+    setTimeout(openCartDrawer, 80);
+    returnParams.delete('cart');
+    const cleanQuery = returnParams.toString();
+    const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}${window.location.hash || '#shop'}`;
+    window.history.replaceState({}, '', cleanUrl);
+  }
+
   loadDeliveryConfig();
   reconcilePendingPaidOrder();
   window.addEventListener("pageshow",reconcilePendingPaidOrder);
