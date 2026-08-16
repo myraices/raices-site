@@ -132,6 +132,8 @@
 
   let deliveryZones = [];
   let deliveryConfigReady = false;
+  let freeDeliveryEnabled = true;
+  let freeDeliveryThreshold = Number(window.RAICES_STORE_CONFIG?.ORDER_RULES?.freeDeliveryThreshold ?? 100);
 
   function normalizeDeliveryZones(zones){
     const list=value=>Array.isArray(value)?value.flatMap(list):String(value||'').split(/[,;\n]+/).map(v=>v.trim()).filter(Boolean);
@@ -149,8 +151,12 @@
       const body = await res.json().catch(()=>({}));
       if(!res.ok || !Array.isArray(body.zones)) throw new Error(body.error || 'DELIVERY_CONFIG_UNAVAILABLE');
       deliveryZones = normalizeDeliveryZones(body.zones);
+      freeDeliveryEnabled = body.freeDeliveryEnabled !== false;
+      const remoteThreshold = Number(body.freeDeliveryThreshold);
+      if(Number.isFinite(remoteThreshold) && remoteThreshold >= 0) freeDeliveryThreshold = remoteThreshold;
       deliveryConfigReady = true;
       window.RAICES_DELIVERY_ZONES = deliveryZones;
+      window.RAICES_FREE_DELIVERY = { enabled: freeDeliveryEnabled, threshold: freeDeliveryThreshold };
       if(getDeliveryZip()) buildDeliveryState(getDeliveryZip());
       renderCart();
     }catch(err){
@@ -682,8 +688,8 @@
     const physicalSubtotal = enriched.filter(item => !isDigitalProduct(item.product)).reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
     const zip = getDeliveryZip();
     const baseDeliveryState = getDeliveryState();
-    const freeAt = Number(window.RAICES_STORE_CONFIG?.ORDER_RULES?.freeDeliveryThreshold || 0);
-    const physicalQualifies = hasPhysicalItems && freeAt > 0 && physicalSubtotal >= freeAt;
+    const freeAt = freeDeliveryEnabled ? Number(freeDeliveryThreshold || 0) : -1;
+    const physicalQualifies = hasPhysicalItems && freeDeliveryEnabled && (freeAt === 0 || physicalSubtotal >= freeAt);
     const deliveryState = digitalOnly
       ? { valid:true, zone:'Entrega digital', cost:0, digitalOnly:true }
       : { ...baseDeliveryState, cost: physicalQualifies ? 0 : Number(baseDeliveryState.cost || 0), digitalOnly:false };

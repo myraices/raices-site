@@ -63,7 +63,10 @@ exports.handler = async (event) => {
     const rows = text ? JSON.parse(text) : [];
     const settings = rows?.[0]?.settings || {};
     const zones = sanitizeZones(settings);
-    return response(200, { zones, source: 'nurai_settings', updatedAt: new Date().toISOString() }, origin);
+    const freeDeliveryEnabled = settings.free_delivery_enabled !== false;
+    const rawThreshold = Number(settings.free_delivery_threshold ?? 100);
+    const freeDeliveryThreshold = Number.isFinite(rawThreshold) && rawThreshold >= 0 ? rawThreshold : 100;
+    return response(200, { zones, freeDeliveryEnabled, freeDeliveryThreshold, source: 'nurai_settings', updatedAt: new Date().toISOString() }, origin);
   } catch (err) {
     console.error('delivery-config', err);
     return response(503, { error: 'DELIVERY_CONFIG_UNAVAILABLE', zones: [] }, origin);
