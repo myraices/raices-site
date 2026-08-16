@@ -47,6 +47,28 @@ function sanitizeZones(input) {
     .filter(zone => zone.name && (zone.zips.length || zone.prefixes.length));
 }
 
+function centralDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Chicago',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+function normalizeDate(value) {
+  const text = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
+function scheduleActive(enabled, startDate, endDate) {
+  if (!enabled) return false;
+  const today = centralDateKey();
+  if (startDate && today < startDate) return false;
+  if (endDate && today > endDate) return false;
+  return true;
+}
+
 exports.handler = async (event) => {
   const origin = event.headers.origin || event.headers.Origin || '';
   if (event.httpMethod === 'OPTIONS') return response(204, {}, origin);
@@ -66,7 +88,20 @@ exports.handler = async (event) => {
     const freeDeliveryEnabled = settings.free_delivery_enabled !== false;
     const rawThreshold = Number(settings.free_delivery_threshold ?? 100);
     const freeDeliveryThreshold = Number.isFinite(rawThreshold) && rawThreshold >= 0 ? rawThreshold : 100;
-    return response(200, { zones, freeDeliveryEnabled, freeDeliveryThreshold, source: 'nurai_settings', updatedAt: new Date().toISOString() }, origin);
+    const freeDeliveryStartDate = normalizeDate(settings.free_delivery_start_date);
+    const freeDeliveryEndDate = normalizeDate(settings.free_delivery_end_date);
+    const freeDeliveryActive = scheduleActive(freeDeliveryEnabled, freeDeliveryStartDate, freeDeliveryEndDate);
+    return response(200, {
+      zones,
+      freeDeliveryEnabled,
+      freeDeliveryActive,
+      freeDeliveryThreshold,
+      freeDeliveryStartDate,
+      freeDeliveryEndDate,
+      scheduleTimeZone: 'America/Chicago',
+      source: 'nurai_settings',
+      updatedAt: new Date().toISOString()
+    }, origin);
   } catch (err) {
     console.error('delivery-config', err);
     return response(503, { error: 'DELIVERY_CONFIG_UNAVAILABLE', zones: [] }, origin);
