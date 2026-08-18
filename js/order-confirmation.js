@@ -1,5 +1,5 @@
 (function(){
- const params=new URLSearchParams(location.search),id=params.get('order');
+ const params=new URLSearchParams(location.search),id=params.get('order')||params.get('checkout');
  let pending={};try{pending=JSON.parse(sessionStorage.getItem('raices_pending_order')||localStorage.getItem('raices_pending_order')||'{}')}catch(e){}
  const number=document.getElementById('confirmationNumber'),status=document.getElementById('confirmationStatus'),icon=document.getElementById('confirmationIcon'),eyebrow=document.getElementById('confirmationEyebrow'),title=document.getElementById('confirmationTitle'),text=document.getElementById('confirmationText'),timeline=document.getElementById('paymentTimeline');
  if(pending.orderNumber)number.textContent='#'+pending.orderNumber;
@@ -12,7 +12,10 @@
    if(r.ok){
     if(d.order_number)number.textContent='#'+d.order_number;
     status.textContent=d.payment_status||d.status||'Pendiente';
-    if(String(d.payment_status).toLowerCase()==='completed'||String(d.status).toLowerCase()==='paid'){
+    if(String(d.payment_status).toLowerCase()==='failed'||String(d.status).toLowerCase()==='payment_failed'){
+     icon.textContent='!';eyebrow.textContent='Pago no completado';title.textContent='El pedido no fue creado.';text.textContent='Square no confirmó el pago. Tu carrito se mantiene para que puedas intentarlo nuevamente.';timeline.classList.remove('done');return;
+    }
+    if(String(d.payment_status).toLowerCase()==='completed'||String(d.status).toLowerCase()==='paid'||String(d.status).toLowerCase()==='completed'){
      icon.textContent='✓';eyebrow.textContent='Pedido recibido';title.textContent='Gracias por volver a la raíz.';text.textContent='Tu pago fue confirmado y recibimos tu pedido.';timeline.classList.add('done');
      sessionStorage.setItem('raices_confirmed_order',JSON.stringify({orderNumber:d.order_number,paymentStatus:'completed'}));
      clearCart();return;

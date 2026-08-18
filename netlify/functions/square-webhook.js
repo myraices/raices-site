@@ -79,6 +79,47 @@ async function completeDigitalOrder(order) {
 }
 
 
+async function supabaseFindCheckoutSession(filter) {
+  const { url, key } = supabaseConfig();
+  const res = await fetch(`${url}/rest/v1/checkout_sessions?${filter}&select=id,status,square_order_id,square_payment_link_id,order_id,expires_at&limit=1`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` }
+  });
+  if (!res.ok) throw new Error(`SUPABASE_CHECKOUT_SESSION_${res.status}:${await res.text()}`);
+  const rows = await res.json();
+  return rows?.[0] || null;
+}
+
+async function supabasePatchCheckoutSession(id, values) {
+  const { url, key } = supabaseConfig();
+  const res = await fetch(`${url}/rest/v1/checkout_sessions?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json', Prefer:'return=minimal' },
+    body: JSON.stringify(values)
+  });
+  if (!res.ok) throw new Error(`SUPABASE_CHECKOUT_SESSION_PATCH_${res.status}:${await res.text()}`);
+}
+
+async function createOrderFromCheckoutSession(sessionId, payment, finalAmounts) {
+  const { url, key } = supabaseConfig();
+  const paidAt = payment.updated_at || payment.created_at || new Date().toISOString();
+  const res = await fetch(`${url}/rest/v1/rpc/nurai_create_order_from_checkout_session`, {
+    method: 'POST',
+    headers: { apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json' },
+    body: JSON.stringify({
+      p_session_id: sessionId,
+      p_square_order_id: payment.order_id || null,
+      p_square_payment_id: payment.id || null,
+      p_paid_at: paidAt,
+      p_tax_cents: Number(finalAmounts?.taxCents || 0),
+      p_total_cents: Number(finalAmounts?.totalCents || 0)
+    })
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`SUPABASE_CREATE_ORDER_FROM_CHECKOUT_${res.status}:${text}`);
+  const parsed = text ? JSON.parse(text) : null;
+  return Array.isArray(parsed) ? parsed[0] : parsed;
+}
+
 async function completePaidOrder(orderId, paymentId, paidAt) {
   const { url, key } = supabaseConfig();
   const res = await fetch(`${url}/rest/v1/rpc/complete_paid_order_and_deduct_inventory`, {
@@ -259,17 +300,45 @@ exports.handler = async (event) => {
     const payment = payload.data?.object?.payment;
     if (!payment?.order_id) return { statusCode: 200, headers: JSON_HEADERS, body: 'No order' };
 
-    const order = await resolveInternalOrder(payment);
-    if (!order?.id) {
-      console.error('square-webhook order not found', { paymentId: payment.id, squareOrderId: payment.order_id });
-      return { statusCode: 200, headers: JSON_HEADERS, body: 'Order not found' };
-    }
-
     const squareStatus = String(payment.status || 'UNKNOWN').toUpperCase();
     const refundedCents = Number(payment.refunded_money?.amount || 0);
     const hasRefund = refundedCents > 0;
     const completed = squareStatus === 'COMPLETED';
     const failed = squareStatus === 'FAILED' || squareStatus === 'CANCELED';
+
+    let order = await resolveInternalOrder(payment);
+
+    // New flow: checkout intent exists, but no NURAI order is created until Square says COMPLETED.
+    if (!order?.id) {
+      const referenceId = await getSquareReferenceId(payment.order_id);
+      let checkoutSession = null;
+      if (/^[0-9a-f-]{36}$/i.test(referenceId || '')) {
+        checkoutSession = await supabaseFindCheckoutSession(`id=eq.${encodeURIComponent(referenceId)}`);
+      }
+      if (!checkoutSession) {
+        checkoutSession = await supabaseFindCheckoutSession(`square_order_id=eq.${encodeURIComponent(payment.order_id)}`);
+      }
+
+      if (!checkoutSession?.id) {
+        console.error('square-webhook checkout/order not found', { paymentId: payment.id, squareOrderId: payment.order_id, referenceId });
+        return { statusCode: 200, headers: JSON_HEADERS, body: 'Checkout not found' };
+      }
+
+      if (failed) {
+        await supabasePatchCheckoutSession(checkoutSession.id, { status:'failed', updated_at:new Date().toISOString() });
+        return { statusCode: 200, headers: JSON_HEADERS, body: 'Checkout failed' };
+      }
+
+      if (!completed) {
+        return { statusCode: 200, headers: JSON_HEADERS, body: 'Checkout pending' };
+      }
+
+      const initialAmounts = await getSquareOrderAmounts(payment.order_id);
+      const createdOrderId = await createOrderFromCheckoutSession(checkoutSession.id, payment, initialAmounts);
+      order = await supabaseFind(`id=eq.${encodeURIComponent(createdOrderId)}`);
+      if (!order?.id) throw new Error('ORDER_CREATION_AFTER_PAYMENT_FAILED');
+      console.log('[square-webhook] order_created_after_payment', { checkoutId:checkoutSession.id, orderId:order.id, paymentId:payment.id });
+    }
 
     // Square keeps the payment itself as COMPLETED after a refund and emits another
     // payment.updated event. That event must never mark the NURAI order as paid again.

@@ -39,9 +39,27 @@ function normalizeDeliveryZones(input) {
     })
     .filter(zone => zone.name && (zone.zips.length || zone.prefixes.length));
 }
-async function deliveryZones() {
+function centralDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Chicago', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
+  const values = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+function normalizeDate(value) {
+  const text = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
+async function deliverySettings() {
   const rows = await supabaseRequest('nurai_settings?section=eq.operation&select=settings&limit=1');
-  return normalizeDeliveryZones(rows?.[0]?.settings || {});
+  const settings = parseSettings(rows?.[0]?.settings || {});
+  const zones = normalizeDeliveryZones(settings);
+  const enabled = settings.free_delivery_enabled !== false;
+  const rawThreshold = Number(settings.free_delivery_threshold ?? 100);
+  const threshold = Number.isFinite(rawThreshold) && rawThreshold >= 0 ? rawThreshold : 100;
+  const startDate = normalizeDate(settings.free_delivery_start_date);
+  const endDate = normalizeDate(settings.free_delivery_end_date);
+  const today = centralDateKey();
+  const active = enabled && (!startDate || today >= startDate) && (!endDate || today <= endDate);
+  return { zones, freeDelivery: { enabled, active, threshold, startDate, endDate } };
 }
 async function salesTaxSettings() {
   const rows = await supabaseRequest('nurai_settings?section=eq.payments&select=settings&limit=1');
@@ -123,7 +141,8 @@ exports.handler = async (event) => {
       return { sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120), qty, unitCents, unitCost, digital, taxStatus, digitalFilePath: safeText(p.digital_file_path,500) };
     });
     const hasPhysicalItems = validated.some(i => !i.digital);
-    const zones = hasPhysicalItems ? await deliveryZones() : [];
+    const deliveryConfig = hasPhysicalItems ? await deliverySettings() : { zones: [], freeDelivery: { enabled:false, active:false, threshold:0 } };
+    const zones = deliveryConfig.zones;
     if (hasPhysicalItems && !zones.length) return response(503, { error: 'DELIVERY_CONFIG_UNAVAILABLE' }, origin);
     const zone = hasPhysicalItems ? zoneFor(zip, zones) : { name: 'Digital delivery', fee: 0 };
     if (hasPhysicalItems && !zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
@@ -131,7 +150,9 @@ exports.handler = async (event) => {
       return response(400, { error: 'DELIVERY_DATA_INCOMPLETE' }, origin);
     }
     if (hasPhysicalItems && (!customer.addressVerified || !safeText(customer.placeId, 200))) return response(400, { error: 'ADDRESS_NOT_VERIFIED' }, origin);
-    const deliveryCents = !hasPhysicalItems || physicalSubtotal >= 10000 ? 0 : cents(zone.fee);
+    const freeThresholdCents = Math.round(Number(deliveryConfig.freeDelivery?.threshold || 0) * 100);
+    const freeDeliveryApplies = hasPhysicalItems && deliveryConfig.freeDelivery?.active && (freeThresholdCents === 0 || physicalSubtotal >= freeThresholdCents);
+    const deliveryCents = !hasPhysicalItems || freeDeliveryApplies ? 0 : cents(zone.fee);
     const hasTaxablePhysical = validated.some(i => i.taxStatus === 'physical_taxable');
     const hasTaxableItems = validated.some(i => i.taxStatus === 'physical_taxable' || i.taxStatus === 'digital_taxable');
     const hasDigitalReview = validated.some(i => i.taxStatus === 'digital_review');
@@ -151,53 +172,40 @@ exports.handler = async (event) => {
     const taxCentsExpected = Number(taxResult.taxCents || 0);
 
     console.log('[checkout] tax_calculated', { provider: taxResult.provider, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
-    console.log('[checkout] create_order:start', { subtotalCents: subtotal, deliveryCents, preTaxTotalCents, taxCentsExpected, hasTaxablePhysical });
-    const pending = await supabaseRequest('orders', {
-      method: 'POST',
-      body: JSON.stringify({
-        status: 'pending_payment', payment_status: 'pending', payment_provider: 'square',
-        fulfillment_type: hasPhysicalItems ? 'delivery' : 'digital',
-        currency: 'USD',
-        subtotal: subtotal / 100,
-        discount_amount: 0,
-        tax_amount: 0,
-        delivery_amount: deliveryCents / 100,
-        total_amount: preTaxTotalCents / 100,
-        subtotal_cents: subtotal,
-        delivery_cents: deliveryCents,
-        tax_cents: 0,
-        total_cents: preTaxTotalCents,
-        customer_name: safeText(customer.name,120), customer_email: safeText(customer.email,180).toLowerCase(), customer_phone: safeText(customer.phone,40),
-        delivery_address: hasPhysicalItems ? safeText(customer.address,180) : 'Digital delivery', delivery_apt: hasPhysicalItems ? safeText(customer.apt,60) : '', delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online', delivery_state: safeText(customer.state,20) || 'N/A', delivery_zip: hasPhysicalItems ? zip : (zip || '00000'),
-        delivery_zone: zone.name, google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '', delivery_notes: hasPhysicalItems ? safeText(customer.notes,1000) : 'Digital product — delivery by email/account',
-        checkout_environment: environment,
-        is_test: environment !== 'production'
-      })
-    });
-    const order = pending?.[0];
-    console.log('[checkout] create_order:finish', { orderId: order?.id, orderNumber: order?.order_number });
-    if (!order?.id) throw new Error('ORDER_CREATION_FAILED');
+    const pendingOrderPayload = {
+      fulfillment_type: hasPhysicalItems ? 'delivery' : 'digital',
+      subtotal: subtotal / 100,
+      delivery_amount: deliveryCents / 100,
+      subtotal_cents: subtotal,
+      delivery_cents: deliveryCents,
+      customer_name: safeText(customer.name,120),
+      customer_email: safeText(customer.email,180).toLowerCase(),
+      customer_phone: safeText(customer.phone,40),
+      delivery_address: hasPhysicalItems ? safeText(customer.address,180) : 'Digital delivery',
+      delivery_apt: hasPhysicalItems ? safeText(customer.apt,60) : '',
+      delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online',
+      delivery_state: safeText(customer.state,20) || 'N/A',
+      delivery_zip: hasPhysicalItems ? zip : (zip || '00000'),
+      delivery_zone: zone.name,
+      google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '',
+      delivery_notes: hasPhysicalItems ? safeText(customer.notes,1000) : 'Digital product — delivery by email/account',
+      checkout_environment: environment,
+      is_test: environment !== 'production'
+    };
+    const pendingItemsPayload = validated.map(i => ({
+      product_id: i.productId,
+      sku: i.sku,
+      product_name: i.name,
+      variant: i.variant,
+      variant_name: i.variant,
+      quantity: i.qty,
+      unit_price: i.unitCents / 100,
+      line_total: (i.unitCents * i.qty) / 100,
+      unit_price_cents: i.unitCents,
+      line_total_cents: i.unitCents * i.qty,
+      unit_cost_snapshot: i.unitCost
+    }));
 
-    console.log('[checkout] save_order_items:start', { orderId: order.id, count: validated.length });
-    await supabaseRequest('order_items', {
-      method: 'POST',
-      body: JSON.stringify(validated.map(i => ({
-        order_id: order.id,
-        product_id: i.productId,
-        sku: i.sku,
-        product_name: i.name,
-        variant: i.variant,
-        variant_name: i.variant,
-        quantity: i.qty,
-        unit_price: i.unitCents / 100,
-        line_total: (i.unitCents * i.qty) / 100,
-        unit_price_cents: i.unitCents,
-        line_total_cents: i.unitCents * i.qty,
-        unit_cost_snapshot: i.unitCost
-      })))
-    });
-
-    console.log('[checkout] save_order_items:finish', { orderId: order.id });
     const TAX_UID = 'RAICES-SALES-TAX';
     const appliedTax = { tax_uid: TAX_UID };
     const lineItems = validated.map(i => ({
@@ -240,17 +248,32 @@ exports.handler = async (event) => {
       }
     }
 
+    const checkoutId = crypto.randomUUID();
+    await supabaseRequest('checkout_sessions', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: checkoutId,
+        status: 'created',
+        environment,
+        payload: {
+          order: pendingOrderPayload,
+          items: pendingItemsPayload,
+          expected: { tax_cents: taxCentsExpected, pre_tax_total_cents: preTaxTotalCents }
+        }
+      })
+    });
+
     const baseUrl = process.env.URL || 'https://myraices.com';
     const squareBase = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
-    console.log('[checkout] create_square_link:start', { orderId: order.id, taxProfile: validated.map(i => ({ sku:i.sku, taxStatus:i.taxStatus })) });
+    console.log('[checkout] create_square_link:start', { checkoutId, taxProfile: validated.map(i => ({ sku:i.sku, taxStatus:i.taxStatus })) });
     const squareRes = await fetch(`${squareBase}/v2/online-checkout/payment-links`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Square-Version': '2026-07-15', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         idempotency_key: crypto.randomUUID(),
-        order: { ...squareOrderPayload, reference_id: order.id },
+        order: { ...squareOrderPayload, reference_id: checkoutId },
         checkout_options: {
-          redirect_url: `${baseUrl}/order-confirmation.html?order=${encodeURIComponent(order.id)}`,
+          redirect_url: `${baseUrl}/order-confirmation.html?checkout=${encodeURIComponent(checkoutId)}`,
           ask_for_shipping_address: false,
           allow_tipping: false,
           enable_coupon: false,
@@ -261,25 +284,22 @@ exports.handler = async (event) => {
     const squareText = await squareRes.text();
     const squareData = squareText ? JSON.parse(squareText) : {};
     if (!squareRes.ok || !squareData.payment_link?.url) {
-      console.log('[checkout] create_square_link:finish', { orderId: order.id, squareOrderId: squareData.payment_link.order_id });
-    await supabaseRequest(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'checkout_error', provider_error: JSON.stringify(squareData).slice(0,2000) }) });
+      await supabaseRequest(`checkout_sessions?id=eq.${checkoutId}`, { method: 'PATCH', body: JSON.stringify({ status: 'failed', updated_at: new Date().toISOString() }) });
       return response(502, { error: 'SQUARE_CHECKOUT_FAILED', details: squareData.errors || [] }, origin);
     }
 
-    console.log('[checkout] create_square_link:finish', { orderId: order.id, squareOrderId: squareData.payment_link.order_id });
+    console.log('[checkout] create_square_link:finish', { checkoutId, squareOrderId: squareData.payment_link.order_id });
     const squareOrder = squareData.related_resources?.orders?.[0] || null;
     const taxCents = Number(squareOrder?.total_tax_money?.amount || squareOrder?.net_amounts?.tax_money?.amount || 0);
     const squareTotalCents = Number(squareOrder?.total_money?.amount || squareOrder?.net_amounts?.total_money?.amount || (preTaxTotalCents + taxCents));
-    await supabaseRequest(`orders?id=eq.${order.id}`, { method: 'PATCH', body: JSON.stringify({
+    await supabaseRequest(`checkout_sessions?id=eq.${checkoutId}`, { method: 'PATCH', body: JSON.stringify({
+      status: 'square_ready',
       square_order_id: squareData.payment_link.order_id,
       square_payment_link_id: squareData.payment_link.id,
-      tax_amount: taxCents / 100,
-      tax_cents: taxCents,
-      total_amount: squareTotalCents / 100,
-      total_cents: squareTotalCents
+      updated_at: new Date().toISOString()
     }) });
-    console.log('[checkout] finish_checkout', { orderId: order.id, taxCents, totalCents: squareTotalCents });
-    return response(200, { checkoutUrl: squareData.payment_link.url, orderId: order.id, orderNumber: order.order_number, environment, taxCents, totalCents: squareTotalCents }, origin);
+    console.log('[checkout] finish_checkout', { checkoutId, taxCents, totalCents: squareTotalCents });
+    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, taxCents, totalCents: squareTotalCents }, origin);
   } catch (err) {
     console.error('create-square-checkout', err);
     const known = ['PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING'];
