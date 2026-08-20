@@ -99,25 +99,96 @@ async function supabasePatchCheckoutSession(id, values) {
   if (!res.ok) throw new Error(`SUPABASE_CHECKOUT_SESSION_PATCH_${res.status}:${await res.text()}`);
 }
 
-async function createOrderFromCheckoutSession(sessionId, payment, finalAmounts) {
+async function fetchCheckoutSessionFull(id) {
   const { url, key } = supabaseConfig();
-  const paidAt = payment.updated_at || payment.created_at || new Date().toISOString();
-  const res = await fetch(`${url}/rest/v1/rpc/nurai_create_order_from_checkout_session`, {
-    method: 'POST',
-    headers: { apikey:key, Authorization:`Bearer ${key}`, 'Content-Type':'application/json' },
-    body: JSON.stringify({
-      p_session_id: sessionId,
-      p_square_order_id: payment.order_id || null,
-      p_square_payment_id: payment.id || null,
-      p_paid_at: paidAt,
-      p_tax_cents: Number(finalAmounts?.taxCents || 0),
-      p_total_cents: Number(finalAmounts?.totalCents || 0)
-    })
+  const res = await fetch(`${url}/rest/v1/checkout_sessions?id=eq.${encodeURIComponent(id)}&select=id,status,payload,environment,order_id,square_order_id,square_payment_link_id,expires_at&limit=1`, {
+    headers: { apikey:key, Authorization:`Bearer ${key}` }
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`SUPABASE_CREATE_ORDER_FROM_CHECKOUT_${res.status}:${text}`);
-  const parsed = text ? JSON.parse(text) : null;
-  return Array.isArray(parsed) ? parsed[0] : parsed;
+  if (!res.ok) throw new Error(`SUPABASE_CHECKOUT_FULL_${res.status}:${await res.text()}`);
+  const rows=await res.json();
+  return rows?.[0]||null;
+}
+async function createOrderFromCheckoutDirect(sessionId, payment, finalAmounts) {
+  const { url, key } = supabaseConfig();
+  const headers={apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json'};
+
+  let session=await fetchCheckoutSessionFull(sessionId);
+  if(!session) throw new Error('CHECKOUT_SESSION_NOT_FOUND');
+
+  if(session.order_id){
+    const existing=await supabaseFind(`id=eq.${encodeURIComponent(session.order_id)}`);
+    if(existing) return existing.id;
+  }
+
+  const existingBySquare=await supabaseFind(`square_order_id=eq.${encodeURIComponent(payment.order_id)}`);
+  if(existingBySquare){
+    await supabasePatchCheckoutSession(session.id,{status:'order_created',order_id:existingBySquare.id,updated_at:new Date().toISOString()});
+    return existingBySquare.id;
+  }
+
+  const payload=session.payload||{};
+  const o=payload.order||{};
+  const items=Array.isArray(payload.items)?payload.items:[];
+  if(!items.length) throw new Error('CHECKOUT_ITEMS_MISSING');
+
+  const orderPayload={
+    status:'pending_payment',payment_status:'pending',payment_provider:'square',
+    fulfillment_type:o.fulfillment_type||'delivery',currency:'USD',
+    subtotal:Number(o.subtotal||0),discount_amount:0,
+    tax_amount:Number(finalAmounts?.taxCents||0)/100,
+    delivery_amount:Number(o.delivery_amount||0),
+    total_amount:Number(finalAmounts?.totalCents||0)/100,
+    subtotal_cents:Number(o.subtotal_cents||0),
+    delivery_cents:Number(o.delivery_cents||0),
+    tax_cents:Number(finalAmounts?.taxCents||0),
+    total_cents:Number(finalAmounts?.totalCents||0),
+    customer_name:o.customer_name||'',
+    customer_email:String(o.customer_email||'').toLowerCase(),
+    customer_phone:o.customer_phone||null,
+    delivery_address:o.delivery_address||'',
+    delivery_apt:o.delivery_apt||null,
+    delivery_city:o.delivery_city||'',
+    delivery_state:o.delivery_state||'',
+    delivery_zip:o.delivery_zip||'',
+    delivery_zone:o.delivery_zone||null,
+    google_place_id:o.google_place_id||null,
+    delivery_notes:o.delivery_notes||null,
+    checkout_environment:o.checkout_environment||session.environment||'sandbox',
+    is_test:o.is_test!==false,
+    square_order_id:payment.order_id,
+    square_payment_link_id:session.square_payment_link_id||null
+  };
+
+  let res=await fetch(`${url}/rest/v1/orders`,{
+    method:'POST',headers:{...headers,Prefer:'return=representation'},body:JSON.stringify(orderPayload)
+  });
+  let text=await res.text();
+  if(!res.ok){
+    const concurrent=await supabaseFind(`square_order_id=eq.${encodeURIComponent(payment.order_id)}`);
+    if(concurrent) return concurrent.id;
+    throw new Error(`ORDER_INSERT_${res.status}:${text.slice(0,500)}`);
+  }
+  const order=(text?JSON.parse(text):[])?.[0];
+  if(!order?.id) throw new Error('ORDER_INSERT_EMPTY');
+
+  const itemPayload=items.map(i=>({
+    order_id:order.id,product_id:i.product_id||null,sku:i.sku,product_name:i.product_name,
+    variant:i.variant||null,variant_name:i.variant_name||i.variant||null,
+    quantity:Number(i.quantity||0),unit_price:Number(i.unit_price||0),line_total:Number(i.line_total||0),
+    unit_price_cents:Number(i.unit_price_cents||0),line_total_cents:Number(i.line_total_cents||0),
+    unit_cost_snapshot:Number(i.unit_cost_snapshot||0)
+  }));
+  res=await fetch(`${url}/rest/v1/order_items`,{
+    method:'POST',headers:{...headers,Prefer:'return=minimal'},body:JSON.stringify(itemPayload)
+  });
+  if(!res.ok){
+    const itemError=await res.text();
+    await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}`,{method:'DELETE',headers:{...headers,Prefer:'return=minimal'}});
+    throw new Error(`ITEMS_INSERT_${res.status}:${itemError.slice(0,500)}`);
+  }
+
+  await supabasePatchCheckoutSession(session.id,{status:'order_created',order_id:order.id,updated_at:new Date().toISOString()});
+  return order.id;
 }
 
 async function completePaidOrder(orderId, paymentId, paidAt) {
@@ -340,7 +411,7 @@ exports.handler = async (event) => {
       }
 
       const initialAmounts = await getSquareOrderAmounts(payment.order_id);
-      const createdOrderId = await createOrderFromCheckoutSession(checkoutSession.id, payment, initialAmounts);
+      const createdOrderId = await createOrderFromCheckoutDirect(checkoutSession.id, payment, initialAmounts);
       order = await supabaseFind(`id=eq.${encodeURIComponent(createdOrderId)}`);
       if (!order?.id) throw new Error('ORDER_CREATION_AFTER_PAYMENT_FAILED');
       console.log('[square-webhook] order_created_after_payment', { checkoutId:checkoutSession.id, orderId:order.id, paymentId:payment.id });

@@ -9,6 +9,10 @@
   attempts++;
   try{
    const r=await fetch('/.netlify/functions/order-status?id='+encodeURIComponent(id||pending.id||''),{cache:'no-store'}),d=await r.json();
+   if(!r.ok){
+    status.textContent='Verificación pendiente';
+    if(d?.stage){text.textContent='No pudimos completar automáticamente la confirmación ('+d.stage+'). El pago no se repetirá; seguimos verificándolo.';}
+   }
    if(r.ok){
     if(d.order_number)number.textContent='#'+d.order_number;
     status.textContent=d.payment_status||d.status||'Pendiente';
