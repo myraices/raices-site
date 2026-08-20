@@ -267,17 +267,23 @@ async function resolveInternalOrder(payment) {
   const squareOrderId = String(payment?.order_id || '').trim();
   if (!squareOrderId) return null;
 
-  // Primary lookup: the Square payment order_id stored in orders.square_order_id.
+  // Primary lookup for orders already created by a completed payment.
   let order = await supabaseFind(`square_order_id=eq.${encodeURIComponent(squareOrderId)}`);
   if (order) return order;
 
-  // Compatibility lookup: payment.order_id may already be the internal order UUID.
-  order = await supabaseFind(`id=eq.${encodeURIComponent(squareOrderId)}`);
-  if (order) return order;
+  // Legacy compatibility only when Square order_id is actually UUID-shaped.
+  // Normal Square order IDs are not UUIDs; querying orders.id with them makes
+  // Postgres reject the request before the checkout-session flow can run.
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(squareOrderId)) {
+    order = await supabaseFind(`id=eq.${encodeURIComponent(squareOrderId)}`);
+    if (order) return order;
+  }
 
-  // Final fallback: retrieve Square's reference_id and use the internal order id.
+  // reference_id can be a legacy internal order UUID. For the new flow it is a
+  // checkout_session UUID, so do not query orders.id unless an order with that
+  // UUID can legitimately exist; the caller will resolve checkout_sessions.
   const referenceId = await getSquareReferenceId(squareOrderId);
-  if (!referenceId) return null;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(referenceId || '')) return null;
   return supabaseFind(`id=eq.${encodeURIComponent(referenceId)}`);
 }
 
