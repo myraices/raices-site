@@ -1006,3 +1006,17 @@ img { height:auto; }
 .account-digital-download{display:inline-flex;margin-left:.5rem;padding:.35rem .65rem;border-radius:999px;background:#174f45;color:#fff!important;text-decoration:none;font-size:.78rem;font-weight:700;white-space:nowrap}.account-digital-download:hover{opacity:.9}
 /* v23.7.24 · post-sale */
 .account-manage-order{display:inline-block;margin-top:4px;padding:8px 13px;border:1px solid #174f45;border-radius:999px;color:#174f45;font-weight:800;text-decoration:none}.account-manage-order:hover{background:#174f45;color:#fff}
+
+
+/* Phase 2 · fulfillment selector */
+.checkout-fulfillment-block{margin:18px 0;padding:16px;border:1px solid rgba(35,82,72,.16);border-radius:16px;background:rgba(250,248,241,.72)}
+.checkout-fulfillment-block h3{margin:0 0 12px;font-size:1rem}
+.checkout-fulfillment-options{display:grid;gap:10px}
+.checkout-fulfillment-option{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;border:1px solid rgba(35,82,72,.14);border-radius:13px;background:#fff;cursor:pointer}
+.checkout-fulfillment-option:has(input:checked){border-color:rgba(35,82,72,.55);box-shadow:0 0 0 2px rgba(35,82,72,.08)}
+.checkout-fulfillment-option input{margin-top:3px}
+.checkout-fulfillment-option span{display:grid;gap:3px}
+.checkout-fulfillment-option strong{font-size:.95rem}
+.checkout-fulfillment-option small{line-height:1.35;color:rgba(31,60,55,.7)}
+.checkout-fulfillment-status{margin:10px 2px 0;font-size:.84rem;color:rgba(31,60,55,.72)}
+@media(max-width:640px){.checkout-fulfillment-block{padding:14px}.checkout-fulfillment-option{padding:12px}}

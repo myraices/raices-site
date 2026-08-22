@@ -61,6 +61,26 @@ async function deliverySettings() {
   const active = enabled && (!startDate || today >= startDate) && (!endDate || today <= endDate);
   return { zones, freeDelivery: { enabled, active, threshold, startDate, endDate } };
 }
+
+async function logisticsSettings() {
+  const rows = await supabaseRequest('nurai_settings?section=eq.logistics&select=settings&limit=1');
+  const settings = parseSettings(rows?.[0]?.settings || {});
+  return settings;
+}
+const CONTIGUOUS_STATES = new Set(['AL','AZ','AR','CA','CO','CT','DE','FL','GA','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
+const US_TERRITORIES = new Set(['PR','VI','GU','AS','MP']);
+function shippingStateAllowed(state, settings) {
+  const code = safeText(state, 2).toUpperCase();
+  if (CONTIGUOUS_STATES.has(code)) return settings.allow_contiguous_us !== false;
+  if (code === 'AK') return settings.allow_alaska === true;
+  if (code === 'HI') return settings.allow_hawaii === true;
+  if (US_TERRITORIES.has(code)) return settings.allow_territories === true;
+  return false;
+}
+function packageProfiles(settings) {
+  const profiles = Array.isArray(settings.package_profiles) ? settings.package_profiles : [];
+  return new Set(profiles.filter(p => p && p.active !== false).map(p => String(p.id || p.key || p.name || '')).filter(Boolean));
+}
 async function salesTaxSettings() {
   const rows = await supabaseRequest('nurai_settings?section=eq.payments&select=settings&limit=1');
   const settings = parseSettings(rows?.[0]?.settings || {});
@@ -78,7 +98,9 @@ async function productMap() {
 }
 function productName(p) { return safeText(p?.name_es || p?.name_en || p?.name || p?.sku, 180); }
 function isDigitalProduct(p) {
-  return String(p?.sku || '').startsWith('RA-LB-') ||
+  return String(p?.operational_type || '').toLowerCase() === 'digital' ||
+    String(p?.product_type || '').toLowerCase() === 'digital' ||
+    String(p?.sku || '').startsWith('RA-LB-') ||
     (String(p?.category || '').toLowerCase() === 'wellness' && String(p?.collection || '').toLowerCase() === 'the library') ||
     /producto digital|ebook|pdf/i.test(String(p?.ingredients || '') + ' ' + String(p?.conservation || ''));
 }
@@ -138,21 +160,52 @@ exports.handler = async (event) => {
       const unitCost = Math.max(0, productionCost + packagingCost + logisticsCost);
       const taxStatus = ['food_exempt','physical_taxable','digital_taxable','digital_review'].includes(String(p.tax_status || '')) ? String(p.tax_status) : (digital ? 'digital_review' : (p.taxable === true ? 'physical_taxable' : 'food_exempt'));
       if (digital && !safeText(p.digital_file_path,500)) throw new Error('DIGITAL_FILE_MISSING');
-      return { sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120), qty, unitCents, unitCost, digital, taxStatus, digitalFilePath: safeText(p.digital_file_path,500) };
+      return {
+        sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120),
+        qty, unitCents, unitCost, digital, taxStatus, digitalFilePath: safeText(p.digital_file_path,500),
+        localDeliveryEnabled: digital ? false : p.local_delivery_enabled !== false,
+        shippingEnabled: digital ? false : p.shipping_enabled === true,
+        shippingPackageProfile: safeText(p.shipping_package_profile,120),
+        shippingWeightValue: Number(p.shipping_weight_value || 0),
+        shippingWeightUnit: safeText(p.shipping_weight_unit,10) || 'lb'
+      };
     });
     const hasPhysicalItems = validated.some(i => !i.digital);
+    const requestedFulfillment = hasPhysicalItems ? safeText(payload.fulfillmentType,20).toLowerCase() : 'digital';
+    const fulfillmentType = hasPhysicalItems ? (requestedFulfillment === 'shipping' ? 'shipping' : 'delivery') : 'digital';
+    const physicalItems = validated.filter(i => !i.digital);
+
     const deliveryConfig = hasPhysicalItems ? await deliverySettings() : { zones: [], freeDelivery: { enabled:false, active:false, threshold:0 } };
+    const logistics = hasPhysicalItems ? await logisticsSettings() : {};
     const zones = deliveryConfig.zones;
-    if (hasPhysicalItems && !zones.length) return response(503, { error: 'DELIVERY_CONFIG_UNAVAILABLE' }, origin);
     const zone = hasPhysicalItems ? zoneFor(zip, zones) : { name: 'Digital delivery', fee: 0 };
-    if (hasPhysicalItems && !zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
+
     if (hasPhysicalItems && (!safeText(customer.phone, 40) || !safeText(customer.address, 180) || !safeText(customer.city, 100) || !safeText(customer.state, 20) || zip.length !== 5)) {
       return response(400, { error: 'DELIVERY_DATA_INCOMPLETE' }, origin);
     }
     if (hasPhysicalItems && (!customer.addressVerified || !safeText(customer.placeId, 200))) return response(400, { error: 'ADDRESS_NOT_VERIFIED' }, origin);
+
+    if (fulfillmentType === 'delivery') {
+      if (!physicalItems.every(i => i.localDeliveryEnabled)) return response(409, { error: 'LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART' }, origin);
+      if (!zones.length) return response(503, { error: 'DELIVERY_CONFIG_UNAVAILABLE' }, origin);
+      if (!zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
+    }
+
+    let shippingSetupOk = false;
+    if (fulfillmentType === 'shipping') {
+      if (logistics.shipping_enabled !== true) return response(409, { error: 'SHIPPING_DISABLED' }, origin);
+      if (!physicalItems.every(i => i.shippingEnabled)) return response(409, { error: 'SHIPPING_NOT_AVAILABLE_FOR_CART' }, origin);
+      const profiles = packageProfiles(logistics);
+      shippingSetupOk = physicalItems.every(i => i.shippingWeightValue > 0 && i.shippingPackageProfile && profiles.has(i.shippingPackageProfile));
+      if (!shippingSetupOk) return response(409, { error: 'SHIPPING_PRODUCT_SETUP_INCOMPLETE' }, origin);
+      if (!shippingStateAllowed(customer.state, logistics)) return response(400, { error: 'SHIPPING_DESTINATION_NOT_ALLOWED' }, origin);
+      // Until Shippo is connected, shipping checkout is permitted only in Square Sandbox.
+      if (environment === 'production') return response(503, { error: 'SHIPPING_RATE_UNAVAILABLE' }, origin);
+    }
+
     const freeThresholdCents = Math.round(Number(deliveryConfig.freeDelivery?.threshold || 0) * 100);
-    const freeDeliveryApplies = hasPhysicalItems && deliveryConfig.freeDelivery?.active && (freeThresholdCents === 0 || physicalSubtotal >= freeThresholdCents);
-    const deliveryCents = !hasPhysicalItems || freeDeliveryApplies ? 0 : cents(zone.fee);
+    const freeDeliveryApplies = fulfillmentType === 'delivery' && deliveryConfig.freeDelivery?.active && (freeThresholdCents === 0 || physicalSubtotal >= freeThresholdCents);
+    const deliveryCents = fulfillmentType === 'delivery' ? (freeDeliveryApplies ? 0 : cents(zone.fee)) : 0;
     const hasTaxablePhysical = validated.some(i => i.taxStatus === 'physical_taxable');
     const hasTaxableItems = validated.some(i => i.taxStatus === 'physical_taxable' || i.taxStatus === 'digital_taxable');
     const hasDigitalReview = validated.some(i => i.taxStatus === 'digital_review');
@@ -173,7 +226,7 @@ exports.handler = async (event) => {
 
     console.log('[checkout] tax_calculated', { provider: taxResult.provider, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
     const pendingOrderPayload = {
-      fulfillment_type: hasPhysicalItems ? 'delivery' : 'digital',
+      fulfillment_type: fulfillmentType,
       subtotal: subtotal / 100,
       delivery_amount: deliveryCents / 100,
       subtotal_cents: subtotal,
@@ -186,9 +239,9 @@ exports.handler = async (event) => {
       delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online',
       delivery_state: safeText(customer.state,20) || 'N/A',
       delivery_zip: hasPhysicalItems ? zip : (zip || '00000'),
-      delivery_zone: zone.name,
+      delivery_zone: fulfillmentType === 'shipping' ? 'National Shipping · Shippo pending' : zone.name,
       google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '',
-      delivery_notes: hasPhysicalItems ? safeText(customer.notes,1000) : 'Digital product — delivery by email/account',
+      delivery_notes: hasPhysicalItems ? `${fulfillmentType === 'shipping' ? '[SHIPPING] ' : ''}${safeText(customer.notes,1000)}` : 'Digital product — delivery by email/account',
       checkout_environment: environment,
       is_test: environment !== 'production'
     };
@@ -258,7 +311,7 @@ exports.handler = async (event) => {
         payload: {
           order: pendingOrderPayload,
           items: pendingItemsPayload,
-          expected: { tax_cents: taxCentsExpected, pre_tax_total_cents: preTaxTotalCents }
+          expected: { tax_cents: taxCentsExpected, pre_tax_total_cents: preTaxTotalCents, fulfillment_type: fulfillmentType, shipping_rate_mode: fulfillmentType === 'shipping' ? 'sandbox_zero_test' : null }
         }
       })
     });
@@ -299,10 +352,10 @@ exports.handler = async (event) => {
       updated_at: new Date().toISOString()
     }) });
     console.log('[checkout] finish_checkout', { checkoutId, taxCents, totalCents: squareTotalCents });
-    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, taxCents, totalCents: squareTotalCents }, origin);
+    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, taxCents, totalCents: squareTotalCents, fulfillmentType }, origin);
   } catch (err) {
     console.error('create-square-checkout', err);
-    const known = ['PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING'];
+    const known = ['PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED'];
     return response(known.includes(err.message) ? 409 : 500, { error: known.includes(err.message) ? err.message : 'CHECKOUT_UNAVAILABLE' }, origin);
   }
 };
