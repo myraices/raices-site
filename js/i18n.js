@@ -56,7 +56,10 @@ window.applyRaicesLanguage = function(lang){
 };
 
 document.addEventListener('DOMContentLoaded', function(){
-  const toggle = function(){ window.applyRaicesLanguage(window.raicesLang === 'es' ? 'en' : 'es'); };
+  const toggle = function(){
+    localStorage.setItem('raices_lang_manual','1');
+    window.applyRaicesLanguage(window.raicesLang === 'es' ? 'en' : 'es');
+  };
   const lb = document.getElementById('langBtn'); if(lb) lb.addEventListener('click', toggle);
   const dl = document.getElementById('drawerLangBtn'); if(dl) dl.addEventListener('click', toggle);
   window.applyRaicesLanguage(window.raicesLang);

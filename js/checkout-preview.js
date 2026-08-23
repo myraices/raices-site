@@ -1,4 +1,7 @@
 (function(){
+ const lang=(localStorage.getItem('raices_lang')||'es').toLowerCase().startsWith('en')?'en':'es';
+ const tr=(es,en)=>lang==='en'?en:es;
+ document.documentElement.lang=lang;
  const money=n=>`$${Number(n||0).toFixed(2)}`, zipNorm=v=>String(v||'').replace(/\D/g,'').slice(0,5);
  let summary={};try{summary=JSON.parse(localStorage.getItem('raices_cart_summary')||'{}')}catch(e){}
  const items=summary.items||[], cfg=window.RAICES_STORE_CONFIG||{}, rules=cfg.ORDER_RULES||{};
@@ -81,31 +84,64 @@
   if(methodStatus&&!digitalOnly){
    const noMethod=fulfillmentOptionsReady&&!localDeliveryEligible&&!shippingEligible;
    methodStatus.hidden=!noMethod;
-   methodStatus.textContent=noMethod?'No hay un método de entrega disponible para este carrito.':'';
+   methodStatus.textContent=noMethod?tr('No hay un método de entrega disponible para este carrito.','No delivery method is available for this cart.'):'';
   }
 
   previewSubtotal.textContent=money(subtotal);
-  const feeLabel=document.getElementById('previewFulfillmentLabel');if(feeLabel)feeLabel.textContent=digitalOnly?'Entrega':(isShipping?'Shipping':'Delivery');
-  previewDelivery.textContent=digitalOnly?'No aplica':(isShipping?(shippingRateMode==='sandbox_zero_test'?'$0.00 · prueba':'Pendiente'):(zone?(qualifies?'Gratis':money(delivery)):'—'));
+  const feeLabel=document.getElementById('previewFulfillmentLabel');if(feeLabel)feeLabel.textContent=digitalOnly?tr('Entrega','Delivery'):(isShipping?'Shipping':tr('Delivery','Local Delivery'));
+  previewDelivery.textContent=digitalOnly?'No aplica':(isShipping?(shippingRateMode==='sandbox_zero_test'?tr('$0.00 · prueba','$0.00 · test'):tr('Pendiente','Pending')):(zone?(qualifies?'Gratis':money(delivery)):'—'));
   previewTotal.textContent=money(subtotal+delivery);
-  checkoutEta.textContent=digitalOnly?'Acceso digital después de confirmar el pago.':isShipping?(shippingRateMode==='sandbox_zero_test'?'Prueba de Shipping en Sandbox. La tarifa real se calculará con Shippo en la siguiente fase.':'La fecha estimada se mostrará al calcular la tarifa del transportista.'):(items.length?`${eta()} · normalmente dentro de 24–48 horas.`:'Agrega productos para calcular la entrega.');
+  checkoutEta.textContent=digitalOnly?'Acceso digital después de confirmar el pago.':isShipping?(shippingRateMode==='sandbox_zero_test'?tr('Prueba de Shipping en Sandbox. La tarifa real se calculará con Shippo en la siguiente fase.','Shipping test in Sandbox. The real carrier rate will be calculated with Shippo in the next phase.'):tr('La fecha estimada se mostrará al calcular la tarifa del transportista.','The estimated date will appear after the carrier rate is calculated.')):(items.length?`${eta()} · normalmente dentro de 24–48 horas.`:'Agrega productos para calcular la entrega.');
   const left=Math.max(0,freeAt-physicalSubtotal);
-  freeDeliveryProgress.textContent=digitalOnly?'Los productos digitales no tienen cargo de delivery.':isShipping?'La promoción de Delivery local no aplica al Shipping nacional.':(!freeDeliveryEnabled?'':!freeDeliveryActive?(freeDeliveryStartDate?`Delivery gratis disponible desde ${freeDeliveryStartDate}.`:''):freeAt===0?'Delivery gratis en todas las compras físicas.':qualifies?'Has desbloqueado delivery gratis.':`Agrega ${money(left)} más en productos físicos para delivery gratis.`);
+  freeDeliveryProgress.textContent=digitalOnly?'Los productos digitales no tienen cargo de delivery.':isShipping?tr('La promoción de Delivery local no aplica a Shipping.','The Local Delivery promotion does not apply to Shipping.'):(!freeDeliveryEnabled?'':!freeDeliveryActive?(freeDeliveryStartDate?`Delivery gratis disponible desde ${freeDeliveryStartDate}.`:''):freeAt===0?'Delivery gratis en todas las compras físicas.':qualifies?'Has desbloqueado delivery gratis.':`Agrega ${money(left)} más en productos físicos para delivery gratis.`);
 
-  const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state=addressVerified?'ok':'idle';status.textContent=addressVerified?'Dirección verificada por Google.':'Selecciona una dirección completa de las sugerencias de Google.'}
+  const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state=addressVerified?'ok':'idle';status.textContent=addressVerified?tr('Dirección verificada por Google.','Address verified by Google.'):tr('Selecciona una dirección completa de las sugerencias de Google.','Select a complete address from Google suggestions.')}
   const msg=checkoutDeliveryMessage;
-  if(!items.length){msg.dataset.state='error';msg.textContent='Tu carrito está vacío.'}
+  if(!items.length){msg.dataset.state='error';msg.textContent=tr('Tu carrito está vacío.','Your cart is empty.')}
   else if(digitalOnly){msg.dataset.state='ok';msg.textContent='Producto digital: no requiere dirección ni tiene cargo de delivery.'}
-  else if(!deliveryConfigReady||!fulfillmentOptionsReady){msg.dataset.state='idle';msg.textContent='Cargando opciones de entrega…'}
-  else if(!addressVerified){msg.dataset.state='idle';msg.textContent='Selecciona primero una dirección válida de Google para confirmar las opciones disponibles.'}
-  else if(isShipping&&!shippingDestinationOk){msg.dataset.state='error';msg.textContent='Shipping no está habilitado para este destino.'}
-  else if(isShipping){msg.dataset.state='ok';msg.textContent='Shipping nacional disponible.'}
-  else if(!zone){msg.dataset.state='error';msg.textContent=shippingEligible?'Esta dirección está fuera del Delivery local. Selecciona Shipping nacional para continuar.':`La dirección seleccionada (ZIP ${zip}) está fuera de la cobertura configurada.`}
+  else if(!deliveryConfigReady||!fulfillmentOptionsReady){msg.dataset.state='idle';msg.textContent=tr('Cargando opciones de entrega…','Loading delivery options…')}
+  else if(!addressVerified){msg.dataset.state='idle';msg.textContent=tr('Selecciona primero una dirección válida de Google para confirmar las opciones disponibles.','Select a valid Google address first to confirm the available options.')}
+  else if(isShipping&&!shippingDestinationOk){msg.dataset.state='error';msg.textContent=tr('Shipping no está habilitado para este destino.','Shipping is not available for this destination.')}
+  else if(isShipping){msg.dataset.state='ok';msg.textContent=tr('Shipping disponible.','Shipping available.');}
+  else if(!zone){msg.dataset.state='error';msg.textContent=shippingEligible?tr('Esta dirección está fuera del Delivery local. Selecciona Shipping para continuar.','This address is outside Local Delivery. Select Shipping to continue.'):`La dirección seleccionada (ZIP ${zip}) está fuera de la cobertura configurada.`}
   else{msg.dataset.state='ok';msg.textContent=qualifies?'Delivery local disponible · Gratis.':'Delivery local disponible.'}
 
-  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!items.length;payButton.textContent='CONTINUAR AL PAGO';}
-  summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk:!!zone&&addressVerified),zone:isShipping?'National Shipping':(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:isShipping?'Shipping nacional':eta()};
+  const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!items.length;payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');}
+  summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk:!!zone&&addressVerified),zone:isShipping?'National Shipping':(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:isShipping?'Shipping':eta()};
   localStorage.setItem('raices_cart_summary',JSON.stringify(summary));
+ }
+ function applyCheckoutLanguage(){
+  const set=(selector,es,en)=>{const el=document.querySelector(selector);if(el)el.textContent=tr(es,en)};
+  set('.checkout-preview-header span','Checkout seguro','Secure checkout');
+  set('#checkoutProgressDelivery','1 · Entrega','1 · Delivery');
+  const progress=document.querySelectorAll('.checkout-progress span');if(progress[1])progress[1].textContent=tr('2 · Revisión','2 · Review');if(progress[2])progress[2].textContent=tr('3 · Pago','3 · Payment');
+  set('.checkout-preview-intro .eyebrow','Compra segura','Secure purchase');
+  set('.checkout-preview-intro h1','Completa tu pedido.','Complete your order.');
+  const intro=document.querySelector('.checkout-preview-intro p:last-child');if(intro)intro.textContent=tr('Revisa tus datos antes de continuar al pago seguro.','Review your details before continuing to secure payment.');
+  set('.checkout-form-card h2','Contacto y entrega','Contact and delivery');
+  set('#checkoutAccountAddress strong','Dirección guardada','Saved address');
+  set('#useSavedAddressBtn','Usar esta dirección','Use this address');
+  const labels=[...document.querySelectorAll('.checkout-fields label>span')];
+  const pairs=[['Nombre y apellido','Full name'],['Email','Email'],['Estado de facturación','Billing state'],['ZIP de facturación','Billing ZIP'],['Teléfono','Phone'],['Dirección','Address'],['Apt / Suite','Apt / Suite'],['Ciudad','City'],['Estado','State'],['ZIP Code','ZIP Code'],['Instrucciones de entrega','Delivery instructions']];
+  labels.forEach((el,i)=>{if(pairs[i])el.textContent=tr(pairs[i][0],pairs[i][1])});
+  const notes=document.getElementById('checkoutNotes');if(notes)notes.placeholder=tr('Gate code, dejar en la puerta, etc.','Gate code, leave at the door, etc.');
+  set('#checkoutFulfillmentBlock h3','Método de entrega','Delivery method');
+  set('#fulfillmentLocalRow strong','Delivery local','Local Delivery');
+  set('#checkoutShippingLabel','Shipping','Shipping');
+  set('.checkout-promise strong','Entrega estimada','Estimated delivery');
+  const terms=document.querySelector('.checkout-terms span');if(terms)terms.innerHTML=lang==='en'
+    ? 'I accept the <a href="terms.html" target="_blank">Terms</a>, the <a href="delivery-policy.html" target="_blank">Delivery Policy</a> and the <a href="refund-policy.html" target="_blank">Cancellation, Returns and Refund Policy</a>.'
+    : 'Acepto los <a href="terms.html" target="_blank">Términos</a>, la <a href="delivery-policy.html" target="_blank">Política de entrega</a> y la <a href="refund-policy.html" target="_blank">Política de cancelaciones, devoluciones y reembolsos</a>.';
+  set('.checkout-edit-link','← Editar carrito','← Edit cart');
+  set('.checkout-summary-card h2','Resumen del pedido','Order summary');
+  const totalLabels=document.querySelectorAll('.preview-totals>div>span');
+  if(totalLabels[0])totalLabels[0].textContent=tr('Subtotal','Subtotal');
+  const taxRow=[...document.querySelectorAll('.preview-totals>div')].find(row=>row.textContent.includes('Impuestos')||row.textContent.includes('Taxes'));
+  if(taxRow){const s=taxRow.querySelector('span'),strong=taxRow.querySelector('strong');if(s)s.textContent=tr('Impuestos','Taxes');if(strong)strong.textContent=tr('Calculados al pagar','Calculated at payment');}
+  const totalRow=document.querySelector('.preview-total span');if(totalRow)totalRow.textContent=tr('Total estimado','Estimated total');
+  set('#checkoutSecureRedirectText',tr('Serás dirigido a una página de pago segura para completar tu compra.','You will be redirected to a secure payment page to complete your purchase.'),'You will be redirected to a secure payment page to complete your purchase.');
+  set('#previewPayButton',tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT'),'CONTINUE TO PAYMENT');
+  set('.checkout-back','← Volver a la tienda','← Back to the store');
  }
  function applyDigitalCheckoutMode(){
   document.querySelectorAll('[data-digital-tax-field]').forEach(el=>{el.hidden=!digitalOnly;el.style.display=digitalOnly?'':'';el.setAttribute('aria-hidden',digitalOnly?'false':'true');});
@@ -167,11 +203,12 @@
  const termsCheckbox=document.getElementById('checkoutTerms');
  const payMessage=document.getElementById('checkoutPaymentMessage');
  function paymentMessage(text,state='idle'){if(!payMessage)return;payMessage.hidden=false;payMessage.dataset.state=state;payMessage.textContent=text;}
+ applyCheckoutLanguage();
  applyDigitalCheckoutMode();
  if(termsCheckbox)termsCheckbox.addEventListener('change',()=>{if(termsCheckbox.checked&&payMessage?.dataset.state==='error')payMessage.hidden=true;});
  if(payButton)payButton.addEventListener('click',async()=>{
   const data=save();
-  if(!items.length){paymentMessage('Tu carrito está vacío.','error');return;}
+  if(!items.length){paymentMessage(tr('Tu carrito está vacío.','Your cart is empty.'),'error');return;}
   if(!data.name){paymentMessage('Escribe tu nombre y apellido para continuar.','error');document.getElementById('checkoutName')?.focus();return;}
   if(!/^\S+@\S+\.\S+$/.test(data.email)){paymentMessage('Escribe un correo electrónico válido para continuar.','error');document.getElementById('checkoutEmail')?.focus();return;}
   if(digitalOnly&&(!data.digitalState||zipNorm(data.digitalZip).length!==5)){paymentMessage('Selecciona el estado y escribe un ZIP de facturación válido para calcular el sales tax.','error');document.getElementById('checkoutDigitalZip')?.focus();return;}
@@ -180,12 +217,12 @@
   if(!digitalOnly&&(!deliveryConfigReady||!fulfillmentOptionsReady)){paymentMessage('No se pudieron cargar las opciones de entrega. Recarga la página e intenta nuevamente.','error');return;}
   const selectedZone=digitalOnly?true:zoneFor(zipNorm(data.zip));
   if(!digitalOnly&&selectedFulfillment==='delivery'&&!localDeliveryEligible){paymentMessage('Este carrito no está habilitado para Delivery local.','error');return;}
-  if(!digitalOnly&&selectedFulfillment==='delivery'&&!selectedZone){paymentMessage(shippingEligible?'Esta dirección está fuera del Delivery local. Selecciona Shipping nacional para continuar.':'La dirección seleccionada está fuera de nuestra zona de entrega.','error');document.getElementById('checkoutGoogleAddressHost')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
-  if(!digitalOnly&&selectedFulfillment==='shipping'&&!shippingEligible){paymentMessage('Uno o más productos todavía no están preparados para Shipping nacional.','error');return;}
-  if(!digitalOnly&&selectedFulfillment==='shipping'&&!shippingStateAllowed(data.state)){paymentMessage('Shipping nacional no está habilitado para este destino.','error');return;}
+  if(!digitalOnly&&selectedFulfillment==='delivery'&&!selectedZone){paymentMessage(shippingEligible?tr('Esta dirección está fuera del Delivery local. Selecciona Shipping para continuar.','This address is outside Local Delivery. Select Shipping to continue.'):'La dirección seleccionada está fuera de nuestra zona de entrega.','error');document.getElementById('checkoutGoogleAddressHost')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  if(!digitalOnly&&selectedFulfillment==='shipping'&&!shippingEligible){paymentMessage(tr('Uno o más productos todavía no están preparados para Shipping.','One or more products are not yet prepared for Shipping.'),'error');return;}
+  if(!digitalOnly&&selectedFulfillment==='shipping'&&!shippingStateAllowed(data.state)){paymentMessage(tr('Shipping no está habilitado para este destino.','Shipping is not available for this destination.'),'error');return;}
   if(!digitalOnly&&selectedFulfillment==='shipping'&&shippingRateMode!=='sandbox_zero_test'){paymentMessage('Shipping está preparado, pero todavía falta conectar Shippo para calcular la tarifa real antes del pago.','error');return;}
   if(!termsCheckbox?.checked){paymentMessage('Debes aceptar los Términos y las políticas de compra antes de continuar al pago.','error');termsCheckbox?.focus();return;}
-  payButton.disabled=true;payButton.textContent='PREPARANDO PAGO…';paymentMessage('Serás dirigido a una página de pago segura para completar tu compra.','idle');
+  payButton.disabled=true;payButton.textContent=tr('PREPARANDO PAGO…','PREPARING PAYMENT…');paymentMessage(tr('Serás dirigido a una página de pago segura para completar tu compra.','You will be redirected to a secure payment page to complete your purchase.'),'idle');
   try{
    const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),
@@ -201,9 +238,9 @@
    console.error('Square checkout error',err);
    const code=String(err.message||'').split(':')[0];
    const messages={
-    EMPTY_CART:'Tu carrito está vacío.',DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:'Selecciona una dirección completa de las sugerencias de Google.',DELIVERY_DATA_INCOMPLETE:'Completa el teléfono y todos los datos de entrega.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',DELIVERY_CONFIG_UNAVAILABLE:'No se pudo cargar la configuración de delivery. Intenta nuevamente.',LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART:'Este carrito no admite Delivery local.',SHIPPING_DISABLED:'Shipping nacional todavía está desactivado en NURAI.',SHIPPING_NOT_AVAILABLE_FOR_CART:'Uno o más productos no están habilitados para Shipping.',SHIPPING_PRODUCT_SETUP_INCOMPLETE:'Falta peso o perfil de empaque en uno de los productos.',SHIPPING_DESTINATION_NOT_ALLOWED:'Shipping no está habilitado para este destino.',SHIPPING_RATE_UNAVAILABLE:'Falta conectar Shippo para calcular la tarifa real.',TAX_RULE_NOT_CONFIGURED:'No hay una regla activa de Sales Tax para este estado. Revisa Configuración → Pagos en NURAI.',SQUARE_TAX_CALCULATION_FAILED:'Square no pudo validar el cálculo del tax. Intenta nuevamente.',TAX_CALCULATION_MISMATCH:'El cálculo fiscal no coincidió con Square y el pago fue bloqueado por seguridad.',DIGITAL_TAX_REVIEW_REQUIRED:'Este producto digital todavía está en revisión fiscal.',DIGITAL_FILE_MISSING:'Este producto digital todavía no tiene su archivo PDF cargado. Intenta nuevamente más tarde.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'
+    EMPTY_CART:tr('Tu carrito está vacío.','Your cart is empty.'),DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:tr('Selecciona una dirección completa de las sugerencias de Google.','Select a complete address from Google suggestions.'),DELIVERY_DATA_INCOMPLETE:'Completa el teléfono y todos los datos de entrega.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',DELIVERY_CONFIG_UNAVAILABLE:'No se pudo cargar la configuración de delivery. Intenta nuevamente.',LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART:'Este carrito no admite Delivery local.',SHIPPING_DISABLED:tr('Shipping todavía está desactivado en NURAI.','Shipping is still disabled in NURAI.'),SHIPPING_NOT_AVAILABLE_FOR_CART:'Uno o más productos no están habilitados para Shipping.',SHIPPING_PRODUCT_SETUP_INCOMPLETE:'Falta peso o perfil de empaque en uno de los productos.',SHIPPING_DESTINATION_NOT_ALLOWED:tr('Shipping no está habilitado para este destino.','Shipping is not available for this destination.'),SHIPPING_RATE_UNAVAILABLE:'Falta conectar Shippo para calcular la tarifa real.',TAX_RULE_NOT_CONFIGURED:'No hay una regla activa de Sales Tax para este estado. Revisa Configuración → Pagos en NURAI.',SQUARE_TAX_CALCULATION_FAILED:'Square no pudo validar el cálculo del tax. Intenta nuevamente.',TAX_CALCULATION_MISMATCH:'El cálculo fiscal no coincidió con Square y el pago fue bloqueado por seguridad.',DIGITAL_TAX_REVIEW_REQUIRED:'Este producto digital todavía está en revisión fiscal.',DIGITAL_FILE_MISSING:'Este producto digital todavía no tiene su archivo PDF cargado. Intenta nuevamente más tarde.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'
    };
-   paymentMessage(messages[code]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent='CONTINUAR AL PAGO';
+   paymentMessage(messages[code]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
   }
  });
  (async()=>{await Promise.all([loadDeliveryConfig(),loadFulfillmentOptions()]);render();hydrateFromAccount();loadDefaultAddress();if(!digitalOnly)initAddressAutocomplete();})();

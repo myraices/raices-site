@@ -166,6 +166,15 @@ function getPreferredLanguageFromUser(user) {
 
 function applyPreferredLanguageFromUser(user) {
   if (!user) return getAuthLang();
+  // The account preference is a default only. A language chosen manually
+  // in the site selector must remain active while navigating between pages.
+  const hasManualSelection = localStorage.getItem("raices_lang_manual") === "1";
+  const activeLanguage = normalizeUserLanguage(localStorage.getItem("raices_lang") || getAuthLang());
+  if (hasManualSelection) {
+    if (typeof window.applyRaicesLanguage === "function") window.applyRaicesLanguage(activeLanguage);
+    else { window.raicesLang = activeLanguage; document.documentElement.lang = activeLanguage; }
+    return activeLanguage;
+  }
   const preferredLanguage = getPreferredLanguageFromUser(user);
   localStorage.setItem("raices_lang", preferredLanguage);
   if (typeof window.applyRaicesLanguage === "function") {

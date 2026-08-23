@@ -81,7 +81,8 @@ function fillForms(){
   fillHeaderName(); $("accountEmailTop").textContent=state.user.email;
   $("firstName").value=safe(m.first_name||m.name||(m.full_name||"").split(" ")[0]);
   $("lastName").value=safe(m.last_name||""); $("email").value=safe(state.user.email); $("phone").value=safe(m.phone||"");
-  const lang=safe(m.language||localStorage.getItem("raices_lang")||"es").toLowerCase().startsWith("en")?"en":"es";
+  const hasManualSelection=localStorage.getItem("raices_lang_manual")==="1";
+  const lang=safe(hasManualSelection?(localStorage.getItem("raices_lang")||"es"):(m.language||localStorage.getItem("raices_lang")||"es")).toLowerCase().startsWith("en")?"en":"es";
   state.lang=lang; localStorage.setItem("raices_lang",lang); applyAccountLanguage();
 }
 async function updateMetadata(nextMeta){
@@ -331,13 +332,13 @@ async function init(){
 document.addEventListener("DOMContentLoaded",function(){
   state.lang=(localStorage.getItem("raices_lang")||"es").toLowerCase().startsWith("en")?"en":"es"; applyAccountLanguage();
   init().catch(err=>{console.error(err); $("accountApp").innerHTML=`<p class="account-message" data-state="error">${t("error")}</p>`;});
-  $("accountLangBtn")?.addEventListener("click",async()=>{state.lang=state.lang==="es"?"en":"es";localStorage.setItem("raices_lang",state.lang);applyAccountLanguage();if(state.user){try{await updateMetadata({language:state.lang});await syncBrevoLocale(state.lang);}catch(e){console.warn(e);}}});
+  $("accountLangBtn")?.addEventListener("click",async()=>{state.lang=state.lang==="es"?"en":"es";localStorage.setItem("raices_lang_manual","1");localStorage.setItem("raices_lang",state.lang);applyAccountLanguage();if(state.user){try{await updateMetadata({language:state.lang});await syncBrevoLocale(state.lang);}catch(e){console.warn(e);}}});
   $("profileForm").addEventListener("submit",async e=>{e.preventDefault();msg("profileMessage",t("saving"));try{const first=$("firstName").value.trim(),last=$("lastName").value.trim();await updateMetadata({first_name:first,last_name:last,full_name:[first,last].filter(Boolean).join(" ").trim(),phone:$("phone").value.trim()});msg("profileMessage",t("profileSaved"));}catch(err){console.error(err);msg("profileMessage",t("error"),false);}});
   $("addAddressBtn").addEventListener("click",()=>openAddressForm()); $("cancelAddressBtn").addEventListener("click",resetAddressForm);
   $("addressForm").addEventListener("submit",async e=>{e.preventDefault();msg("addressMessage",t("saving"));try{await saveAddress();}catch(err){console.error(err);msg("addressMessage",err.message==="ADDRESS_NOT_SELECTED"?t("selectGoogleAddress"):(err.code==="42P01"?t("addressTableError"):t("error")),false);}});
   $("addressesList").addEventListener("click",async e=>{const btn=e.target.closest("button[data-action]");if(!btn)return;const card=btn.closest(".address-card"),id=card?.dataset.id,address=state.addresses.find(a=>String(a.id)===String(id));if(btn.dataset.action==="edit"&&address)openAddressForm(address);if(btn.dataset.action==="delete"&&id&&confirm(t("confirmDelete"))){try{await deleteAddress(id);}catch(err){console.error(err);msg("addressMessage",t("error"),false);}}});
   $("marketingConsentToggle")?.addEventListener("change",async e=>{const next=e.target.checked; await setMarketingPreference(next);});
-  $("preferencesForm").addEventListener("submit",async e=>{e.preventDefault();msg("preferencesMessage",t("saving"));try{const lang=$("preferredLanguage").value;state.lang=lang;localStorage.setItem("raices_lang",lang);applyAccountLanguage();await updateMetadata({language:lang});await syncBrevoLocale(lang);msg("preferencesMessage",t("prefSaved"));}catch(err){console.error(err);msg("preferencesMessage",t("error"),false);}});
+  $("preferencesForm").addEventListener("submit",async e=>{e.preventDefault();msg("preferencesMessage",t("saving"));try{const lang=$("preferredLanguage").value;state.lang=lang;localStorage.setItem("raices_lang_manual","1");localStorage.setItem("raices_lang",lang);applyAccountLanguage();await updateMetadata({language:lang});await syncBrevoLocale(lang);msg("preferencesMessage",t("prefSaved"));}catch(err){console.error(err);msg("preferencesMessage",t("error"),false);}});
   $("passwordForm").addEventListener("submit",async e=>{e.preventDefault();const p1=$("newAccountPassword").value,p2=$("confirmAccountPassword").value;if(p1.length<6)return msg("passwordMessage",t("passwordMin"),false);if(p1!==p2)return msg("passwordMessage",t("passwordMismatch"),false);msg("passwordMessage",t("saving"));const{error}=await raicesSupabase.auth.updateUser({password:p1});if(error)return msg("passwordMessage",error.message||t("error"),false);$("passwordForm").reset();msg("passwordMessage",t("passwordSaved"));});
   $("refreshOrdersBtn")?.addEventListener("click",()=>loadOrders(true));
   $("favoritesList")?.addEventListener("click",e=>{const b=e.target.closest("[data-remove-favorite]");if(b){e.preventDefault();toggleFavorite(b.dataset.removeFavorite);}});
