@@ -43,9 +43,17 @@
       unit: normalize(row.unit_label) || (Number(row.units_per_pack || 1) > 1 ? "Paquete" : (row.weight_unit === "digital" ? "Digital" : "Unidad")),
       unitsPerPackage: Number(row.units_per_pack || 1), unitWeight: normalize(row.unit_weight_label) || formatWeight(row), netWeight: normalize(row.net_weight_label),
       price: Number(row.price || 0), unitPrice: Number(row.unit_price || 0), image: normalize(row.image_url) || FALLBACK_IMAGE,
-      available: row.stock === null || Number(row.stock) > 0,
-      soldOut: row.stock !== null && Number(row.stock) <= 0, status: normalize(row.status),
-      featured: Boolean(row.featured), sortOrder: Number(row.sort_order || 0), stock: row.stock === null ? null : Number(row.stock),
+      available: row._inventory_available === null || row._inventory_available === undefined
+        ? (row.stock === null || Number(row.stock) > 0)
+        : Number(row._inventory_available) > 0,
+      soldOut: row._inventory_available === null || row._inventory_available === undefined
+        ? (row.stock !== null && Number(row.stock) <= 0)
+        : Number(row._inventory_available) <= 0,
+      status: normalize(row.status),
+      featured: Boolean(row.featured), sortOrder: Number(row.sort_order || 0),
+      stock: row._inventory_available === null || row._inventory_available === undefined
+        ? (row.stock === null ? null : Number(row.stock))
+        : Math.max(0,Number(row._inventory_available||0)),
       tags: Array.isArray(row.tags) ? row.tags : [], taxable: row.taxable,
       variants: Array.isArray(row.variants) ? row.variants : [],
       webGroupKey: normalize(row.web_group_key),
@@ -90,6 +98,12 @@
         stock:p.stock,
         slug:p.slug
       }));
+      // The modal activates the first option. Keep its image/price aligned with
+      // that option instead of borrowing the administrative "primary" model.
+      if(group.variants[0]){
+        group.image=group.variants[0].image||group.image;
+        group.price=Number(group.variants[0].price??group.price);
+      }
       output.push(group);
     }
     return output.sort((a,b)=>(Number(a.sortOrder||0)-Number(b.sortOrder||0))||String(a.name||'').localeCompare(String(b.name||'')));
@@ -101,9 +115,21 @@
   }
   async function loadDatabaseProducts() {
     if (!window.raicesSupabase) throw new Error("Supabase is unavailable.");
-    const { data, error } = await window.raicesSupabase.from("products").select("*").in("status",["active","sold_out"]).order("sort_order",{ascending:true});
+    const [{data,error},{data:balances,error:balanceError}] = await Promise.all([
+      window.raicesSupabase.from("products").select("*").in("status",["active","sold_out"]).order("sort_order",{ascending:true}),
+      window.raicesSupabase.from("inventory_balances").select("product_id,quantity,reserved_quantity")
+    ]);
     if (error) throw error;
-    const mapped=(data || []).map(toStoreProduct);
+    if (balanceError) console.warn("[Raíces Catalog] Inventory availability fallback:", balanceError.message||balanceError);
+    const balanceMap=new Map((balances||[]).map(row=>[
+      String(row.product_id),
+      Math.max(0,Number(row.quantity||0)-Number(row.reserved_quantity||0))
+    ]));
+    const rows=(data||[]).map(row=>({
+      ...row,
+      _inventory_available: balanceMap.has(String(row.id)) ? balanceMap.get(String(row.id)) : undefined
+    }));
+    const mapped=rows.map(toStoreProduct);
     const products=groupProductsForStore(mapped);
     return { products, source:"supabase", count:products.length, rawCount:mapped.length };
   }

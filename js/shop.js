@@ -489,7 +489,7 @@
       </div>` : '';
     productModalContent.innerHTML = `
       <div class="product-modal-grid">
-        <div class="product-modal-image" id="modalProductImage" style="background-image:url('${p.image}')"></div>
+        <div class="product-modal-image" id="modalProductImage" style="background-image:url('${hasVariants ? (p.variants[0]?.image || p.image) : p.image}')"></div>
         <div class="product-modal-info">
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
           <h2>${p.name}</h2><a class="modal-product-page-link" href="/products/${p.slug}/">${currentLang()==='es' ? 'Ver página del producto' : 'View product page'} →</a>
