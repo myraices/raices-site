@@ -686,7 +686,7 @@
   function updateQty(key, delta){
     const item = cart.find(i => cartItemKey(i.sku, i.variant) === key);
     if(!item) return;
-    const product = products.find(p => p.sku === item.sku);
+    const product = productBySku(item.sku);
     const maxQty = maxProductQty(product);
     if(delta > 0 && item.qty >= maxQty){
       showCartStatus(currentLang()==='es' ? `Has alcanzado el inventario disponible (${maxQty}).` : `You reached the available inventory (${maxQty}).`, 'warning');
@@ -700,12 +700,12 @@
   function renderCart(){
     const removedNames = [];
     const validCart = cart.filter(item => {
-      const product = products.find(p => p.sku === item.sku);
+      const product = productBySku(item.sku);
       const valid = product && isProductAvailable(product) && maxProductQty(product) > 0;
       if(!valid) removedNames.push(product?.name || item.sku);
       return valid;
     }).map(item => {
-      const product = products.find(p => p.sku === item.sku);
+      const product = productBySku(item.sku);
       return {...item, qty: Math.min(Math.max(1, Number(item.qty)||1), maxProductQty(product))};
     });
     if(removedNames.length || JSON.stringify(validCart) !== JSON.stringify(cart)){
@@ -713,7 +713,7 @@
       localStorage.setItem("raices_cart", JSON.stringify(cart));
       if(removedNames.length) showCartStatus((currentLang()==='es' ? 'Se retiró del carrito por falta de disponibilidad: ' : 'Removed because it is no longer available: ') + removedNames.join(', '), 'warning');
     }
-    const enriched = cart.map(item => ({...item, product: products.find(p => p.sku === item.sku)})).filter(i => i.product && isProductAvailable(i.product));
+    const enriched = cart.map(item => ({...item, product: productBySku(item.sku)})).filter(i => i.product && isProductAvailable(i.product));
     const count = enriched.reduce((sum, item) => sum + item.qty, 0);
     const subtotal = enriched.reduce((sum, item) => sum + item.qty * Number(item.product.price || 0), 0);
     const isDigitalProduct = product => String(product?.sku || '').toUpperCase().startsWith('RA-LB-') || /producto digital|ebook|pdf/i.test(String(product?.ingredients || '') + ' ' + String(product?.conservation || ''));
@@ -780,7 +780,7 @@
       const variantText = item.variant ? `<span class="cart-variant">${item.variant}</span>` : "";
       const variantImage = item.variant && Array.isArray(item.product.variants) ? (item.product.variants.find(v => variantDisplay(v) === item.variant || v.name === item.variant)?.image || item.product.image) : item.product.image;
       const unit = translateUnit(item.product.unit);
-      const stockNote = Number.isFinite(maxProductQty(item.product)) ? `<span>${currentLang()==='es' ? 'Disponibles' : 'Available'}: ${maxProductQty(item.product)}</span>` : '';
+      const stockNote = '';
       return `<div class="cart-item">
       <div class="cart-item-img" style="background-image:url('${variantImage}')"></div>
       <div class="cart-item-main">
