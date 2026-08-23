@@ -623,6 +623,7 @@ logoutBtn.addEventListener("click", async function() {
 });
 
 raicesSupabase.auth.onAuthStateChange(function(event, session) {
+  window.dispatchEvent(new CustomEvent("raices:authChanged",{detail:{event,user:session?.user||null}}));
   if (event === "PASSWORD_RECOVERY") {
     passwordRecoverySessionReady = Boolean(session);
     showPasswordRecoveryView();

@@ -35,7 +35,129 @@
   let activeCategory = "All";
   let activeCollection = "All";
   let cart = loadCart();
+  let cartSyncTimer = null;
+  let cartSyncBusy = false;
+  let cartSyncUserId = null;
+  let cartRealtimeChannel = null;
+  let suppressRemoteCartWrite = false;
   let pendingOrderCheckRunning = false;
+
+  const cartUpdatedAt=()=>Number(localStorage.getItem("raices_cart_updated_at")||0);
+  const cartOwner=()=>String(localStorage.getItem("raices_cart_owner")||"");
+  const cartKey=item=>cartItemKey(String(item?.sku||""),String(item?.variant||""));
+  function sanitizeCart(input){
+    if(!Array.isArray(input))return[];
+    const map=new Map();
+    input.forEach(raw=>{
+      const sku=String(raw?.sku||"").trim();
+      if(!sku)return;
+      const variant=String(raw?.variant||"").trim();
+      const qty=Math.max(1,Math.min(99,Math.floor(Number(raw?.qty||1))));
+      const key=cartItemKey(sku,variant);
+      const previous=map.get(key);
+      map.set(key,{sku,variant,qty:previous?Math.max(previous.qty,qty):qty});
+    });
+    return [...map.values()];
+  }
+  function mergeCarts(localItems,remoteItems){
+    return sanitizeCart([...(Array.isArray(remoteItems)?remoteItems:[]),...(Array.isArray(localItems)?localItems:[])]);
+  }
+  function setLocalCart(items,{owner=null,updatedAt=Date.now(),render=true}={}){
+    cart=sanitizeCart(items);
+    localStorage.setItem("raices_cart",JSON.stringify(cart));
+    localStorage.setItem("raices_cart_updated_at",String(Number(updatedAt)||Date.now()));
+    if(owner)localStorage.setItem("raices_cart_owner",owner);
+    else localStorage.removeItem("raices_cart_owner");
+    if(render)renderCart();
+  }
+  async function currentCartUser(){
+    if(!window.raicesSupabase)return null;
+    try{
+      const {data}=await window.raicesSupabase.auth.getUser();
+      return data?.user||null;
+    }catch{return null}
+  }
+  async function writeRemoteCart(userId,items){
+    if(!window.raicesSupabase||!userId)return;
+    const now=new Date().toISOString();
+    const {error}=await window.raicesSupabase.from("user_carts").upsert({
+      user_id:userId,cart:sanitizeCart(items),updated_at:now
+    },{onConflict:"user_id"});
+    if(error)throw error;
+    localStorage.setItem("raices_cart_owner",userId);
+    localStorage.setItem("raices_cart_updated_at",String(Date.parse(now)));
+  }
+  function scheduleRemoteCartWrite(){
+    if(suppressRemoteCartWrite)return;
+    clearTimeout(cartSyncTimer);
+    cartSyncTimer=setTimeout(async()=>{
+      const user=await currentCartUser();
+      if(!user)return;
+      try{await writeRemoteCart(user.id,cart)}
+      catch(error){console.warn("[cart-sync] remote save failed",error)}
+    },220);
+  }
+  async function syncCartForUser(user,{reason="refresh"}={}){
+    if(!window.raicesSupabase||!user?.id||cartSyncBusy)return;
+    cartSyncBusy=true;
+    try{
+      const {data,error}=await window.raicesSupabase.from("user_carts").select("cart,updated_at").eq("user_id",user.id).maybeSingle();
+      if(error)throw error;
+      const localItems=sanitizeCart(loadCart());
+      const remoteItems=sanitizeCart(data?.cart||[]);
+      const remoteTime=data?.updated_at?Date.parse(data.updated_at):0;
+      const localTime=cartUpdatedAt();
+      const owner=cartOwner();
+
+      let next;
+      let shouldWrite=false;
+      if(!data){
+        next=localItems;
+        shouldWrite=true;
+      }else if(owner!==user.id && localItems.length){
+        // First login on this device: preserve the guest/local selections without
+        // doubling quantities already present in the account cart.
+        next=mergeCarts(localItems,remoteItems);
+        shouldWrite=JSON.stringify(next)!==JSON.stringify(remoteItems);
+      }else if(localTime>remoteTime+1000){
+        next=localItems;
+        shouldWrite=true;
+      }else{
+        next=remoteItems;
+      }
+
+      suppressRemoteCartWrite=true;
+      setLocalCart(next,{owner:user.id,updatedAt:Math.max(remoteTime,localTime,Date.now()),render:true});
+      suppressRemoteCartWrite=false;
+      if(shouldWrite)await writeRemoteCart(user.id,next);
+      cartSyncUserId=user.id;
+      console.info("[cart-sync] synchronized",{reason,userId:user.id.slice(0,8),items:next.length});
+    }catch(error){
+      suppressRemoteCartWrite=false;
+      console.warn("[cart-sync] synchronization failed",error);
+    }finally{cartSyncBusy=false}
+  }
+  function subscribeCartRealtime(user){
+    if(!window.raicesSupabase||!user?.id)return;
+    if(cartRealtimeChannel){window.raicesSupabase.removeChannel(cartRealtimeChannel);cartRealtimeChannel=null}
+    cartRealtimeChannel=window.raicesSupabase.channel(`user-cart-${user.id}`)
+      .on("postgres_changes",{event:"*",schema:"public",table:"user_carts",filter:`user_id=eq.${user.id}`},()=>{
+        setTimeout(()=>syncCartForUser(user,{reason:"realtime"}),50);
+      }).subscribe();
+  }
+  async function initializeCartSync(){
+    const user=await currentCartUser();
+    if(user){
+      await syncCartForUser(user,{reason:"initial"});
+      subscribeCartRealtime(user);
+    }
+  }
+  async function clearRemoteCart(){
+    const user=await currentCartUser();
+    if(!user)return;
+    try{await writeRemoteCart(user.id,[])}catch(error){console.warn("[cart-sync] remote clear failed",error)}
+  }
+
   function readPendingOrder(){
     try{return JSON.parse(sessionStorage.getItem('raices_pending_order')||localStorage.getItem('raices_pending_order')||'{}')}catch{return {}}
   }
@@ -43,8 +165,10 @@
     localStorage.removeItem('raices_cart');
     localStorage.removeItem('raices_cart_summary');
     localStorage.removeItem('raices_pending_order');
+    localStorage.setItem('raices_cart_updated_at',String(Date.now()));
     sessionStorage.removeItem('raices_pending_order');
     cart=[];
+    clearRemoteCart();
     window.dispatchEvent(new CustomEvent('raices:cart-cleared'));
     renderCart();
   }
@@ -328,8 +452,11 @@
   }
 
   function saveCart(){
+    cart=sanitizeCart(cart);
     localStorage.setItem("raices_cart", JSON.stringify(cart));
+    localStorage.setItem("raices_cart_updated_at",String(Date.now()));
     renderCart();
+    scheduleRemoteCartWrite();
   }
 
   function renderDoors(){
@@ -711,6 +838,8 @@
     if(removedNames.length || JSON.stringify(validCart) !== JSON.stringify(cart)){
       cart = validCart;
       localStorage.setItem("raices_cart", JSON.stringify(cart));
+      localStorage.setItem("raices_cart_updated_at",String(Date.now()));
+      scheduleRemoteCartWrite();
       if(removedNames.length) showCartStatus((currentLang()==='es' ? 'Se retiró del carrito por falta de disponibilidad: ' : 'Removed because it is no longer available: ') + removedNames.join(', '), 'warning');
     }
     const enriched = cart.map(item => ({...item, product: productBySku(item.sku)})).filter(i => i.product && isProductAvailable(i.product));
@@ -941,8 +1070,34 @@
 
   loadDeliveryConfig();
   reconcilePendingPaidOrder();
-  window.addEventListener("pageshow",reconcilePendingPaidOrder);
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reconcilePendingPaidOrder()});
+  initializeCartSync();
+  window.addEventListener("pageshow",async()=>{
+    reconcilePendingPaidOrder();
+    const user=await currentCartUser();
+    if(user)syncCartForUser(user,{reason:"pageshow"});
+  });
+  window.addEventListener("focus",async()=>{
+    const user=await currentCartUser();
+    if(user)syncCartForUser(user,{reason:"focus"});
+  });
+  document.addEventListener("visibilitychange",async()=>{
+    if(document.visibilityState==="visible"){
+      reconcilePendingPaidOrder();
+      const user=await currentCartUser();
+      if(user)syncCartForUser(user,{reason:"visible"});
+    }
+  });
+  window.addEventListener("raices:authChanged",async(event)=>{
+    const user=event.detail?.user||null;
+    if(user){
+      await syncCartForUser(user,{reason:"auth"});
+      subscribeCartRealtime(user);
+    }else{
+      if(cartRealtimeChannel){window.raicesSupabase?.removeChannel(cartRealtimeChannel);cartRealtimeChannel=null}
+      cartSyncUserId=null;
+      localStorage.removeItem("raices_cart_owner");
+    }
+  });
 
   }
   if(document.readyState === "loading"){
