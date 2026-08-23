@@ -65,6 +65,7 @@
    SHIPPING_PACKAGE_DIMENSIONS_MISSING:tr('Faltan dimensiones en el perfil de empaque.','The packaging profile is missing dimensions.'),
    SHIPPO_TOKEN_MISSING:tr('La conexión con Shippo todavía no está disponible.','The Shippo connection is not available yet.'),
    SHIPPO_RATE_REQUEST_FAILED:tr('Shippo no pudo obtener tarifas para esta dirección. Revisa los datos e intenta nuevamente.','Shippo could not retrieve rates for this address. Check the details and try again.'),
+   SHIPPO_NETWORK_FAILED:tr('No pudimos conectar con Shippo. Intenta nuevamente; si continúa, revisaremos el diagnóstico de conexión.','We could not connect to Shippo. Try again; if it continues, we will review the connection diagnostic.'),
    NO_SHIPPING_RATES:tr('No encontramos opciones de Shipping para esta dirección.','No shipping options were found for this address.'),
    SHIPPING_RATES_UNAVAILABLE:tr('No pudimos calcular Shipping en este momento.','Shipping could not be calculated right now.')
   };

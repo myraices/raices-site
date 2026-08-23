@@ -1,15 +1,34 @@
 const crypto=require('crypto');
+const https=require('https');
 const JSON_HEADERS={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'};
 const SHIPPO_BASE='https://api.goshippo.com';
 
 function response(statusCode,body){return{statusCode,headers:JSON_HEADERS,body:JSON.stringify(body)}}
 function safeText(v,max=500){return String(v||'').trim().slice(0,max)}
 function parseSettings(v){if(v&&typeof v==='object')return v;if(typeof v==='string'){try{return JSON.parse(v)}catch{}}return{}}
+function networkCause(err){
+  const c=err?.cause||{};
+  return {name:String(err?.name||''),message:String(err?.message||''),code:String(c?.code||err?.code||''),errno:String(c?.errno||''),syscall:String(c?.syscall||''),hostname:String(c?.hostname||'')};
+}
+function httpsJson(url,{method='GET',headers={},body=null}={}){
+  return new Promise((resolve,reject)=>{
+    const u=new URL(url);
+    const req=https.request({protocol:u.protocol,hostname:u.hostname,port:u.port||443,path:u.pathname+u.search,method,headers},res=>{
+      let raw='';res.setEncoding('utf8');res.on('data',chunk=>raw+=chunk);res.on('end',()=>{
+        let parsed={};try{parsed=raw?JSON.parse(raw):{}}catch{parsed={raw}};
+        resolve({ok:res.statusCode>=200&&res.statusCode<300,status:res.statusCode,body:parsed});
+      });
+    });
+    req.on('error',reject);req.setTimeout(15000,()=>req.destroy(new Error('HTTPS_TIMEOUT')));if(body)req.write(body);req.end();
+  });
+}
 async function sb(path){
-  const url=process.env.SUPABASE_URL||'https://tqtnffhqbyesjdollk.supabase.co';
+  const url=process.env.SUPABASE_URL||'https://tqtnffinhqbyesjdollk.supabase.co';
   const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!key)throw new Error('SUPABASE_SERVICE_ROLE_KEY_MISSING');
-  const r=await fetch(`${url}/rest/v1/${path}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+  let r;
+  try{r=await fetch(`${url}/rest/v1/${path}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});}
+  catch(err){console.error('[shipping-rates] stage=supabase_fetch',networkCause(err));throw err;}
   const text=await r.text();
   if(!r.ok)throw new Error(`SUPABASE_${r.status}:${text.slice(0,500)}`);
   return text?JSON.parse(text):[];
@@ -122,15 +141,30 @@ function parcelGroups(items,profiles){
   });
 }
 async function shippo(path,options={}){
-  const token=process.env.SHIPPO_API_TOKEN;
+  const token=String(process.env.SHIPPO_API_TOKEN||'').trim();
   if(!token)throw new Error('SHIPPO_TOKEN_MISSING');
-  const r=await fetch(`${SHIPPO_BASE}${path}`,{
-    ...options,
-    headers:{Authorization:`ShippoToken ${token}`,'Content-Type':'application/json','SHIPPO-API-VERSION':'2018-02-08',...(options.headers||{})}
-  });
-  const text=await r.text();let body={};try{body=text?JSON.parse(text):{}}catch{body={raw:text}}
-  if(!r.ok){const e=new Error('SHIPPO_REQUEST_FAILED');e.status=r.status;e.body=body;throw e}
-  return body;
+  const url=`${SHIPPO_BASE}${path}`;
+  const body=options.body||null;
+  const headers={Authorization:`ShippoToken ${token}`,'Content-Type':'application/json','SHIPPO-API-VERSION':'2018-02-08',...(options.headers||{})};
+  try{
+    const r=await fetch(url,{...options,headers});
+    const text=await r.text();let parsed={};try{parsed=text?JSON.parse(text):{}}catch{parsed={raw:text}};
+    if(!r.ok){const e=new Error('SHIPPO_REQUEST_FAILED');e.status=r.status;e.body=parsed;throw e}
+    return parsed;
+  }catch(err){
+    if(err?.message==='SHIPPO_REQUEST_FAILED')throw err;
+    console.error('[shipping-rates] stage=shippo_fetch',networkCause(err));
+    try{
+      const alt=await httpsJson(url,{method:options.method||'GET',headers,body});
+      console.log('[shipping-rates] shippo_https_fallback_status',alt.status);
+      if(!alt.ok){const e=new Error('SHIPPO_REQUEST_FAILED');e.status=alt.status;e.body=alt.body;throw e}
+      return alt.body;
+    }catch(altErr){
+      if(altErr?.message==='SHIPPO_REQUEST_FAILED')throw altErr;
+      console.error('[shipping-rates] stage=shippo_https_fallback',networkCause(altErr));
+      const e=new Error('SHIPPO_NETWORK_FAILED');e.causeInfo={fetch:networkCause(err),https:networkCause(altErr)};throw e;
+    }
+  }
 }
 
 exports.handler=async(event)=>{
@@ -189,13 +223,14 @@ exports.handler=async(event)=>{
     if(!rates.length)return response(422,{error:'NO_SHIPPING_RATES',messages:shipment.messages||[]});
     return response(200,{shipmentId:String(shipment.object_id||''),rates,parcels:parcels.map(p=>({length:p.length,width:p.width,height:p.height,distance_unit:p.distance_unit,weight:p.weight,mass_unit:p.mass_unit})),test:shipment.test===true});
   }catch(err){
-    console.error('[shipping-rates]',err.message,err.status||'',err.body||'');
+    console.error('[shipping-rates] final',err.message,err.status||'',err.body||'',err.causeInfo||networkCause(err));
     const known=['PRODUCT_NOT_AVAILABLE','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPO_TOKEN_MISSING'];
     if(String(err.message).startsWith('PACKAGE_PROFILE_MISSING'))return response(409,{error:'SHIPPING_PACKAGE_PROFILE_MISSING'});
     if(String(err.message).startsWith('PRODUCT_WEIGHT_MISSING'))return response(409,{error:'SHIPPING_PRODUCT_WEIGHT_MISSING'});
     if(String(err.message).startsWith('PACKAGE_DIMENSIONS_MISSING'))return response(409,{error:'SHIPPING_PACKAGE_DIMENSIONS_MISSING'});
     if(known.includes(err.message))return response(err.message==='SHIPPO_TOKEN_MISSING'?503:409,{error:err.message});
     if(err.message==='SHIPPO_REQUEST_FAILED')return response(502,{error:'SHIPPO_RATE_REQUEST_FAILED',details:err.body||null});
-    return response(500,{error:'SHIPPING_RATES_UNAVAILABLE'});
+    if(err.message==='SHIPPO_NETWORK_FAILED')return response(502,{error:'SHIPPO_NETWORK_FAILED',diagnostic:err.causeInfo||null});
+    return response(500,{error:'SHIPPING_RATES_UNAVAILABLE',diagnostic:networkCause(err)});
   }
 };
