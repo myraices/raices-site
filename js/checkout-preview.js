@@ -176,17 +176,22 @@
   const shippingRadio=document.getElementById('fulfillmentShipping');
   const methodStatus=document.getElementById('checkoutFulfillmentStatus');
   if(methodBlock){methodBlock.hidden=digitalOnly;methodBlock.style.display=digitalOnly?'none':'';}
+  const outsideLocalArea=Boolean(addressVerified&&zip.length===5&&localDeliveryEligible&&!zone);
   if(localRow)localRow.hidden=!localDeliveryEligible;
   if(shippingRow)shippingRow.hidden=!shippingEligible;
-  if(localRadio){localRadio.checked=selectedFulfillment==='delivery';localRadio.disabled=!localDeliveryEligible;}
+  if(localRadio){localRadio.checked=selectedFulfillment==='delivery';localRadio.disabled=!localDeliveryEligible||outsideLocalArea;}
   if(shippingRadio){shippingRadio.checked=selectedFulfillment==='shipping';shippingRadio.disabled=!shippingEligible;}
   if(methodStatus&&!digitalOnly){
    const noMethod=fulfillmentOptionsReady&&!localDeliveryEligible&&!shippingEligible;
    const setupBlocked=shippingEnabled&&!shippingEligible&&shippingSetupProblems.length>0&&localDeliveryEligible;
-   methodStatus.hidden=!(noMethod||setupBlocked);
-   methodStatus.textContent=noMethod
-    ?tr('No hay un método de entrega disponible para este carrito.','No delivery method is available for this cart.')
-    :tr('Shipping no está disponible para este carrito todavía.','Shipping is not available for this cart yet.');
+   methodStatus.hidden=!(outsideLocalArea||noMethod||setupBlocked);
+   methodStatus.textContent=outsideLocalArea
+    ?(shippingEligible
+      ?tr('Esta dirección está fuera de nuestra zona de Delivery local. Puedes continuar con Shipping.','This address is outside our Local Delivery area. You can continue with Shipping.')
+      :tr('Esta dirección está fuera de nuestra zona de Delivery local.','This address is outside our Local Delivery area.'))
+    :noMethod
+      ?tr('No hay un método de entrega disponible para este carrito.','No delivery method is available for this cart.')
+      :tr('Shipping no está disponible para este carrito todavía.','Shipping is not available for this cart yet.');
   }
 
   const ratesBox=document.getElementById('checkoutShippingRates');
