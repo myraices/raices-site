@@ -171,6 +171,20 @@ exports.handler=async(event)=>{
       method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(update)
     });
 
+    if(status==='in_transit'&&order&&!['out_for_delivery','delivered','completed','cancelled'].includes(order.status)){
+      await rest(c,`orders?id=eq.${encodeURIComponent(order.id)}`,{
+        method:'PATCH',headers:{Prefer:'return=minimal'},
+        body:JSON.stringify({status:'out_for_delivery',updated_at:now})
+      });
+      await rest(c,'order_status_history',{
+        method:'POST',headers:{Prefer:'return=minimal'},
+        body:JSON.stringify({
+          order_id:order.id,from_status:order.status||'paid',to_status:'out_for_delivery',
+          note:`Shipping marcado como enviado automáticamente por tracking ${tracking}.`,changed_at:now
+        })
+      }).catch(()=>null);
+    }
+
     if(status==='delivered'&&order&&order.status!=='completed'){
       await rest(c,`orders?id=eq.${encodeURIComponent(order.id)}`,{
         method:'PATCH',headers:{Prefer:'return=minimal'},
