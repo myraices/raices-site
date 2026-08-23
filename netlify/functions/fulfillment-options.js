@@ -50,7 +50,7 @@ exports.handler=async(event)=>{
       else if(!activeProfiles.has(profile)) setupProblems.push({sku:p.sku,reason:'PACKAGE_PROFILE_INACTIVE'});
     });
     const shippingConfigured=logistics.shipping_enabled===true;
-    const shippingEligible=shippingConfigured&&shippingFlagEligible&&setupProblems.length===0;
+    const shippingEligible=shippingConfigured&&shippingFlagEligible;
     const environment=String(process.env.SQUARE_ENVIRONMENT||'sandbox').toLowerCase();
 
     const allowedStates=[];

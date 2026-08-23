@@ -79,11 +79,9 @@
   if(localRadio){localRadio.checked=selectedFulfillment==='delivery';localRadio.disabled=!localDeliveryEligible;}
   if(shippingRadio){shippingRadio.checked=selectedFulfillment==='shipping';shippingRadio.disabled=!shippingEligible;}
   if(methodStatus&&!digitalOnly){
-   if(!fulfillmentOptionsReady)methodStatus.textContent='Cargando métodos disponibles…';
-   else if(localDeliveryEligible&&shippingEligible)methodStatus.textContent='Puedes elegir delivery local o shipping nacional según la dirección.';
-   else if(shippingEligible)methodStatus.textContent='Este carrito está habilitado para shipping nacional.';
-   else if(localDeliveryEligible)methodStatus.textContent=shippingEnabled?'Este carrito requiere delivery local; uno o más productos no están habilitados para shipping.':'Shipping nacional todavía no está activado.';
-   else methodStatus.textContent='No hay un método de entrega disponible para este carrito.';
+   const noMethod=fulfillmentOptionsReady&&!localDeliveryEligible&&!shippingEligible;
+   methodStatus.hidden=!noMethod;
+   methodStatus.textContent=noMethod?'No hay un método de entrega disponible para este carrito.':'';
   }
 
   previewSubtotal.textContent=money(subtotal);
@@ -101,9 +99,9 @@
   else if(!deliveryConfigReady||!fulfillmentOptionsReady){msg.dataset.state='idle';msg.textContent='Cargando opciones de entrega…'}
   else if(!addressVerified){msg.dataset.state='idle';msg.textContent='Selecciona primero una dirección válida de Google para confirmar las opciones disponibles.'}
   else if(isShipping&&!shippingDestinationOk){msg.dataset.state='error';msg.textContent='Shipping no está habilitado para este destino.'}
-  else if(isShipping){msg.dataset.state='ok';msg.textContent=shippingRateMode==='sandbox_zero_test'?'Shipping nacional habilitado para prueba Sandbox. Tarifa provisional $0; todavía no se usa Shippo.':'Shipping nacional disponible. La tarifa del transportista se calculará antes del pago.'}
+  else if(isShipping){msg.dataset.state='ok';msg.textContent='Shipping nacional disponible.'}
   else if(!zone){msg.dataset.state='error';msg.textContent=shippingEligible?'Esta dirección está fuera del Delivery local. Selecciona Shipping nacional para continuar.':`La dirección seleccionada (ZIP ${zip}) está fuera de la cobertura configurada.`}
-  else{msg.dataset.state='ok';msg.textContent=`Cobertura confirmada: ${zone.name}. ${qualifies?'Delivery gratis.':`Delivery estimado ${money(delivery)}.`}`}
+  else{msg.dataset.state='ok';msg.textContent=qualifies?'Delivery local disponible · Gratis.':'Delivery local disponible.'}
 
   const payButton=document.getElementById('previewPayButton');if(payButton){payButton.disabled=!items.length;payButton.textContent='CONTINUAR AL PAGO';}
   summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk:!!zone&&addressVerified),zone:isShipping?'National Shipping':(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:isShipping?'Shipping nacional':eta()};

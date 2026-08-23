@@ -197,9 +197,9 @@ exports.handler = async (event) => {
       if (!physicalItems.every(i => i.shippingEnabled)) return response(409, { error: 'SHIPPING_NOT_AVAILABLE_FOR_CART' }, origin);
       const profiles = packageProfiles(logistics);
       shippingSetupOk = physicalItems.every(i => i.shippingWeightValue > 0 && i.shippingPackageProfile && profiles.has(i.shippingPackageProfile));
-      if (!shippingSetupOk) return response(409, { error: 'SHIPPING_PRODUCT_SETUP_INCOMPLETE' }, origin);
       if (!shippingStateAllowed(customer.state, logistics)) return response(400, { error: 'SHIPPING_DESTINATION_NOT_ALLOWED' }, origin);
-      // Until Shippo is connected, shipping checkout is permitted only in Square Sandbox.
+      // Phase 2 validates fulfillment only. Missing package/weight data is allowed in Sandbox
+      // and will become mandatory when Shippo live rating is connected in Phase 3.
       if (environment === 'production') return response(503, { error: 'SHIPPING_RATE_UNAVAILABLE' }, origin);
     }
 
