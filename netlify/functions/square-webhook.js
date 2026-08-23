@@ -108,6 +108,25 @@ async function fetchCheckoutSessionFull(id) {
   const rows=await res.json();
   return rows?.[0]||null;
 }
+async function upsertCheckoutShipment(orderId, session) {
+  const shipping=session?.payload?.shipping;
+  if(!orderId||!shipping)return;
+  const {url,key}=supabaseConfig();
+  const res=await fetch(`${url}/rest/v1/order_shipments?on_conflict=order_id`,{
+    method:'POST',
+    headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({
+      order_id:orderId,provider:shipping.provider||null,service:shipping.service||null,
+      service_token:shipping.serviceToken||null,shippo_shipment_id:shipping.shipmentId||null,
+      shippo_rate_id:shipping.rateId||null,quoted_amount:Number(shipping.amount||0),
+      charged_amount:Number(shipping.chargedAmount??shipping.amount??0),currency:shipping.currency||'USD',
+      shipment_status:'quoted',estimated_days:Number.isFinite(Number(shipping.estimatedDays))?Number(shipping.estimatedDays):null,
+      duration_terms:shipping.durationTerms||null,free_shipping_applied:Boolean(shipping.freeShippingApplied),
+      quoted_at:shipping.quotedAt||new Date().toISOString(),is_test:shipping.test!==false,updated_at:new Date().toISOString()
+    })
+  });
+  if(!res.ok)throw new Error(`SHIPMENT_UPSERT_${res.status}:${(await res.text()).slice(0,500)}`);
+}
 async function createOrderFromCheckoutDirect(sessionId, payment, finalAmounts) {
   const { url, key } = supabaseConfig();
   const headers={apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json'};
@@ -117,11 +136,12 @@ async function createOrderFromCheckoutDirect(sessionId, payment, finalAmounts) {
 
   if(session.order_id){
     const existing=await supabaseFind(`id=eq.${encodeURIComponent(session.order_id)}`);
-    if(existing) return existing.id;
+    if(existing){await upsertCheckoutShipment(existing.id,session);return existing.id;}
   }
 
   const existingBySquare=await supabaseFind(`square_order_id=eq.${encodeURIComponent(payment.order_id)}`);
   if(existingBySquare){
+    await upsertCheckoutShipment(existingBySquare.id,session);
     await supabasePatchCheckoutSession(session.id,{status:'order_created',order_id:existingBySquare.id,updated_at:new Date().toISOString()});
     return existingBySquare.id;
   }
@@ -165,7 +185,7 @@ async function createOrderFromCheckoutDirect(sessionId, payment, finalAmounts) {
   let text=await res.text();
   if(!res.ok){
     const concurrent=await supabaseFind(`square_order_id=eq.${encodeURIComponent(payment.order_id)}`);
-    if(concurrent) return concurrent.id;
+    if(concurrent){await upsertCheckoutShipment(concurrent.id,session);return concurrent.id;}
     throw new Error(`ORDER_INSERT_${res.status}:${text.slice(0,500)}`);
   }
   const order=(text?JSON.parse(text):[])?.[0];
@@ -187,6 +207,7 @@ async function createOrderFromCheckoutDirect(sessionId, payment, finalAmounts) {
     throw new Error(`ITEMS_INSERT_${res.status}:${itemError.slice(0,500)}`);
   }
 
+  await upsertCheckoutShipment(order.id,session);
   await supabasePatchCheckoutSession(session.id,{status:'order_created',order_id:order.id,updated_at:new Date().toISOString()});
   return order.id;
 }

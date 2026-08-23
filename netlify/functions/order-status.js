@@ -59,13 +59,42 @@ function amounts(order){
     totalCents:Number(order?.total_money?.amount||order?.net_amounts?.total_money?.amount||0)
   };
 }
+async function upsertOrderShipment(orderId, session, c){
+  const shipping=session?.payload?.shipping;
+  if(!orderId||!shipping)return;
+  const row={
+    order_id:orderId,
+    provider:shipping.provider||null,
+    service:shipping.service||null,
+    service_token:shipping.serviceToken||null,
+    shippo_shipment_id:shipping.shipmentId||null,
+    shippo_rate_id:shipping.rateId||null,
+    quoted_amount:Number(shipping.amount||0),
+    charged_amount:Number(shipping.chargedAmount??shipping.amount??0),
+    currency:shipping.currency||'USD',
+    shipment_status:'quoted',
+    estimated_days:Number.isFinite(Number(shipping.estimatedDays))?Number(shipping.estimatedDays):null,
+    duration_terms:shipping.durationTerms||null,
+    free_shipping_applied:Boolean(shipping.freeShippingApplied),
+    quoted_at:shipping.quotedAt||new Date().toISOString(),
+    is_test:shipping.test!==false,
+    updated_at:new Date().toISOString()
+  };
+  const r=await fetchJson(`${c.url}/rest/v1/order_shipments?on_conflict=order_id`,{
+    method:'POST',
+    headers:{...sbHeaders(c,'resolution=merge-duplicates,return=minimal')},
+    body:JSON.stringify(row)
+  });
+  if(!r.ok)throw new Error(`SHIPMENT_UPSERT_${r.status}:${r.text.slice(0,500)}`);
+}
 async function createOrderDirect(session,payment,sqOrder,c){
   if(session.order_id){
     const existing=await fetchOrder(session.order_id,c);
-    if(existing)return existing;
+    if(existing){await upsertOrderShipment(existing.id,session,c);return existing;}
   }
   const bySquare=await fetchOrderBySquareId(session.square_order_id||payment.order_id,c);
   if(bySquare){
+    await upsertOrderShipment(bySquare.id,session,c);
     await patchSession(session.id,{status:'order_created',order_id:bySquare.id},c);
     return bySquare;
   }
@@ -116,6 +145,7 @@ async function createOrderDirect(session,payment,sqOrder,c){
   if(!created.ok){
     const concurrent=await fetchOrderBySquareId(orderPayload.square_order_id,c);
     if(concurrent){
+      await upsertOrderShipment(concurrent.id,session,c);
       await patchSession(session.id,{status:'order_created',order_id:concurrent.id},c);
       return concurrent;
     }
@@ -148,6 +178,7 @@ async function createOrderDirect(session,payment,sqOrder,c){
     throw new Error(`ITEMS_INSERT_${insertedItems.status}:${insertedItems.text.slice(0,500)}`);
   }
 
+  await upsertOrderShipment(order.id,session,c);
   await patchSession(session.id,{status:'order_created',order_id:order.id},c);
   return order;
 }

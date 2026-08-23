@@ -24,8 +24,10 @@ exports.handler=async(event)=>{
     const ids=orders.map(o=>o.id).filter(Boolean);
     const items=await serviceRequest(`order_items?select=order_id,product_id,sku,product_name,variant,quantity,line_total_cents&order_id=in.(${ids.join(',')})&order=created_at.asc`);
     const entitlements=await serviceRequest(`digital_entitlements?select=order_id,product_id,download_token,revoked_at&order_id=in.(${ids.join(',')})`);
+    const shipments=await serviceRequest(`order_shipments?select=order_id,provider,service,shipment_status,tracking_number,tracking_url,estimated_days,delivered_at&order_id=in.(${ids.join(',')})`);
+    const shipmentMap=new Map(shipments.map(s=>[s.order_id,s]));
     const entMap=new Map(entitlements.filter(e=>!e.revoked_at).map(e=>[`${e.order_id}:${e.product_id}`,e.download_token]));
     const byOrder=new Map(); for(const item of items){if(!byOrder.has(item.order_id))byOrder.set(item.order_id,[]);const token=entMap.get(`${item.order_id}:${item.product_id}`);byOrder.get(item.order_id).push({...item,download_url:token?`/.netlify/functions/digital-download?token=${token}`:null})}
-    return response(200,{orders:orders.map(o=>({...o,items:byOrder.get(o.id)||[]}))});
+    return response(200,{orders:orders.map(o=>({...o,items:byOrder.get(o.id)||[],shipment:shipmentMap.get(o.id)||null}))});
   }catch(err){console.error('customer-orders',err);return response(500,{error:'ORDERS_UNAVAILABLE'});}
 };
