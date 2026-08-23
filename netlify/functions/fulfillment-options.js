@@ -18,6 +18,12 @@ function isDigital(p){
 }
 const CONTIGUOUS=new Set(['AL','AZ','AR','CA','CO','CT','DE','FL','GA','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
 const TERRITORIES=new Set(['PR','VI','GU','AS','MP']);
+function centralDateKey(date=new Date()){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Chicago',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+  const v=Object.fromEntries(parts.filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+  return `${v.year}-${v.month}-${v.day}`;
+}
+function dateValue(v){const s=String(v||'').trim();return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:''}
 
 exports.handler=async(event)=>{
   if(event.httpMethod!=='POST')return{statusCode:405,headers:JSON_HEADERS,body:JSON.stringify({error:'METHOD_NOT_ALLOWED'})};
@@ -50,8 +56,14 @@ exports.handler=async(event)=>{
       else if(!activeProfiles.has(profile)) setupProblems.push({sku:p.sku,reason:'PACKAGE_PROFILE_INACTIVE'});
     });
     const shippingConfigured=logistics.shipping_enabled===true;
-    const shippingEligible=shippingConfigured&&shippingFlagEligible;
+    const shippingEligible=shippingConfigured&&shippingFlagEligible&&setupProblems.length===0;
     const environment=String(process.env.SQUARE_ENVIRONMENT||'sandbox').toLowerCase();
+    const freeShippingEnabled=logistics.free_shipping_enabled===true;
+    const freeShippingStart=dateValue(logistics.free_shipping_start_date);
+    const freeShippingEnd=dateValue(logistics.free_shipping_end_date);
+    const today=centralDateKey();
+    const freeShippingActive=freeShippingEnabled&&(!freeShippingStart||today>=freeShippingStart)&&(!freeShippingEnd||today<=freeShippingEnd);
+    const freeShippingThreshold=Math.max(0,Number(logistics.free_shipping_threshold||0));
 
     const allowedStates=[];
     if(logistics.allow_contiguous_us!==false)allowedStates.push(...CONTIGUOUS);
@@ -69,7 +81,8 @@ exports.handler=async(event)=>{
       shippingProvider:String(logistics.shipping_provider||'shippo'),
       allowedStates:[...new Set(allowedStates)],
       environment,
-      shippingRateMode:environment==='production'?'carrier_required':'sandbox_zero_test'
+      shippingRateMode:'shippo',
+      freeShipping:{enabled:freeShippingEnabled,active:freeShippingActive,threshold:freeShippingThreshold,startDate:freeShippingStart,endDate:freeShippingEnd}
     })};
   }catch(e){
     console.error('fulfillment-options',e);

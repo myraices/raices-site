@@ -1020,3 +1020,19 @@ img { height:auto; }
 .checkout-fulfillment-option small{line-height:1.35;color:rgba(31,60,55,.7)}
 .checkout-fulfillment-status{margin:10px 2px 0;font-size:.84rem;color:rgba(31,60,55,.72)}
 @media(max-width:640px){.checkout-fulfillment-block{padding:14px}.checkout-fulfillment-option{padding:12px}}
+
+
+/* Phase 3 · Shippo rate selection */
+.checkout-shipping-rates{margin-top:14px;padding-top:14px;border-top:1px solid rgba(35,82,72,.12)}
+.checkout-shipping-rates__head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+.checkout-shipping-rates__head strong{font-size:.92rem}
+.checkout-shipping-rates__head span{font-size:.8rem;color:rgba(31,60,55,.7)}
+.checkout-shipping-rates__list{display:grid;gap:8px}
+.checkout-shipping-rate{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:12px 13px;border:1px solid rgba(35,82,72,.14);border-radius:12px;background:#fff;cursor:pointer}
+.checkout-shipping-rate:has(input:checked){border-color:rgba(35,82,72,.55);box-shadow:0 0 0 2px rgba(35,82,72,.07)}
+.checkout-shipping-rate span{display:grid;gap:2px}
+.checkout-shipping-rate strong{font-size:.9rem}
+.checkout-shipping-rate small{color:rgba(31,60,55,.66);font-size:.78rem}
+.checkout-shipping-rate b{font-size:.92rem}
+.checkout-shipping-retry{justify-self:start;border:1px solid rgba(35,82,72,.2);border-radius:10px;padding:9px 12px;background:#fff;color:#174f45;font-weight:700;cursor:pointer}
+@media(max-width:640px){.checkout-shipping-rate{grid-template-columns:auto 1fr}.checkout-shipping-rate b{grid-column:2}}

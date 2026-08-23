@@ -81,6 +81,55 @@ function packageProfiles(settings) {
   const profiles = Array.isArray(settings.package_profiles) ? settings.package_profiles : [];
   return new Set(profiles.filter(p => p && p.active !== false).map(p => String(p.id || p.key || p.name || '')).filter(Boolean));
 }
+
+function shippingQuoteFingerprint(items, customer) {
+  const itemKey=[...items].sort((a,b)=>String(a.sku).localeCompare(String(b.sku))).map(i=>[
+    String(i.sku||''),Number(i.qty||1),String(i.shippingPackageProfile||''),
+    Number(i.shippingWeightValue||0),String(i.shippingWeightUnit||'')
+  ]);
+  const destination=[
+    safeText(customer.address,160).toLowerCase(),safeText(customer.apt,100).toLowerCase(),
+    safeText(customer.city,100).toLowerCase(),safeText(customer.state,2).toUpperCase(),normalizeZip(customer.zip)
+  ];
+  return crypto.createHash('sha256').update(JSON.stringify({items:itemKey,destination})).digest('hex');
+}
+async function shippoGet(path) {
+  const token = process.env.SHIPPO_API_TOKEN;
+  if (!token) throw new Error('SHIPPO_TOKEN_MISSING');
+  const res = await fetch(`https://api.goshippo.com${path}`, {
+    headers: { Authorization:`ShippoToken ${token}`, 'SHIPPO-API-VERSION':'2018-02-08' }
+  });
+  const text=await res.text();let body={};try{body=text?JSON.parse(text):{}}catch{}
+  if(!res.ok)throw new Error('SHIPPING_RATE_INVALID');
+  return body;
+}
+async function shippoRate(rateId) {
+  const token = process.env.SHIPPO_API_TOKEN;
+  if (!token) throw new Error('SHIPPO_TOKEN_MISSING');
+  const id = safeText(rateId, 100);
+  if (!id) throw new Error('SHIPPING_RATE_REQUIRED');
+  const res = await fetch(`https://api.goshippo.com/rates/${encodeURIComponent(id)}`, {
+    headers: { Authorization:`ShippoToken ${token}`, 'SHIPPO-API-VERSION':'2018-02-08' }
+  });
+  const text = await res.text();
+  let body={}; try { body=text?JSON.parse(text):{}; } catch {}
+  if (!res.ok) {
+    console.error('[checkout] shippo_rate_lookup_failed', res.status, body);
+    throw new Error('SHIPPING_RATE_INVALID');
+  }
+  return body;
+}
+function shippingPromotion(settings, physicalSubtotalCents) {
+  const enabled = settings.free_shipping_enabled === true;
+  const rawThreshold = Number(settings.free_shipping_threshold ?? 0);
+  const thresholdCents = Math.max(0, Math.round((Number.isFinite(rawThreshold)?rawThreshold:0)*100));
+  const startDate = normalizeDate(settings.free_shipping_start_date);
+  const endDate = normalizeDate(settings.free_shipping_end_date);
+  const today = centralDateKey();
+  const active = enabled && (!startDate || today >= startDate) && (!endDate || today <= endDate);
+  const qualifies = active && (thresholdCents === 0 || physicalSubtotalCents >= thresholdCents);
+  return { enabled, active, qualifies, thresholdCents, startDate, endDate };
+}
 async function salesTaxSettings() {
   const rows = await supabaseRequest('nurai_settings?section=eq.payments&select=settings&limit=1');
   const settings = parseSettings(rows?.[0]?.settings || {});
@@ -191,21 +240,47 @@ exports.handler = async (event) => {
       if (!zone) return response(400, { error: 'DELIVERY_OUTSIDE_COVERAGE' }, origin);
     }
 
-    let shippingSetupOk = false;
+    let selectedShipping = null;
     if (fulfillmentType === 'shipping') {
       if (logistics.shipping_enabled !== true) return response(409, { error: 'SHIPPING_DISABLED' }, origin);
       if (!physicalItems.every(i => i.shippingEnabled)) return response(409, { error: 'SHIPPING_NOT_AVAILABLE_FOR_CART' }, origin);
       const profiles = packageProfiles(logistics);
-      shippingSetupOk = physicalItems.every(i => i.shippingWeightValue > 0 && i.shippingPackageProfile && profiles.has(i.shippingPackageProfile));
+      const shippingSetupOk = physicalItems.every(i => i.shippingWeightValue > 0 && i.shippingPackageProfile && profiles.has(i.shippingPackageProfile));
+      if (!shippingSetupOk) return response(409, { error: 'SHIPPING_PRODUCT_SETUP_INCOMPLETE' }, origin);
       if (!shippingStateAllowed(customer.state, logistics)) return response(400, { error: 'SHIPPING_DESTINATION_NOT_ALLOWED' }, origin);
-      // Phase 2 validates fulfillment only. Missing package/weight data is allowed in Sandbox
-      // and will become mandatory when Shippo live rating is connected in Phase 3.
-      if (environment === 'production') return response(503, { error: 'SHIPPING_RATE_UNAVAILABLE' }, origin);
+
+      const requestedRateId = safeText(payload.shippingRateId,100);
+      const requestedShipmentId = safeText(payload.shippingShipmentId,100);
+      if (!requestedRateId || !requestedShipmentId) return response(409,{error:'SHIPPING_RATE_REQUIRED'},origin);
+      const rate = await shippoRate(requestedRateId);
+      if (String(rate.shipment||'') !== requestedShipmentId) return response(409,{error:'SHIPPING_RATE_INVALID'},origin);
+      if (String(rate.currency||'USD').toUpperCase() !== 'USD' || !(Number(rate.amount)>0)) return response(409,{error:'SHIPPING_RATE_INVALID'},origin);
+      const quotedShipment=await shippoGet(`/shipments/${encodeURIComponent(requestedShipmentId)}`);
+      const expectedFingerprint=shippingQuoteFingerprint(physicalItems,{...customer,zip});
+      if(String(quotedShipment.metadata||'')!==`RQC:${expectedFingerprint}`)return response(409,{error:'SHIPPING_RATE_INVALID'},origin);
+      selectedShipping = {
+        rateId:String(rate.object_id||requestedRateId),
+        shipmentId:String(rate.shipment||requestedShipmentId),
+        provider:safeText(rate.provider,80),
+        service:safeText(rate.servicelevel?.name||rate.servicelevel?.token||'Shipping',100),
+        serviceToken:safeText(rate.servicelevel?.token,100),
+        amount:Number(rate.amount),
+        currency:String(rate.currency||'USD'),
+        estimatedDays:Number.isFinite(Number(rate.estimated_days))?Number(rate.estimated_days):null,
+        durationTerms:safeText(rate.duration_terms,180),
+        test:rate.test===true
+      };
     }
 
     const freeThresholdCents = Math.round(Number(deliveryConfig.freeDelivery?.threshold || 0) * 100);
     const freeDeliveryApplies = fulfillmentType === 'delivery' && deliveryConfig.freeDelivery?.active && (freeThresholdCents === 0 || physicalSubtotal >= freeThresholdCents);
-    const deliveryCents = fulfillmentType === 'delivery' ? (freeDeliveryApplies ? 0 : cents(zone.fee)) : 0;
+    const freeShipping = fulfillmentType === 'shipping' ? shippingPromotion(logistics, physicalSubtotal) : {qualifies:false};
+    const carrierShippingCents = selectedShipping ? cents(selectedShipping.amount) : 0;
+    const deliveryCents = fulfillmentType === 'delivery'
+      ? (freeDeliveryApplies ? 0 : cents(zone.fee))
+      : fulfillmentType === 'shipping'
+        ? (freeShipping.qualifies ? 0 : carrierShippingCents)
+        : 0;
     const hasTaxablePhysical = validated.some(i => i.taxStatus === 'physical_taxable');
     const hasTaxableItems = validated.some(i => i.taxStatus === 'physical_taxable' || i.taxStatus === 'digital_taxable');
     const hasDigitalReview = validated.some(i => i.taxStatus === 'digital_review');
@@ -239,7 +314,7 @@ exports.handler = async (event) => {
       delivery_city: hasPhysicalItems ? safeText(customer.city,100) : 'Online',
       delivery_state: safeText(customer.state,20) || 'N/A',
       delivery_zip: hasPhysicalItems ? zip : (zip || '00000'),
-      delivery_zone: fulfillmentType === 'shipping' ? 'National Shipping · Shippo pending' : zone.name,
+      delivery_zone: fulfillmentType === 'shipping' ? `Shipping · ${selectedShipping?.provider||'Shippo'} · ${selectedShipping?.service||''}`.slice(0,180) : zone.name,
       google_place_id: hasPhysicalItems ? safeText(customer.placeId,200) : '',
       delivery_notes: hasPhysicalItems ? `${fulfillmentType === 'shipping' ? '[SHIPPING] ' : ''}${safeText(customer.notes,1000)}` : 'Digital product — delivery by email/account',
       checkout_environment: environment,
@@ -268,8 +343,14 @@ exports.handler = async (event) => {
       note: `${i.sku} · tax:${i.taxStatus}`,
       ...((i.taxStatus === 'physical_taxable' || i.taxStatus === 'digital_taxable') && taxCentsExpected > 0 ? { applied_taxes: [appliedTax] } : {})
     }));
-    if (deliveryCents > 0) lineItems.push({
+    if (fulfillmentType === 'delivery' && deliveryCents > 0) lineItems.push({
       name: `Delivery · ${zone.name}`,
+      quantity: '1',
+      base_price_money: { amount: deliveryCents, currency: 'USD' },
+      ...(hasTaxablePhysical && taxCentsExpected > 0 && taxResult.freightTaxable ? { applied_taxes: [appliedTax] } : {})
+    });
+    if (fulfillmentType === 'shipping' && deliveryCents > 0) lineItems.push({
+      name: `${selectedShipping?.provider||'Shipping'} · ${selectedShipping?.service||'Shipping'}`.slice(0,255),
       quantity: '1',
       base_price_money: { amount: deliveryCents, currency: 'USD' },
       ...(hasTaxablePhysical && taxCentsExpected > 0 && taxResult.freightTaxable ? { applied_taxes: [appliedTax] } : {})
@@ -311,7 +392,18 @@ exports.handler = async (event) => {
         payload: {
           order: pendingOrderPayload,
           items: pendingItemsPayload,
-          expected: { tax_cents: taxCentsExpected, pre_tax_total_cents: preTaxTotalCents, fulfillment_type: fulfillmentType, shipping_rate_mode: fulfillmentType === 'shipping' ? 'sandbox_zero_test' : null }
+          expected: {
+            tax_cents: taxCentsExpected,
+            pre_tax_total_cents: preTaxTotalCents,
+            fulfillment_type: fulfillmentType,
+            shipping_rate_mode: fulfillmentType === 'shipping' ? 'shippo' : null
+          },
+          shipping: fulfillmentType === 'shipping' ? {
+            ...selectedShipping,
+            chargedAmount: deliveryCents / 100,
+            freeShippingApplied: Boolean(freeShipping.qualifies),
+            quotedAt: new Date().toISOString()
+          } : null
         }
       })
     });
@@ -352,10 +444,10 @@ exports.handler = async (event) => {
       updated_at: new Date().toISOString()
     }) });
     console.log('[checkout] finish_checkout', { checkoutId, taxCents, totalCents: squareTotalCents });
-    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, taxCents, totalCents: squareTotalCents, fulfillmentType }, origin);
+    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, taxCents, totalCents: squareTotalCents, fulfillmentType, shipping: selectedShipping ? { provider:selectedShipping.provider, service:selectedShipping.service, amount:deliveryCents/100, rateId:selectedShipping.rateId, shipmentId:selectedShipping.shipmentId } : null }, origin);
   } catch (err) {
     console.error('create-square-checkout', err);
-    const known = ['PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED'];
+    const known = ['PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED','SHIPPO_TOKEN_MISSING','SHIPPING_RATE_REQUIRED','SHIPPING_RATE_INVALID'];
     return response(known.includes(err.message) ? 409 : 500, { error: known.includes(err.message) ? err.message : 'CHECKOUT_UNAVAILABLE' }, origin);
   }
 };
