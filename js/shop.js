@@ -438,6 +438,16 @@
     return v.labelEn || v.name || '';
   }
 
+  function productBySku(sku){
+    const direct=products.find(p=>p.sku===sku);
+    if(direct)return direct;
+    for(const group of products){
+      const child=(group._groupMembers||[]).find(p=>p.sku===sku);
+      if(child)return child;
+    }
+    return null;
+  }
+
   function variantLabel(product){
     if(!product || !Array.isArray(product.variants) || !product.variants.length) return '';
     if(product.slug === 'ritual-box') return currentLang()==='es' ? 'Elige tu té' : 'Choose your tea';
@@ -467,11 +477,13 @@
     const related = relatedProducts(p).map(r => `<button class="ritual-card" ${isProductAvailable(r) ? `data-related-add="${r.sku}"` : `data-related-view="${r.sku}"`}><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}${isProductAvailable(r) ? '' : ` · ${t('sold_out')}`}</em></button>`).join('');
     const hasVariants = Array.isArray(p.variants) && p.variants.length;
     const selectedVariant = hasVariants ? variantDisplay(p.variants[0]) : "";
+    const selectedVariantSku = hasVariants ? (p.variants[0]?.sku || p.sku) : p.sku;
+    const selectedVariantAvailable = hasVariants ? p.variants[0]?.available !== false : isProductAvailable(p);
     const variantBlock = hasVariants ? `
       <div class="variant-box">
         <label>${variantLabel(p)}</label>
         <div class="variant-options">
-          ${p.variants.map((v, idx) => `<button type="button" class="variant-option ${idx===0?'active':''}" data-variant="${variantDisplay(v)}" data-variant-image="${v.image}">${variantDisplay(v)}</button>`).join('')}
+          ${p.variants.map((v, idx) => `<button type="button" class="variant-option ${idx===0?'active':''}" data-variant="${variantDisplay(v)}" data-variant-sku="${v.sku||p.sku}" data-variant-image="${v.image}" data-variant-price="${Number(v.price??p.price)}" data-variant-available="${v.available===false?'false':'true'}">${variantDisplay(v)}${v.available===false?` · ${t('sold_out')}`:''}</button>`).join('')}
         </div>
         <p>${variantIntro(p)}</p>
       </div>` : '';
@@ -484,7 +496,7 @@
           <p class="modal-description">${productDescription(p)}</p>
           <div class="product-meta modal-meta">${productMeta(p)}</div>
           ${variantBlock}
-          <div class="modal-price-row"><div><strong>${money(p.price)}</strong>${isProductAvailable(p) ? '' : `<span class="sold-out-label">${t('sold_out')}</span>`}</div>${isProductAvailable(p) ? `<div class="modal-buy-controls"><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${p.sku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div>` : soldOutAction(p, 'modal')}</div>
+          <div class="modal-price-row"><div><strong id="modalVariantPrice">${money(hasVariants ? (p.variants[0]?.price ?? p.price) : p.price)}</strong><span id="modalVariantSoldOut" class="sold-out-label" ${selectedVariantAvailable?'hidden':''}>${t('sold_out')}</span></div><div class="modal-buy-controls" id="modalBuyControls" ${selectedVariantAvailable?'':'hidden'}><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${selectedVariantSku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div></div>
           <div class="modal-sections product-accordion">
             <details open><summary>${t('benefits')}</summary><div><ul>${benefits}</ul></div></details>
             <details><summary>${t('ingredients')}</summary><div><p>${localizedIngredients(p)}</p></div></details>
@@ -505,7 +517,17 @@
         productModalContent.querySelectorAll('.variant-option').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         if(modalImage) modalImage.style.backgroundImage = `url('${this.dataset.variantImage}')`;
-        if(modalAdd) modalAdd.dataset.selectedVariant = this.dataset.variant;
+        if(modalAdd){
+          modalAdd.dataset.selectedVariant = this.dataset.variant;
+          modalAdd.dataset.modalAdd = this.dataset.variantSku || p.sku;
+        }
+        const modalVariantPrice=productModalContent.querySelector('#modalVariantPrice');
+        const modalVariantSoldOut=productModalContent.querySelector('#modalVariantSoldOut');
+        const modalBuyControls=productModalContent.querySelector('#modalBuyControls');
+        const available=this.dataset.variantAvailable!=='false';
+        if(modalVariantPrice)modalVariantPrice.textContent=money(Number(this.dataset.variantPrice||p.price));
+        if(modalVariantSoldOut)modalVariantSoldOut.hidden=available;
+        if(modalBuyControls)modalBuyControls.hidden=!available;
       });
     });
 
@@ -631,7 +653,7 @@
   }
 
   function addToCart(sku, variant, quantity=1){
-    const product = products.find(p => p.sku === sku);
+    const product = productBySku(sku);
     if(!product) return;
     if(!isProductAvailable(product)){
       openProductWaitlist(product.sku);

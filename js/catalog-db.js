@@ -47,11 +47,54 @@
       soldOut: row.stock !== null && Number(row.stock) <= 0, status: normalize(row.status),
       featured: Boolean(row.featured), sortOrder: Number(row.sort_order || 0), stock: row.stock === null ? null : Number(row.stock),
       tags: Array.isArray(row.tags) ? row.tags : [], taxable: row.taxable,
-      variants: Array.isArray(row.variants) ? row.variants : [], source: "supabase",
+      variants: Array.isArray(row.variants) ? row.variants : [],
+      webGroupKey: normalize(row.web_group_key),
+      webGroupSlug: normalize(row.web_group_slug),
+      webVariantLabelEs: normalize(row.web_variant_label_es),
+      webVariantLabelEn: normalize(row.web_variant_label_en),
+      webGroupPrimary: Boolean(row.web_group_primary),
+      source: "supabase",
       _localizedSource: row,
     };
     return applyLocalization(product);
   }
+  function groupProductsForStore(items){
+    const grouped=new Map();
+    const output=[];
+    for(const product of items){
+      const key=normalize(product.webGroupKey);
+      if(!key){ output.push(product); continue; }
+      if(!grouped.has(key)) grouped.set(key,[]);
+      grouped.get(key).push(product);
+    }
+    for(const [key,members] of grouped){
+      const primary=members.find(p=>p.webGroupPrimary)||members[0];
+      const group={...primary};
+      group.sku=primary.sku;
+      group.slug=primary.webGroupSlug||primary.slug;
+      group.webGroupKey=key;
+      group.webGroupSlug=primary.webGroupSlug||primary.slug;
+      group._groupMembers=members;
+      group.available=members.some(p=>p.available!==false&&!p.soldOut);
+      group.soldOut=!group.available;
+      group.stock=members.reduce((sum,p)=>sum+(p.stock===null?0:Number(p.stock||0)),0);
+      group.variants=members.map(p=>({
+        sku:p.sku,
+        name:p.sku,
+        labelEs:p.webVariantLabelEs||p.name,
+        labelEn:p.webVariantLabelEn||p.name,
+        image:p.image,
+        price:p.price,
+        available:p.available!==false&&!p.soldOut,
+        soldOut:p.soldOut,
+        stock:p.stock,
+        slug:p.slug
+      }));
+      output.push(group);
+    }
+    return output.sort((a,b)=>(Number(a.sortOrder||0)-Number(b.sortOrder||0))||String(a.name||'').localeCompare(String(b.name||'')));
+  }
+
   function relocalizeProducts() {
     if (!Array.isArray(window.RAICES_PRODUCTS)) return;
     window.RAICES_PRODUCTS.forEach(applyLocalization);
@@ -60,7 +103,9 @@
     if (!window.raicesSupabase) throw new Error("Supabase is unavailable.");
     const { data, error } = await window.raicesSupabase.from("products").select("*").in("status",["active","sold_out"]).order("sort_order",{ascending:true});
     if (error) throw error;
-    return { products:(data || []).map(toStoreProduct), source:"supabase", count:(data || []).length };
+    const mapped=(data || []).map(toStoreProduct);
+    const products=groupProductsForStore(mapped);
+    return { products, source:"supabase", count:products.length, rawCount:mapped.length };
   }
   window.RAICES_RELOCALIZE_PRODUCTS = relocalizeProducts;
   window.addEventListener("raices:languageChanged", relocalizeProducts);
