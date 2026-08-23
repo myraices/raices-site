@@ -56,6 +56,47 @@
    items:items.map(i=>[i.sku,Number(i.qty||1),i.variant||''])
   });
  }
+ function curatedShippingRates(){
+  if(!shippingRates.length)return [];
+  const sorted=[...shippingRates].sort((a,b)=>Number(a.amount||0)-Number(b.amount||0));
+  const chosen=[];
+  const push=(rate,labelKey)=>{if(rate&&!chosen.some(x=>String(x.rate.id)===String(rate.id)))chosen.push({rate,labelKey})};
+
+  // Economy: cheapest available rate.
+  push(sorted[0],'economy');
+
+  // Standard: prefer a true Ground / standard service, excluding saver/economy-style products.
+  const standard=sorted.find(r=>{
+    const s=`${r.provider||''} ${r.service||''}`.toLowerCase();
+    return !chosen.some(x=>String(x.rate.id)===String(r.id))
+      && /(ground|priority mail|home delivery|standard)/i.test(s)
+      && !/(saver|advantage|economy|select|express|air|next day|overnight)/i.test(s);
+  }) || sorted.find(r=>!chosen.some(x=>String(x.rate.id)===String(r.id)) && Number(r.estimatedDays||99)<=3);
+  push(standard,'standard');
+
+  // Express: cheapest one-day service. If unavailable, choose the fastest remaining rate.
+  let express=sorted.find(r=>!chosen.some(x=>String(x.rate.id)===String(r.id)) && Number(r.estimatedDays||99)<=1);
+  if(!express){
+    const remaining=sorted.filter(r=>!chosen.some(x=>String(x.rate.id)===String(r.id)));
+    remaining.sort((a,b)=>{
+      const da=Number.isFinite(Number(a.estimatedDays))?Number(a.estimatedDays):99;
+      const db=Number.isFinite(Number(b.estimatedDays))?Number(b.estimatedDays):99;
+      return da-db || Number(a.amount||0)-Number(b.amount||0);
+    });
+    express=remaining[0]||null;
+  }
+  push(express,'express');
+
+  // If any category could not be filled, complete up to three with cheapest remaining options.
+  for(const r of sorted){
+    if(chosen.length>=3)break;
+    push(r,chosen.length===1?'standard':'express');
+  }
+  return chosen.slice(0,3);
+ }
+ function rateCategoryLabel(key){
+  return key==='economy'?tr('Económico','Economy'):key==='standard'?tr('Estándar','Standard'):tr('Express','Express');
+ }
  function selectedShippingRate(){return shippingRates.find(r=>String(r.id)===String(selectedShippingRateId))||null}
  function shippingErrorText(code){
   const messages={
@@ -156,11 +197,18 @@
   if(ratesList){
    if(!isShipping||shippingRatesLoading)ratesList.innerHTML='';
    else if(shippingRateError)ratesList.innerHTML=`<button type="button" class="checkout-shipping-retry">${tr('Intentar de nuevo','Try again')}</button>`;
-   else ratesList.innerHTML=shippingRates.map(r=>{
-    const checked=String(r.id)===String(selectedShippingRateId)?' checked':'';
-    const days=r.estimatedDays?tr(`${r.estimatedDays} día${r.estimatedDays===1?'':'s'} estimado${r.estimatedDays===1?'':'s'}`,`${r.estimatedDays} estimated day${r.estimatedDays===1?'':'s'}`):(r.durationTerms||'');
-    return `<label class="checkout-shipping-rate"><input type="radio" name="shippingRate" value="${String(r.id).replace(/"/g,'&quot;')}"${checked}><span><strong>${r.provider||''} · ${r.service||'Shipping'}</strong>${days?`<small>${days}</small>`:''}</span><b>${money(r.amount)}</b></label>`;
-   }).join('');
+   else {
+    const curated=curatedShippingRates();
+    // If the previously selected rate is hidden by a fresh quote, use the first curated option.
+    if(curated.length&&!curated.some(x=>String(x.rate.id)===String(selectedShippingRateId))){
+      selectedShippingRateId=String(curated[0].rate.id||'');
+    }
+    ratesList.innerHTML=curated.map(({rate:r,labelKey})=>{
+      const checked=String(r.id)===String(selectedShippingRateId)?' checked':'';
+      const days=r.estimatedDays?tr(`${r.estimatedDays} día${r.estimatedDays===1?'':'s'} estimado${r.estimatedDays===1?'':'s'}`,`${r.estimatedDays} estimated day${r.estimatedDays===1?'':'s'}`):(r.durationTerms||'');
+      return `<label class="checkout-shipping-rate"><input type="radio" name="shippingRate" value="${String(r.id).replace(/"/g,'&quot;')}"${checked}><span><em class="checkout-shipping-rate__category">${rateCategoryLabel(labelKey)}</em><strong>${r.provider||''} · ${r.service||'Shipping'}</strong>${days?`<small>${days}</small>`:''}</span><b>${money(r.amount)}</b></label>`;
+    }).join('');
+   }
   }
 
   previewSubtotal.textContent=money(subtotal);
