@@ -33,6 +33,36 @@ async function sb(path){
   if(!r.ok)throw new Error(`SUPABASE_${r.status}:${text.slice(0,500)}`);
   return text?JSON.parse(text):[];
 }
+
+function variantText(v){return String(v||'').trim().toLowerCase()}
+function resolveSelectedVariant(product,requestedVariant){
+  const requested=variantText(requestedVariant);
+  const variants=Array.isArray(product?.variants)?product.variants:[];
+  if(!requested||!variants.length)return null;
+  return variants.find(v=>[
+    v?.name,v?.labelEs,v?.labelEn,v?.label_es,v?.label_en,v?.label
+  ].some(value=>variantText(value)===requested))||null;
+}
+function variantShippingConfig(product,requestedVariant){
+  const variant=resolveSelectedVariant(product,requestedVariant);
+  if(!variant)return{
+    variant:null,
+    shipping_enabled:product?.shipping_enabled===true,
+    shipping_package_profile:String(product?.shipping_package_profile||''),
+    shipping_weight_value:Number(product?.shipping_weight_value||0),
+    shipping_weight_unit:String(product?.shipping_weight_unit||'lb')
+  };
+  const hasVariantFlag=variant.shippingEnabled!==undefined||variant.shipping_enabled!==undefined;
+  const enabled=hasVariantFlag?Boolean(variant.shippingEnabled??variant.shipping_enabled):product?.shipping_enabled===true;
+  return{
+    variant,
+    shipping_enabled:enabled,
+    shipping_package_profile:String(variant.shippingPackageProfile||variant.shipping_package_profile||product?.shipping_package_profile||''),
+    shipping_weight_value:Number(variant.shippingWeightValue??variant.shipping_weight_value??product?.shipping_weight_value??0),
+    shipping_weight_unit:String(variant.shippingWeightUnit||variant.shipping_weight_unit||product?.shipping_weight_unit||'lb')
+  };
+}
+
 function isDigital(p){
   return String(p?.operational_type||'').toLowerCase()==='digital' ||
     String(p?.product_type||'').toLowerCase()==='digital' ||
@@ -104,7 +134,7 @@ function resolveOrigin(company,logistics){
 function validAddress(a){return Boolean(a?.name&&a?.street1&&a?.city&&/^[A-Z]{2}$/.test(a?.state||'')&&/^\d{5}(?:-\d{4})?$/.test(a?.zip||'')&&a?.country)}
 function quoteFingerprint(items,customer){
   const itemKey=[...items].sort((a,b)=>String(a.sku).localeCompare(String(b.sku))).map(i=>[
-    String(i.sku||''),Number(i.qty||1),String(i.shipping_package_profile||''),
+    String(i.sku||''),String(i.selected_variant||i.variant||''),Number(i.qty||1),String(i.shipping_package_profile||''),
     Number(i.shipping_weight_value||0),String(i.shipping_weight_unit||'')
   ]);
   const destination=[
@@ -175,12 +205,13 @@ exports.handler=async(event)=>{
     const customer=body.customer||{};
     if(!requested.length)return response(400,{error:'EMPTY_CART'});
     const skus=[...new Set(requested.map(i=>safeText(i.sku,60)).filter(Boolean))];
-    const rows=await sb(`products?sku=in.(${skus.map(s=>`"${s.replace(/"/g,'')}"`).join(',')})&select=id,sku,status,operational_type,product_type,shipping_enabled,shipping_package_profile,shipping_weight_value,shipping_weight_unit`);
+    const rows=await sb(`products?sku=in.(${skus.map(s=>`"${s.replace(/"/g,'')}"`).join(',')})&select=id,sku,status,operational_type,product_type,shipping_enabled,shipping_package_profile,shipping_weight_value,shipping_weight_unit,variants`);
     const bySku=new Map(rows.map(p=>[String(p.sku),p]));
     const physical=requested.map(raw=>{
       const p=bySku.get(String(raw.sku));
       if(!p)throw new Error('PRODUCT_NOT_AVAILABLE');
-      return{...p,qty:Math.max(1,Math.min(99,Number(raw.qty||1)))};
+      const shipping=variantShippingConfig(p,raw.variant||'');
+      return{...p,...shipping,selected_variant:raw.variant||'',qty:Math.max(1,Math.min(99,Number(raw.qty||1)))};
     }).filter(p=>!isDigital(p));
     if(!physical.length)return response(400,{error:'NO_PHYSICAL_ITEMS'});
     if(!physical.every(p=>p.shipping_enabled===true))return response(409,{error:'SHIPPING_NOT_AVAILABLE_FOR_CART'});

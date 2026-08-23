@@ -25,6 +25,36 @@ function centralDateKey(date=new Date()){
 }
 function dateValue(v){const s=String(v||'').trim();return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:''}
 
+
+function variantText(v){return String(v||'').trim().toLowerCase()}
+function resolveSelectedVariant(product,requestedVariant){
+  const requested=variantText(requestedVariant);
+  const variants=Array.isArray(product?.variants)?product.variants:[];
+  if(!requested||!variants.length)return null;
+  return variants.find(v=>[
+    v?.name,v?.labelEs,v?.labelEn,v?.label_es,v?.label_en,v?.label
+  ].some(value=>variantText(value)===requested))||null;
+}
+function variantShippingConfig(product,requestedVariant){
+  const variant=resolveSelectedVariant(product,requestedVariant);
+  if(!variant)return{
+    variant:null,
+    shipping_enabled:product?.shipping_enabled===true,
+    shipping_package_profile:String(product?.shipping_package_profile||''),
+    shipping_weight_value:Number(product?.shipping_weight_value||0),
+    shipping_weight_unit:String(product?.shipping_weight_unit||'lb')
+  };
+  const hasVariantFlag=variant.shippingEnabled!==undefined||variant.shipping_enabled!==undefined;
+  const enabled=hasVariantFlag?Boolean(variant.shippingEnabled??variant.shipping_enabled):product?.shipping_enabled===true;
+  return{
+    variant,
+    shipping_enabled:enabled,
+    shipping_package_profile:String(variant.shippingPackageProfile||variant.shipping_package_profile||product?.shipping_package_profile||''),
+    shipping_weight_value:Number(variant.shippingWeightValue??variant.shipping_weight_value??product?.shipping_weight_value??0),
+    shipping_weight_unit:String(variant.shippingWeightUnit||variant.shipping_weight_unit||product?.shipping_weight_unit||'lb')
+  };
+}
+
 exports.handler=async(event)=>{
   if(event.httpMethod!=='POST')return{statusCode:405,headers:JSON_HEADERS,body:JSON.stringify({error:'METHOD_NOT_ALLOWED'})};
   try{
@@ -32,12 +62,16 @@ exports.handler=async(event)=>{
     const items=Array.isArray(body.items)?body.items:[];
     if(!items.length)return{statusCode:400,headers:JSON_HEADERS,body:JSON.stringify({error:'EMPTY_CART'})};
     const skus=[...new Set(items.map(i=>safeText(i.sku,60)).filter(Boolean))];
-    const rows=await sb(`products?sku=in.(${skus.map(s=>`"${s.replace(/"/g,'')}"`).join(',')})&select=id,sku,status,operational_type,product_type,local_delivery_enabled,shipping_enabled,shipping_package_profile,shipping_weight_value,shipping_weight_unit`);
+    const rows=await sb(`products?sku=in.(${skus.map(s=>`"${s.replace(/"/g,'')}"`).join(',')})&select=id,sku,status,operational_type,product_type,local_delivery_enabled,shipping_enabled,shipping_package_profile,shipping_weight_value,shipping_weight_unit,variants`);
     const bySku=new Map((rows||[]).map(p=>[String(p.sku),p]));
     const products=skus.map(s=>bySku.get(s)).filter(Boolean);
     if(products.length!==skus.length)return{statusCode:409,headers:JSON_HEADERS,body:JSON.stringify({error:'PRODUCT_NOT_AVAILABLE'})};
 
-    const physical=products.filter(p=>!isDigital(p));
+    const physical=items.map(item=>{
+      const product=bySku.get(String(item.sku));
+      if(!product||isDigital(product))return null;
+      return{...product,_requestedVariant:item.variant||'',_shipping:variantShippingConfig(product,item.variant||'')};
+    }).filter(Boolean);
     if(!physical.length)return{statusCode:200,headers:JSON_HEADERS,body:JSON.stringify({digitalOnly:true,localDeliveryEligible:false,shippingEligible:false})};
 
     const settingsRows=await sb('nurai_settings?section=eq.logistics&select=settings&limit=1');
@@ -46,14 +80,15 @@ exports.handler=async(event)=>{
     const activeProfiles=new Set(profiles.filter(p=>p&&p.active!==false).map(p=>String(p.id||p.key||p.name||'')).filter(Boolean));
 
     const localDeliveryEligible=physical.every(p=>p.local_delivery_enabled!==false);
-    const shippingFlagEligible=physical.every(p=>p.shipping_enabled===true);
+    const shippingFlagEligible=physical.every(p=>p._shipping?.shipping_enabled===true);
     const setupProblems=[];
     physical.forEach(p=>{
-      if(p.shipping_enabled!==true)return;
-      if(!(Number(p.shipping_weight_value)>0))setupProblems.push({sku:p.sku,reason:'MISSING_WEIGHT'});
-      const profile=String(p.shipping_package_profile||'');
-      if(!profile)setupProblems.push({sku:p.sku,reason:'MISSING_PACKAGE_PROFILE'});
-      else if(!activeProfiles.has(profile)) setupProblems.push({sku:p.sku,reason:'PACKAGE_PROFILE_INACTIVE'});
+      const shipping=p._shipping||{};
+      if(shipping.shipping_enabled!==true)return;
+      if(!(Number(shipping.shipping_weight_value)>0))setupProblems.push({sku:p.sku,variant:p._requestedVariant||null,reason:'MISSING_WEIGHT'});
+      const profile=String(shipping.shipping_package_profile||'');
+      if(!profile)setupProblems.push({sku:p.sku,variant:p._requestedVariant||null,reason:'MISSING_PACKAGE_PROFILE'});
+      else if(!activeProfiles.has(profile)) setupProblems.push({sku:p.sku,variant:p._requestedVariant||null,reason:'PACKAGE_PROFILE_INACTIVE'});
     });
     const shippingConfigured=logistics.shipping_enabled===true;
     const shippingEligible=shippingConfigured&&shippingFlagEligible&&setupProblems.length===0;

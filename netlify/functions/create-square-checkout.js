@@ -82,9 +82,39 @@ function packageProfiles(settings) {
   return new Set(profiles.filter(p => p && p.active !== false).map(p => String(p.id || p.key || p.name || '')).filter(Boolean));
 }
 
+
+function variantText(v){return String(v||'').trim().toLowerCase()}
+function resolveSelectedVariant(product,requestedVariant){
+  const requested=variantText(requestedVariant);
+  const variants=Array.isArray(product?.variants)?product.variants:[];
+  if(!requested||!variants.length)return null;
+  return variants.find(v=>[
+    v?.name,v?.labelEs,v?.labelEn,v?.label_es,v?.label_en,v?.label
+  ].some(value=>variantText(value)===requested))||null;
+}
+function variantShippingConfig(product,requestedVariant){
+  const variant=resolveSelectedVariant(product,requestedVariant);
+  if(!variant)return{
+    variant:null,
+    shipping_enabled:product?.shipping_enabled===true,
+    shipping_package_profile:String(product?.shipping_package_profile||''),
+    shipping_weight_value:Number(product?.shipping_weight_value||0),
+    shipping_weight_unit:String(product?.shipping_weight_unit||'lb')
+  };
+  const hasVariantFlag=variant.shippingEnabled!==undefined||variant.shipping_enabled!==undefined;
+  const enabled=hasVariantFlag?Boolean(variant.shippingEnabled??variant.shipping_enabled):product?.shipping_enabled===true;
+  return{
+    variant,
+    shipping_enabled:enabled,
+    shipping_package_profile:String(variant.shippingPackageProfile||variant.shipping_package_profile||product?.shipping_package_profile||''),
+    shipping_weight_value:Number(variant.shippingWeightValue??variant.shipping_weight_value??product?.shipping_weight_value??0),
+    shipping_weight_unit:String(variant.shippingWeightUnit||variant.shipping_weight_unit||product?.shipping_weight_unit||'lb')
+  };
+}
+
 function shippingQuoteFingerprint(items, customer) {
   const itemKey=[...items].sort((a,b)=>String(a.sku).localeCompare(String(b.sku))).map(i=>[
-    String(i.sku||''),Number(i.qty||1),String(i.shippingPackageProfile||''),
+    String(i.sku||''),String(i.variant||''),Number(i.qty||1),String(i.shippingPackageProfile||''),
     Number(i.shippingWeightValue||0),String(i.shippingWeightUnit||'')
   ]);
   const destination=[
@@ -209,14 +239,16 @@ exports.handler = async (event) => {
       const unitCost = Math.max(0, productionCost + packagingCost + logisticsCost);
       const taxStatus = ['food_exempt','physical_taxable','digital_taxable','digital_review'].includes(String(p.tax_status || '')) ? String(p.tax_status) : (digital ? 'digital_review' : (p.taxable === true ? 'physical_taxable' : 'food_exempt'));
       if (digital && !safeText(p.digital_file_path,500)) throw new Error('DIGITAL_FILE_MISSING');
+      const selectedVariant = safeText(raw.variant, 120);
+      const shipping = variantShippingConfig(p, selectedVariant);
       return {
-        sku: p.sku, productId: p.id || null, name: productName(p), variant: safeText(raw.variant, 120),
+        sku: p.sku, productId: p.id || null, name: productName(p), variant: selectedVariant,
         qty, unitCents, unitCost, digital, taxStatus, digitalFilePath: safeText(p.digital_file_path,500),
         localDeliveryEnabled: digital ? false : p.local_delivery_enabled !== false,
-        shippingEnabled: digital ? false : p.shipping_enabled === true,
-        shippingPackageProfile: safeText(p.shipping_package_profile,120),
-        shippingWeightValue: Number(p.shipping_weight_value || 0),
-        shippingWeightUnit: safeText(p.shipping_weight_unit,10) || 'lb'
+        shippingEnabled: digital ? false : shipping.shipping_enabled,
+        shippingPackageProfile: safeText(shipping.shipping_package_profile,120),
+        shippingWeightValue: Number(shipping.shipping_weight_value || 0),
+        shippingWeightUnit: safeText(shipping.shipping_weight_unit,10) || 'lb'
       };
     });
     const hasPhysicalItems = validated.some(i => !i.digital);
