@@ -177,8 +177,15 @@
   const methodStatus=document.getElementById('checkoutFulfillmentStatus');
   if(methodBlock){methodBlock.hidden=digitalOnly;methodBlock.style.display=digitalOnly?'none':'';}
   const outsideLocalArea=Boolean(addressVerified&&zip.length===5&&localDeliveryEligible&&!zone);
-  if(localRow)localRow.hidden=!localDeliveryEligible||outsideLocalArea;
-  if(shippingRow)shippingRow.hidden=!shippingEligible;
+  if(localRow){
+   const hideLocal=!localDeliveryEligible||outsideLocalArea;
+   localRow.hidden=hideLocal;
+   localRow.style.display=hideLocal?'none':'';
+  }
+  if(shippingRow){
+   shippingRow.hidden=!shippingEligible;
+   shippingRow.style.display=!shippingEligible?'none':'';
+  }
   if(localRadio){localRadio.checked=selectedFulfillment==='delivery';localRadio.disabled=!localDeliveryEligible||outsideLocalArea;}
   if(shippingRadio){shippingRadio.checked=selectedFulfillment==='shipping';shippingRadio.disabled=!shippingEligible;}
   if(methodStatus&&!digitalOnly){
