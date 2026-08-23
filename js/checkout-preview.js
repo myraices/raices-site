@@ -30,7 +30,7 @@
  async function loadFulfillmentOptions(){
   if(digitalOnly){fulfillmentOptionsReady=true;selectedFulfillment='digital';return;}
   try{
-   const res=await fetch('/.netlify/functions/fulfillment-options',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:items.map(i=>({sku:i.sku,qty:i.qty}))})});
+   const res=await fetch(`/.netlify/functions/fulfillment-options?ts=${Date.now()}`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''}))})});
    const body=await res.json().catch(()=>({}));
    if(!res.ok)throw new Error(body.error||'FULFILLMENT_OPTIONS_UNAVAILABLE');
    localDeliveryEligible=body.localDeliveryEligible===true;
@@ -114,6 +114,10 @@
  }
  async function loadShippingRates(force=false){
   if(digitalOnly||selectedFulfillment!=='shipping'||!shippingEligible||!addressVerified)return;
+  if(force){
+   await loadFulfillmentOptions();
+   if(!shippingEligible)return;
+  }
   const data=save();
   if(!shippingStateAllowed(data.state))return;
   const key=shippingQuoteKey(data);
@@ -121,7 +125,7 @@
   lastShippingQuoteKey=key;shippingRatesLoading=true;shippingRateError='';shippingRates=[];shippingShipmentId='';selectedShippingRateId='';
   render();
   try{
-   const res=await fetch('/.netlify/functions/shipping-rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   const res=await fetch(`/.netlify/functions/shipping-rates?ts=${Date.now()}`,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','Cache-Control':'no-cache'},body:JSON.stringify({
     items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),
     customer:{...data,zip:zipNorm(data.zip)}
    })});
@@ -405,5 +409,15 @@
    paymentMessage(messages[code]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
   }
  });
+ async function refreshLiveFulfillmentSettings(){
+  if(digitalOnly)return;
+  try{
+   await loadFulfillmentOptions();
+   render();
+  }catch(err){console.warn('Live fulfillment refresh failed',err)}
+ }
+ window.addEventListener('pageshow',event=>{if(event.persisted)setTimeout(refreshLiveFulfillmentSettings,80)});
+ window.addEventListener('focus',()=>{setTimeout(refreshLiveFulfillmentSettings,80)});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(refreshLiveFulfillmentSettings,80)});
  (async()=>{await Promise.all([loadDeliveryConfig(),loadFulfillmentOptions()]);render();hydrateFromAccount();loadDefaultAddress();if(!digitalOnly)initAddressAutocomplete();})();
 })();
