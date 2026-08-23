@@ -496,7 +496,7 @@
           <p class="modal-description">${productDescription(p)}</p>
           <div class="product-meta modal-meta">${productMeta(p)}</div>
           ${variantBlock}
-          <div class="modal-price-row"><div><strong id="modalVariantPrice">${money(hasVariants ? (p.variants[0]?.price ?? p.price) : p.price)}</strong><span id="modalVariantSoldOut" class="sold-out-label" ${selectedVariantAvailable?'hidden':''}>${t('sold_out')}</span></div><div class="modal-buy-controls" id="modalBuyControls" ${selectedVariantAvailable?'':'hidden'}><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${selectedVariantSku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div></div>
+          <div class="modal-price-row"><div><strong id="modalVariantPrice">${money(hasVariants ? (p.variants[0]?.price ?? p.price) : p.price)}</strong><span id="modalVariantSoldOut" class="sold-out-label" style="display:${selectedVariantAvailable?'none':'inline-flex'}">${t('sold_out')}</span></div><div class="modal-buy-controls" id="modalBuyControls" style="display:${selectedVariantAvailable?'flex':'none'}"><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${selectedVariantSku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div></div>
           <div class="modal-sections product-accordion">
             <details open><summary>${t('benefits')}</summary><div><ul>${benefits}</ul></div></details>
             <details><summary>${t('ingredients')}</summary><div><p>${localizedIngredients(p)}</p></div></details>
@@ -526,8 +526,14 @@
         const modalBuyControls=productModalContent.querySelector('#modalBuyControls');
         const available=this.dataset.variantAvailable!=='false';
         if(modalVariantPrice)modalVariantPrice.textContent=money(Number(this.dataset.variantPrice||p.price));
-        if(modalVariantSoldOut)modalVariantSoldOut.hidden=available;
-        if(modalBuyControls)modalBuyControls.hidden=!available;
+        if(modalVariantSoldOut){
+          modalVariantSoldOut.hidden=available;
+          modalVariantSoldOut.style.display=available?'none':'inline-flex';
+        }
+        if(modalBuyControls){
+          modalBuyControls.hidden=!available;
+          modalBuyControls.style.display=available?'flex':'none';
+        }
       });
     });
 
