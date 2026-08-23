@@ -146,29 +146,52 @@ function quoteFingerprint(items,customer){
 function parcelGroups(items,profiles){
   const profileMap=new Map(profiles.filter(p=>p&&p.active!==false).map(p=>[String(p.id||p.key||p.name||''),p]));
   const groups=new Map();
+
+  // Group products that use the same physical package profile.
   for(const item of items){
     const profileId=String(item.shipping_package_profile||'');
     const profile=profileMap.get(profileId);
     if(!profile)throw new Error(`PACKAGE_PROFILE_MISSING:${item.sku}`);
+
     const productWeightOz=weightToOz(item.shipping_weight_value,item.shipping_weight_unit);
     if(productWeightOz<=0)throw new Error(`PRODUCT_WEIGHT_MISSING:${item.sku}`);
-    if(!groups.has(profileId))groups.set(profileId,{profile,weightOz:0,skus:[]});
+
+    if(!groups.has(profileId))groups.set(profileId,{profile,units:[]});
     const group=groups.get(profileId);
-    group.weightOz+=productWeightOz*Number(item.qty||1);
-    group.skus.push(item.sku);
+    const qty=Math.max(1,Number(item.qty||1));
+    for(let index=0;index<qty;index++){
+      group.units.push({sku:item.sku,weightOz:productWeightOz});
+    }
   }
-  return [...groups.values()].map(({profile,weightOz,skus})=>{
+
+  const parcels=[];
+  for(const {profile,units} of groups.values()){
     const emptyOz=weightToOz(profile.empty_weight,profile.weight_unit);
     const length=dimensionToIn(profile.length,profile.dimension_unit);
     const width=dimensionToIn(profile.width,profile.dimension_unit);
     const height=dimensionToIn(profile.height,profile.dimension_unit);
     if(!(length>0&&width>0&&height>0))throw new Error(`PACKAGE_DIMENSIONS_MISSING:${profile.name||'profile'}`);
-    return{
-      length:length.toFixed(2),width:width.toFixed(2),height:height.toFixed(2),distance_unit:'in',
-      weight:Math.max(.1,weightOz+emptyOz).toFixed(2),mass_unit:'oz',
-      metadata:`Raices ${safeText(profile.name,50)} · ${skus.join(',').slice(0,70)}`
-    };
-  });
+
+    // Backward compatibility: old profiles without capacity default to 1 unit
+    // per physical package, which is the safest operational assumption.
+    const capacity=Math.max(1,Math.floor(Number(profile.max_units_per_package)||1));
+
+    for(let offset=0;offset<units.length;offset+=capacity){
+      const chunk=units.slice(offset,offset+capacity);
+      const productWeight=chunk.reduce((sum,unit)=>sum+unit.weightOz,0);
+      const skus=chunk.map(unit=>unit.sku);
+      parcels.push({
+        length:length.toFixed(2),
+        width:width.toFixed(2),
+        height:height.toFixed(2),
+        distance_unit:'in',
+        weight:Math.max(.1,productWeight+emptyOz).toFixed(2),
+        mass_unit:'oz',
+        metadata:`Raices ${safeText(profile.name,44)} · ${chunk.length}/${capacity} units · ${skus.join(',').slice(0,52)}`
+      });
+    }
+  }
+  return parcels;
 }
 async function shippo(path,options={}){
   const token=String(process.env.SHIPPO_API_TOKEN||'').trim();
