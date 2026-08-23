@@ -166,8 +166,12 @@
    shippingRates=[];shippingShipmentId='';selectedShippingRateId='';shippingRateError='';lastShippingQuoteKey='';
   }
   const rate=selectedShippingRate();
-  const shippingFree=Boolean(isShipping&&rate&&freeShippingActive&&(freeShippingThreshold===0||physicalSubtotal>=freeShippingThreshold));
-  const delivery=digitalOnly?0:(isShipping?(shippingFree?0:Number(rate?.amount||0)):(zone&&items.length?(qualifies?0:Number(zone.fee||0)):0));
+  const shippingPromoQualifies=Boolean(isShipping&&freeShippingEnabled&&freeShippingActive&&(freeShippingThreshold===0||physicalSubtotal>=freeShippingThreshold));
+  const cheapestShippingAmount=shippingRates.length?Math.min(...shippingRates.map(r=>Number(r.amount||0)).filter(v=>Number.isFinite(v)&&v>=0)):0;
+  const shippingCredit=shippingPromoQualifies?cheapestShippingAmount:0;
+  const effectiveShippingCharge=rate?Math.max(0,Number(rate.amount||0)-shippingCredit):0;
+  const shippingFree=Boolean(rate&&shippingPromoQualifies&&effectiveShippingCharge<=0.001);
+  const delivery=digitalOnly?0:(isShipping?effectiveShippingCharge:(zone&&items.length?(qualifies?0:Number(zone.fee||0)):0));
 
   const methodBlock=document.getElementById('checkoutFulfillmentBlock');
   const localRow=document.getElementById('fulfillmentLocalRow');
@@ -218,7 +222,11 @@
     ratesList.innerHTML=curated.map(({rate:r,labelKey})=>{
       const checked=String(r.id)===String(selectedShippingRateId)?' checked':'';
       const days=r.estimatedDays?tr(`${r.estimatedDays} día${r.estimatedDays===1?'':'s'} estimado${r.estimatedDays===1?'':'s'}`,`${r.estimatedDays} estimated day${r.estimatedDays===1?'':'s'}`):(r.durationTerms||'');
-      return `<label class="checkout-shipping-rate"><input type="radio" name="shippingRate" value="${String(r.id).replace(/"/g,'&quot;')}"${checked}><span><em class="checkout-shipping-rate__category">${rateCategoryLabel(labelKey)}</em><strong>${r.provider||''} · ${r.service||'Shipping'}</strong>${days?`<small>${days}</small>`:''}</span><b>${money(r.amount)}</b></label>`;
+      const effective=shippingPromoQualifies?Math.max(0,Number(r.amount||0)-shippingCredit):Number(r.amount||0);
+      const priceLabel=shippingPromoQualifies&&effective<=0.001
+        ? tr('Gratis','Free')
+        : money(effective);
+      return `<label class="checkout-shipping-rate"><input type="radio" name="shippingRate" value="${String(r.id).replace(/"/g,'&quot;')}"${checked}><span><em class="checkout-shipping-rate__category">${rateCategoryLabel(labelKey)}</em><strong>${r.provider||''} · ${r.service||'Shipping'}</strong>${days?`<small>${days}</small>`:''}</span><b>${priceLabel}</b></label>`;
     }).join('');
    }
   }
@@ -229,7 +237,7 @@
   previewTotal.textContent=money(subtotal+delivery);
   checkoutEta.textContent=digitalOnly?tr('Acceso digital después de confirmar el pago.','Digital access after payment is confirmed.'):isShipping?(rate?(rate.estimatedDays?tr(`Aproximadamente ${rate.estimatedDays} día${rate.estimatedDays===1?'':'s'} hábil${rate.estimatedDays===1?'':'es'}.`,`Approximately ${rate.estimatedDays} business day${rate.estimatedDays===1?'':'s'}.`):(rate.durationTerms||tr('Según el servicio seleccionado.','Based on the selected service.'))):tr('Selecciona una opción de Shipping.','Select a Shipping option.')):(items.length?`${eta()} · ${tr('normalmente dentro de 24–48 horas.','normally within 24–48 hours.')}`:tr('Agrega productos para calcular la entrega.','Add products to calculate delivery.'));
   const left=Math.max(0,freeAt-physicalSubtotal);
-  freeDeliveryProgress.textContent=digitalOnly?tr('Los productos digitales no tienen cargo de delivery.','Digital products have no delivery charge.'):isShipping?(shippingFree?tr('Has desbloqueado Shipping gratis.','You unlocked free Shipping.'):(freeShippingActive&&freeShippingThreshold>0?`${tr('Agrega','Add')} ${money(Math.max(0,freeShippingThreshold-physicalSubtotal))} ${tr('más para Shipping gratis.','more for free Shipping.')}`:'')):(!freeDeliveryEnabled?'':!freeDeliveryActive?(freeDeliveryStartDate?`${tr('Delivery gratis disponible desde','Free delivery available from')} ${freeDeliveryStartDate}.`:''):freeAt===0?tr('Delivery gratis en todas las compras físicas.','Free delivery on all physical purchases.'):qualifies?tr('Has desbloqueado delivery gratis.','You unlocked free delivery.'):`${tr('Agrega','Add')} ${money(left)} ${tr('más en productos físicos para delivery gratis.','more in physical products for free delivery.')}`);
+  freeDeliveryProgress.textContent=digitalOnly?tr('Los productos digitales no tienen cargo de delivery.','Digital products have no delivery charge.'):isShipping?(shippingPromoQualifies?tr('Has desbloqueado Shipping gratis en la opción económica. Los servicios superiores solo cobran la diferencia.','You unlocked free Shipping on the economy option. Faster services only charge the difference.'):(freeShippingActive&&freeShippingThreshold>0?`${tr('Agrega','Add')} ${money(Math.max(0,freeShippingThreshold-physicalSubtotal))} ${tr('más para Shipping gratis.','more for free Shipping.')}`:'')):(!freeDeliveryEnabled?'':!freeDeliveryActive?(freeDeliveryStartDate?`${tr('Delivery gratis disponible desde','Free delivery available from')} ${freeDeliveryStartDate}.`:''):freeAt===0?tr('Delivery gratis en todas las compras físicas.','Free delivery on all physical purchases.'):qualifies?tr('Has desbloqueado delivery gratis.','You unlocked free delivery.'):`${tr('Agrega','Add')} ${money(left)} ${tr('más en productos físicos para delivery gratis.','more in physical products for free delivery.')}`);
 
   const status=document.getElementById('checkoutGoogleAddressStatus');if(status){status.dataset.state=addressVerified?'ok':'idle';status.textContent=addressVerified?tr('Dirección verificada por Google.','Address verified by Google.'):tr('Selecciona una dirección completa de las sugerencias de Google.','Select a complete address from Google suggestions.')}
   const msg=checkoutDeliveryMessage;

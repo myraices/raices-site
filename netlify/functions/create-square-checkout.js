@@ -308,10 +308,23 @@ exports.handler = async (event) => {
     const freeDeliveryApplies = fulfillmentType === 'delivery' && deliveryConfig.freeDelivery?.active && (freeThresholdCents === 0 || physicalSubtotal >= freeThresholdCents);
     const freeShipping = fulfillmentType === 'shipping' ? shippingPromotion(logistics, physicalSubtotal) : {qualifies:false};
     const carrierShippingCents = selectedShipping ? cents(selectedShipping.amount) : 0;
+
+    // Free Shipping covers the cheapest available service on this Shippo shipment.
+    // Faster services remain available, but the customer pays only the upgrade difference.
+    let freeShippingCreditCents = 0;
+    if (fulfillmentType === 'shipping' && freeShipping.qualifies && selectedShipping) {
+      const shipmentRates = Array.isArray(quotedShipment?.rates) ? quotedShipment.rates : [];
+      const validRateCents = shipmentRates
+        .filter(r => String(r.currency || r.currency_local || 'USD').toUpperCase() === 'USD')
+        .map(r => cents(r.amount))
+        .filter(v => Number.isFinite(v) && v > 0);
+      freeShippingCreditCents = validRateCents.length ? Math.min(...validRateCents) : carrierShippingCents;
+    }
+
     const deliveryCents = fulfillmentType === 'delivery'
       ? (freeDeliveryApplies ? 0 : cents(zone.fee))
       : fulfillmentType === 'shipping'
-        ? (freeShipping.qualifies ? 0 : carrierShippingCents)
+        ? Math.max(0, carrierShippingCents - freeShippingCreditCents)
         : 0;
     const hasTaxablePhysical = validated.some(i => i.taxStatus === 'physical_taxable');
     const hasTaxableItems = validated.some(i => i.taxStatus === 'physical_taxable' || i.taxStatus === 'digital_taxable');
@@ -434,6 +447,7 @@ exports.handler = async (event) => {
             ...selectedShipping,
             chargedAmount: deliveryCents / 100,
             freeShippingApplied: Boolean(freeShipping.qualifies),
+            freeShippingCredit: freeShippingCreditCents / 100,
             quotedAt: new Date().toISOString()
           } : null
         }
