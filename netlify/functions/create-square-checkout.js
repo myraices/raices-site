@@ -273,6 +273,7 @@ exports.handler = async (event) => {
     }
 
     let selectedShipping = null;
+    let quotedShipment = null;
     if (fulfillmentType === 'shipping') {
       if (logistics.shipping_enabled !== true) return response(409, { error: 'SHIPPING_DISABLED' }, origin);
       if (!physicalItems.every(i => i.shippingEnabled)) return response(409, { error: 'SHIPPING_NOT_AVAILABLE_FOR_CART' }, origin);
@@ -287,7 +288,7 @@ exports.handler = async (event) => {
       const rate = await shippoRate(requestedRateId);
       if (String(rate.shipment||'') !== requestedShipmentId) return response(409,{error:'SHIPPING_RATE_INVALID'},origin);
       if (String(rate.currency||'USD').toUpperCase() !== 'USD' || !(Number(rate.amount)>0)) return response(409,{error:'SHIPPING_RATE_INVALID'},origin);
-      const quotedShipment=await shippoGet(`/shipments/${encodeURIComponent(requestedShipmentId)}`);
+      quotedShipment=await shippoGet(`/shipments/${encodeURIComponent(requestedShipmentId)}`);
       const expectedFingerprint=shippingQuoteFingerprint(physicalItems,{...customer,zip});
       if(String(quotedShipment.metadata||'')!==`RQC:${expectedFingerprint}`)return response(409,{error:'SHIPPING_RATE_INVALID'},origin);
       selectedShipping = {
@@ -313,6 +314,9 @@ exports.handler = async (event) => {
     // Faster services remain available, but the customer pays only the upgrade difference.
     let freeShippingCreditCents = 0;
     if (fulfillmentType === 'shipping' && freeShipping.qualifies && selectedShipping) {
+      // quotedShipment was validated above for this exact cart/address/rate.
+      // It is intentionally kept in handler scope because Free Shipping needs
+      // all shipment rates to calculate the cheapest-service credit.
       const shipmentRates = Array.isArray(quotedShipment?.rates) ? quotedShipment.rates : [];
       const validRateCents = shipmentRates
         .filter(r => String(r.currency || r.currency_local || 'USD').toUpperCase() === 'USD')
