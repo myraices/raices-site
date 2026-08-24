@@ -344,7 +344,7 @@ exports.handler = async (event) => {
     const preTaxTotalCents = subtotal + deliveryCents;
     const taxCentsExpected = Number(taxResult.taxCents || 0);
 
-    console.log('[checkout] tax_calculated', { provider: taxResult.provider, state:taxResult.state, nexus:Boolean(taxResult.nexus), reason:taxResult.reason||null, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
+    console.log('[checkout] tax_calculated', { provider: taxResult.provider, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
     const pendingOrderPayload = {
       fulfillment_type: fulfillmentType,
       subtotal: subtotal / 100,

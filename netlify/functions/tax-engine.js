@@ -29,7 +29,7 @@ function normalizeSalesTax(input) {
   };
 }
 function zeroTaxResult({state,provider='manual-no-nexus',ruleName=null,nexus=false,reason='NO_NEXUS'}) {
-  return { provider, taxCents:0, ratePercent:0, freightTaxable:false, taxableAmountCents:0, state, ruleName, nexus, reason };
+  return {provider,taxCents:0,ratePercent:0,freightTaxable:false,taxableAmountCents:0,state,ruleName,nexus,reason};
 }
 function calculateManualTax({ customer, items, deliveryCents, salesTax }) {
   const state = normalizeState(customer?.state);
@@ -41,10 +41,10 @@ function calculateManualTax({ customer, items, deliveryCents, salesTax }) {
   if (!rule) return zeroTaxResult({state,reason:'STATE_NOT_CONFIGURED'});
   if (!rule.nexus) return zeroTaxResult({state,ruleName:rule.name||state,reason:'NEXUS_INACTIVE'});
   if (!rule.active) return zeroTaxResult({state,ruleName:rule.name||state,nexus:true,reason:'COLLECTION_INACTIVE'});
-  const itemsTaxableCents = taxableItems.reduce((sum, item) => sum + Number(item.unitCents || 0) * Number(item.qty || 0), 0);
-  const freightTaxable = config.taxDeliveryWhenTaxable && taxablePhysical.length > 0 && Number(deliveryCents || 0) > 0;
-  const taxableAmountCents = itemsTaxableCents + (freightTaxable ? Number(deliveryCents || 0) : 0);
-  const taxCents = Math.round(taxableAmountCents * Number(rule.rate) / 100);
+  const itemsTaxableCents = taxableItems.reduce((sum,item)=>sum+Number(item.unitCents||0)*Number(item.qty||0),0);
+  const freightTaxable = config.taxDeliveryWhenTaxable && taxablePhysical.length>0 && Number(deliveryCents||0)>0;
+  const taxableAmountCents = itemsTaxableCents + (freightTaxable?Number(deliveryCents||0):0);
+  const taxCents = Math.round(taxableAmountCents*Number(rule.rate)/100);
   return {provider:'manual-state-nexus',taxCents,ratePercent:Number(rule.rate),freightTaxable,taxableAmountCents,state,ruleName:rule.name||state,nexus:true,stateRatePercent:Number(rule.stateRate||0),sourceNote:rule.sourceNote||''};
 }
 
