@@ -1056,3 +1056,8 @@ img { height:auto; }
 .account-shipping-info{display:grid;gap:4px;margin:10px 0;padding:10px 12px;border:1px solid rgba(35,82,72,.13);border-radius:10px;background:rgba(250,248,241,.75);font-size:.82rem}
 .account-shipping-info span{color:rgba(31,60,55,.72)}
 .account-shipping-info a{width:max-content;color:#174f45;font-weight:800}
+
+/* SEO Phase 1 · crawlable discovery links */
+.seo-discovery-links{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 20px;padding:28px 20px;font-size:.86rem}
+.seo-discovery-links a{text-decoration:none}
+@media(max-width:640px){.seo-discovery-links{gap:10px 16px;padding:22px 16px}}
