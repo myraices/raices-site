@@ -41,3 +41,6 @@
   from = "/sitemaps/articles.xml"
   to = "/.netlify/functions/sitemap-articles"
   status = 200
+
+[functions]
+  node_bundler = "esbuild"

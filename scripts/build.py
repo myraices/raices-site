@@ -90,6 +90,15 @@ def apply_content_hash_cache_busting() -> None:
 
 
 def main() -> None:
+    # Netlify treats every .js file inside netlify/functions as a deployable function.
+    # Remove accidental test/spec files before the bundling stage so a stale test file
+    # in the repository cannot cancel a production deploy.
+    functions_dir = ROOT / "netlify" / "functions"
+    if functions_dir.exists():
+        for pattern in ("*.test.js", "*.spec.js"):
+            for test_file in functions_dir.glob(pattern):
+                test_file.unlink(missing_ok=True)
+
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
     if not api_key:
         raise SystemExit(
