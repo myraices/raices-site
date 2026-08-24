@@ -826,46 +826,60 @@ window.RAICES_PRODUCTS = [
     "relatedHint": "Combina con otros productos Raíces"
   },
   {
-    "sku": "RA-HM-001",
-    "category": "Home",
-    "collection": "Home Rituals",
-    "subcategory": "Home",
-    "name": "Signature Teapot",
-    "slug": "signature-teapot",
-    "description": "Tetera de vidrio Raíces con infusor integrado para preparar tu ritual de té con elegancia.",
-    "longDescription": "Signature Teapot pertenece a Home Rituals: una tetera de vidrio diseñada para preparar infusiones con calma, intención y una presencia visual limpia en la mesa.",
-    "unit": "Unidad",
-    "unitsPerPackage": 1,
-    "unitWeight": "",
-    "netWeight": "",
-    "price": 35.0,
-    "image": "assets/products/home/home-signature-teapot-round.webp",
-    "available": true,
-    "taxable": null,
-    "benefits": [
-      "Vidrio transparente para apreciar la infusión",
-      "Infusor integrado",
-      "Ideal para servir y compartir"
-    ],
-    "ingredients": "Vidrio, acero inoxidable y tapa de bambú según modelo.",
-    "conservation": "Lavar y cuidar según material. Evitar golpes o cambios bruscos de temperatura si aplica.",
-    "preparation": "Añade tu té favorito, vierte agua caliente y deja infusionar según el tipo de mezcla.",
-    "moment": "Rituales de té en casa, sobremesa o pausa consciente.",
-    "relatedHint": "Completa tu ritual",
-    "variants": [
-      {
-        "name": "teapot-round",
-        "labelEs": "Redonda",
-        "labelEn": "Round Teapot",
-        "image": "assets/products/home/home-signature-teapot-round.webp"
-      },
-      {
-        "name": "teapot-square",
-        "labelEs": "Cuadrada",
-        "labelEn": "Square Teapot",
-        "image": "assets/products/home/home-signature-teapot-square.webp"
-      }
-    ]
+      "sku": "RA-HM-001-SQ",
+      "category": "Home",
+      "collection": "Home Rituals",
+      "subcategory": "Home",
+      "name": "Signature Teapot · Cuadrada",
+      "slug": "signature-teapot-cuadrada",
+      "description": "Tetera de vidrio Raíces con infusor integrado para preparar tu ritual de té con elegancia.",
+      "longDescription": "Signature Teapot pertenece a Home Rituals: una tetera de vidrio diseñada para preparar infusiones con calma, intención y una presencia visual limpia en la mesa.",
+      "unit": "Unidad",
+      "unitsPerPackage": 1,
+      "unitWeight": "",
+      "netWeight": "",
+      "price": 10.0,
+      "image": "assets/products/home/home-signature-teapot-square.webp",
+      "available": true,
+      "taxable": null,
+      "benefits": [
+          "Vidrio transparente para apreciar la infusión",
+          "Infusor integrado",
+          "Ideal para servir y compartir"
+      ],
+      "ingredients": "Vidrio, acero inoxidable y tapa de bambú según modelo.",
+      "conservation": "Lavar y cuidar según material. Evitar golpes o cambios bruscos de temperatura si aplica.",
+      "preparation": "Añade tu té favorito, vierte agua caliente y deja infusionar según el tipo de mezcla.",
+      "moment": "Rituales de té en casa, sobremesa o pausa consciente.",
+      "relatedHint": "Completa tu ritual"
+  },
+  {
+      "sku": "RA-HM-001-RD",
+      "category": "Home",
+      "collection": "Home Rituals",
+      "subcategory": "Home",
+      "name": "Signature Teapot · Redonda",
+      "slug": "signature-teapot-redonda",
+      "description": "Tetera de vidrio Raíces con infusor integrado para preparar tu ritual de té con elegancia.",
+      "longDescription": "Signature Teapot pertenece a Home Rituals: una tetera de vidrio diseñada para preparar infusiones con calma, intención y una presencia visual limpia en la mesa.",
+      "unit": "Unidad",
+      "unitsPerPackage": 1,
+      "unitWeight": "",
+      "netWeight": "",
+      "price": 35.0,
+      "image": "assets/products/home/home-signature-teapot-round.webp",
+      "available": true,
+      "taxable": null,
+      "benefits": [
+          "Vidrio transparente para apreciar la infusión",
+          "Infusor integrado",
+          "Ideal para servir y compartir"
+      ],
+      "ingredients": "Vidrio, acero inoxidable y tapa de bambú según modelo.",
+      "conservation": "Lavar y cuidar según material. Evitar golpes o cambios bruscos de temperatura si aplica.",
+      "preparation": "Añade tu té favorito, vierte agua caliente y deja infusionar según el tipo de mezcla.",
+      "moment": "Rituales de té en casa, sobremesa o pausa consciente.",
+      "relatedHint": "Completa tu ritual"
   },
   {
     "sku": "RA-HM-006",

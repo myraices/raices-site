@@ -5,6 +5,9 @@
   const collectionMap = { arepas:"Signature Arepas", empanadas:"Signature Empanadas", "proteínas":"Protein Craft Collection", proteinas:"Protein Craft Collection", herbal:"Three Moments", postres:"Signature Desserts", home:"Home Rituals", "guías":"The Library", guias:"The Library" };
   const normalize = (value) => String(value || "").trim();
   const currentLanguage = () => window.raicesLang || localStorage.getItem("raices_lang") || "es";
+  const INDEPENDENT_SIGNATURE_TEAPOT_SKUS = new Set(["RA-HM-001-SQ","RA-HM-001-RD"]);
+  const isIndependentSignatureTeapot = (sku) => INDEPENDENT_SIGNATURE_TEAPOT_SKUS.has(normalize(sku).toUpperCase());
+
   const localized = (row, es, en) => currentLanguage() === "en" ? normalize(row[en]) || normalize(row[es]) : normalize(row[es]) || normalize(row[en]);
   const localizedArray = (row, es, en, legacy) => currentLanguage() === "en"
     ? (Array.isArray(row[en]) && row[en].length ? row[en] : (Array.isArray(row[es]) && row[es].length ? row[es] : (Array.isArray(row[legacy]) ? row[legacy] : [])))
@@ -55,16 +58,27 @@
         ? (row.stock === null ? null : Number(row.stock))
         : Math.max(0,Number(row._inventory_available||0)),
       tags: Array.isArray(row.tags) ? row.tags : [], taxable: row.taxable,
-      variants: Array.isArray(row.variants) ? row.variants : [],
-      webGroupKey: normalize(row.web_group_key),
-      webGroupSlug: normalize(row.web_group_slug),
-      webVariantLabelEs: normalize(row.web_variant_label_es),
-      webVariantLabelEn: normalize(row.web_variant_label_en),
-      webGroupPrimary: Boolean(row.web_group_primary),
+      variants: isIndependentSignatureTeapot(row.sku) ? [] : (Array.isArray(row.variants) ? row.variants : []),
+      webGroupKey: isIndependentSignatureTeapot(row.sku) ? "" : normalize(row.web_group_key),
+      webGroupSlug: isIndependentSignatureTeapot(row.sku) ? "" : normalize(row.web_group_slug),
+      webVariantLabelEs: isIndependentSignatureTeapot(row.sku) ? "" : normalize(row.web_variant_label_es),
+      webVariantLabelEn: isIndependentSignatureTeapot(row.sku) ? "" : normalize(row.web_variant_label_en),
+      webGroupPrimary: isIndependentSignatureTeapot(row.sku) ? false : Boolean(row.web_group_primary),
       source: "supabase",
       _localizedSource: row,
     };
-    return applyLocalization(product);
+    applyLocalization(product);
+    if (isIndependentSignatureTeapot(product.sku)) {
+      const square = normalize(product.sku).toUpperCase() === "RA-HM-001-SQ";
+      product.name = currentLanguage() === "en"
+        ? `Signature Teapot · ${square ? "Square" : "Round"}`
+        : `Signature Teapot · ${square ? "Cuadrada" : "Redonda"}`;
+      product.slug = square ? "signature-teapot-cuadrada" : "signature-teapot-redonda";
+      product.variants = [];
+      product.webGroupKey = "";
+      product.webGroupSlug = "";
+    }
+    return product;
   }
   function groupProductsForStore(items){
     const grouped=new Map();
