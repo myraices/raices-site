@@ -344,7 +344,7 @@ exports.handler = async (event) => {
     const preTaxTotalCents = subtotal + deliveryCents;
     const taxCentsExpected = Number(taxResult.taxCents || 0);
 
-    console.log('[checkout] tax_calculated', { provider: taxResult.provider, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
+    console.log('[checkout] tax_calculated', { provider: taxResult.provider, state:taxResult.state, nexus:Boolean(taxResult.nexus), reason:taxResult.reason||null, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
     const pendingOrderPayload = {
       fulfillment_type: fulfillmentType,
       subtotal: subtotal / 100,
@@ -439,6 +439,14 @@ exports.handler = async (event) => {
           items: pendingItemsPayload,
           expected: {
             tax_cents: taxCentsExpected,
+            tax_provider: taxResult.provider,
+            tax_state: taxResult.state || safeText(customer.state,20).toUpperCase(),
+            tax_rate_percent: Number(taxResult.ratePercent || 0),
+            tax_nexus: Boolean(taxResult.nexus),
+            tax_rule_name: taxResult.ruleName || null,
+            tax_reason: taxResult.reason || null,
+            freight_taxable: Boolean(taxResult.freightTaxable),
+            taxable_amount_cents: Number(taxResult.taxableAmountCents || 0),
             pre_tax_total_cents: preTaxTotalCents,
             fulfillment_type: fulfillmentType,
             shipping_rate_mode: fulfillmentType === 'shipping' ? 'shippo' : null
