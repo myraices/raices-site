@@ -228,6 +228,14 @@ function orderStatusKey(order){
 }
 function orderStatusLabel(order){
   const raw=orderStatusKey(order);
+  const isShipping=String(order?.fulfillment_type||"")==="shipping";
+  if(isShipping){
+    const shippingLabels={
+      es:{ready_for_delivery:"Listo para enviar",out_for_delivery:"Enviado",delivered:"Entregado"},
+      en:{ready_for_delivery:"Ready to ship",out_for_delivery:"Shipped",delivered:"Delivered"}
+    };
+    if(shippingLabels[state.lang]?.[raw])return shippingLabels[state.lang][raw];
+  }
   const labels={
     es:{pending_payment:"Pendiente de pago",paid:"Pagado",completed:"Pagado",processing:"En preparación",preparing:"En preparación",ready:"Listo",ready_to_prepare:"Listo para preparar",ready_for_delivery:"Listo para entregar",out_for_delivery:"En ruta",delivered:"Entregado",cancelled:"Cancelado",canceled:"Cancelado",refunded:"Reembolsado",partially_refunded:"Reembolso parcial",production_required:"Pendiente de producción"},
     en:{pending_payment:"Payment pending",paid:"Paid",completed:"Paid",processing:"Preparing",preparing:"Preparing",ready:"Ready",ready_to_prepare:"Ready to prepare",ready_for_delivery:"Ready for delivery",out_for_delivery:"Out for delivery",delivered:"Delivered",cancelled:"Cancelled",canceled:"Cancelled",refunded:"Refunded",partially_refunded:"Partial refund",production_required:"Production required"}

@@ -64,6 +64,7 @@ async function upsertOrderShipment(orderId, session, c){
   if(!orderId||!shipping)return;
   const row={
     order_id:orderId,
+    shipment_number:1,
     provider:shipping.provider||null,
     service:shipping.service||null,
     service_token:shipping.serviceToken||null,
@@ -80,7 +81,7 @@ async function upsertOrderShipment(orderId, session, c){
     is_test:shipping.test!==false,
     updated_at:new Date().toISOString()
   };
-  const r=await fetchJson(`${c.url}/rest/v1/order_shipments?on_conflict=order_id`,{
+  const r=await fetchJson(`${c.url}/rest/v1/order_shipments?on_conflict=order_id,shipment_number`,{
     method:'POST',
     headers:{...sbHeaders(c,'resolution=merge-duplicates,return=minimal')},
     body:JSON.stringify(row)

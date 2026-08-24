@@ -112,11 +112,11 @@ async function upsertCheckoutShipment(orderId, session) {
   const shipping=session?.payload?.shipping;
   if(!orderId||!shipping)return;
   const {url,key}=supabaseConfig();
-  const res=await fetch(`${url}/rest/v1/order_shipments?on_conflict=order_id`,{
+  const res=await fetch(`${url}/rest/v1/order_shipments?on_conflict=order_id,shipment_number`,{
     method:'POST',
     headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify({
-      order_id:orderId,provider:shipping.provider||null,service:shipping.service||null,
+      order_id:orderId,shipment_number:1,provider:shipping.provider||null,service:shipping.service||null,
       service_token:shipping.serviceToken||null,shippo_shipment_id:shipping.shipmentId||null,
       shippo_rate_id:shipping.rateId||null,quoted_amount:Number(shipping.amount||0),
       charged_amount:Number(shipping.chargedAmount??shipping.amount??0),currency:shipping.currency||'USD',
