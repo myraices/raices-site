@@ -3,3 +3,55 @@
 /* v128.3 performance */
 .product-grid, .seo-footer { content-visibility:auto; contain-intrinsic-size:1px 800px; }
 img { height:auto; }
+
+
+/* v3.1.27 · Dynamic product tags — storefront badge style */
+.product-feature-tags{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  gap:6px !important;
+  margin:10px 0 10px !important;
+}
+.product-feature-tags > span{
+  display:inline-flex !important;
+  flex:0 0 auto !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:auto !important;
+  min-width:0 !important;
+  min-height:23px !important;
+  margin:0 !important;
+  padding:5px 9px !important;
+  border:1px solid rgba(35,59,32,.14) !important;
+  border-radius:999px !important;
+  background:rgba(247,240,230,.92) !important;
+  color:#31543c !important;
+  font-size:.61rem !important;
+  font-weight:800 !important;
+  line-height:1 !important;
+  letter-spacing:.07em !important;
+  text-transform:uppercase !important;
+  white-space:nowrap !important;
+}
+.product-card-shop .product-feature-tags{
+  margin:9px 0 9px !important;
+}
+.product-card-shop .product-feature-tags > span{
+  min-height:22px !important;
+  padding:5px 8px !important;
+  font-size:.58rem !important;
+}
+.product-feature-tags--modal{
+  margin:12px 0 14px !important;
+}
+.product-feature-tags--modal > span,
+.product-feature-tags--page > span{
+  min-height:25px !important;
+  padding:6px 10px !important;
+  font-size:.64rem !important;
+}
+@media(max-width:640px){
+  .product-feature-tags{gap:5px !important}
+  .product-feature-tags > span{font-size:.57rem !important;padding:5px 8px !important}
+}
