@@ -10,6 +10,6 @@
 
 /blog        /blog.html    200
 /blog/       /blog.html    200
-/blog/*      /.netlify/functions/blog-article-ssr?slug=:splat 200!
+/blog/*      /.netlify/functions/blog-article-ssr 200!
 
 /sitemaps/articles.xml /.netlify/functions/sitemap-articles 200

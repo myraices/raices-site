@@ -47,6 +47,6 @@
 
 [[redirects]]
   from = "/blog/*"
-  to = "/.netlify/functions/blog-article-ssr?slug=:splat"
+  to = "/.netlify/functions/blog-article-ssr"
   status = 200
   force = true
