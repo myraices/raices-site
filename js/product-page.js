@@ -7,9 +7,25 @@
     : normalize(row[es]) || normalize(row[legacy]) || normalize(row[en]);
   const money = (value) => `$${Number(value || 0).toFixed(2)}`;
   const setText = (selector, value) => { const el = document.querySelector(selector); if (el && value) el.textContent = value; };
+  const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const setList = (selector, values) => {
     const el = document.querySelector(selector); if (!el || !Array.isArray(values) || !values.length) return;
-    el.innerHTML = values.map((item) => `<li>${String(item).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</li>`).join("");
+    el.innerHTML = values.map((item) => `<li>${escape(item)}</li>`).join("");
+  };
+  const setTags = (row) => {
+    const tags = lang() === "en"
+      ? (Array.isArray(row.tags_en) && row.tags_en.length ? row.tags_en : (Array.isArray(row.tags) ? row.tags : []))
+      : (Array.isArray(row.tags) ? row.tags : []);
+    let el = document.querySelector(".product-feature-tags--page");
+    if (!tags.length) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "product-feature-tags product-feature-tags--page";
+      el.setAttribute("aria-label", lang() === "en" ? "Product features" : "Características del producto");
+      const lead = document.querySelector(".product-copy .lead");
+      if (lead) lead.insertAdjacentElement("afterend", el);
+    }
+    el.innerHTML = tags.map(tag => `<span>${escape(tag)}</span>`).join("");
   };
   async function hydrate() {
     if (!window.raicesSupabase) return;
@@ -30,6 +46,7 @@
     setText(".product-copy h1", name);
     setText(".product-copy .lead", intro);
     setText(".product-copy .price", money(row.price));
+    setTags(row);
     setList(".details .detail:nth-child(1) ul", benefits);
     setText(".details .detail:nth-child(2) p", ingredients);
     setText(".details .detail:nth-child(3) p", conservation);

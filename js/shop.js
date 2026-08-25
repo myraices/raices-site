@@ -621,6 +621,7 @@
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
           <h2>${p.name}</h2><a class="modal-product-page-link" href="/products/${p.slug}/">${currentLang()==='es' ? 'Ver página del producto' : 'View product page'} →</a>
           <p class="modal-description">${productDescription(p)}</p>
+          ${productTagsHtml(p,{modal:true})}
           <div class="product-meta modal-meta">${productMeta(p)}</div>
           ${variantBlock}
           <div class="modal-price-row"><div><strong id="modalVariantPrice">${money(hasVariants ? (p.variants[0]?.price ?? p.price) : p.price)}</strong><span id="modalVariantSoldOut" class="sold-out-label" style="display:${selectedVariantAvailable?'none':'inline-flex'}">${t('sold_out')}</span></div><div class="modal-buy-controls" id="modalBuyControls" style="display:${selectedVariantAvailable?'flex':'none'}"><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${selectedVariantSku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div></div>
@@ -685,6 +686,16 @@
   }
 
 
+  function escapeProductTag(value){
+    return String(value ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function productTagsHtml(product,{limit=null,modal=false}={}){
+    const tags=Array.isArray(product?.tags)?product.tags.map(x=>String(x||"").trim()).filter(Boolean):[];
+    const visible=limit?tags.slice(0,limit):tags;
+    if(!visible.length)return "";
+    return `<div class="${modal?'product-feature-tags product-feature-tags--modal':'product-feature-tags'}" aria-label="${currentLang()==='es'?'Características del producto':'Product features'}">${visible.map(tag=>`<span>${escapeProductTag(tag)}</span>`).join("")}</div>`;
+  }
+
   function renderProducts(){
     let list = products.slice();
     if(activeCategory !== "All") list = list.filter(p => p.category === activeCategory);
@@ -729,6 +740,7 @@
           <h3><a class="product-seo-link" href="/products/${p.slug}/">${p.name}</a></h3>
         </div>
         <p>${p.cardDescription || productDescription(p)}</p>
+        ${productTagsHtml(p,{limit:3})}
         <div class="product-meta">${productMeta(p)}</div>
         <div class="product-details">
           <span>🌿 ${productBenefit(p)}</span>

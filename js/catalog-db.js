@@ -33,6 +33,9 @@
     product.preparation = localized(row,"preparation_text_es","preparation_text_en") || normalize(row.preparation_text);
     product.moment = localized(row,"moment_text_es","moment_text_en") || normalize(row.moment_text);
     product.relatedHint = localized(row,"related_hint_es","related_hint_en") || normalize(row.related_hint) || (currentLanguage() === "en" ? "Pair with other Raíces products" : "Combina con otros productos Raíces");
+    product.tags = currentLanguage() === "en"
+      ? (Array.isArray(row.tags_en) && row.tags_en.length ? row.tags_en : (Array.isArray(row.tags) ? row.tags : []))
+      : (Array.isArray(row.tags) ? row.tags : []);
     return product;
   }
   function toStoreProduct(row) {
@@ -57,7 +60,7 @@
       stock: row._inventory_available === null || row._inventory_available === undefined
         ? (row.stock === null ? null : Number(row.stock))
         : Math.max(0,Number(row._inventory_available||0)),
-      tags: Array.isArray(row.tags) ? row.tags : [], taxable: row.taxable,
+      tags: [], tagsEs: Array.isArray(row.tags) ? row.tags : [], tagsEn: Array.isArray(row.tags_en) ? row.tags_en : [], taxable: row.taxable,
       variants: isIndependentSignatureTeapot(row.sku) ? [] : (Array.isArray(row.variants) ? row.variants : []),
       webGroupKey: isIndependentSignatureTeapot(row.sku) ? "" : normalize(row.web_group_key),
       webGroupSlug: isIndependentSignatureTeapot(row.sku) ? "" : normalize(row.web_group_slug),

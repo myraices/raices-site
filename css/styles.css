@@ -1061,3 +1061,11 @@ img { height:auto; }
 .seo-discovery-links{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 20px;padding:28px 20px;font-size:.86rem}
 .seo-discovery-links a{text-decoration:none}
 @media(max-width:640px){.seo-discovery-links{gap:10px 16px;padding:22px 16px}}
+
+/* v3.1.25 · Dynamic bilingual product feature tags */
+.product-feature-tags{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 8px}
+.product-feature-tags span{display:inline-flex;align-items:center;min-height:28px;padding:5px 10px;border:1px solid rgba(35,59,32,.16);border-radius:999px;background:rgba(35,59,32,.055);font-size:.72rem;font-weight:650;line-height:1.15;letter-spacing:.01em}
+.product-feature-tags--modal{margin:14px 0}
+.product-feature-tags--modal span,.product-feature-tags--page span{font-size:.78rem;padding:6px 11px}
+.product-feature-tags--page{margin:16px 0 18px}
+@media(max-width:640px){.product-feature-tags{gap:6px}.product-feature-tags span{font-size:.7rem;padding:5px 9px}}
