@@ -44,3 +44,9 @@
 
 [functions]
   node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/blog/*"
+  to = "/.netlify/functions/blog-article-ssr?slug=:splat"
+  status = 200
+  force = true
