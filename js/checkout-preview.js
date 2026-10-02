@@ -98,19 +98,46 @@
   return key==='economy'?tr('Económico','Economy'):key==='standard'?tr('Estándar','Standard'):tr('Express','Express');
  }
  function selectedShippingRate(){return shippingRates.find(r=>String(r.id)===String(selectedShippingRateId))||null}
+ function getMissingShippingCustomerFields(customer){
+  const missing=[];
+  if(!String(customer?.name||'').trim())missing.push('name');
+  if(!String(customer?.address||'').trim())missing.push('address');
+  if(!String(customer?.city||'').trim())missing.push('city');
+  if(!/^[A-Z]{2}$/.test(String(customer?.state||'').trim().toUpperCase()))missing.push('state');
+  if(!/^\d{5}(?:-\d{4})?$/.test(String(customer?.zip||'').trim()))missing.push('zip');
+  return missing;
+ }
+ function shippingCustomerFieldLabel(field){
+  const labels={
+   name:tr('Nombre','Name'),
+   address:tr('Dirección','Address'),
+   city:tr('Ciudad','City'),
+   state:tr('Estado','State'),
+   zip:tr('Código postal','ZIP code')
+  };
+  return labels[field]||field;
+ }
  function shippingErrorText(code){
+  const raw=String(code||'');
+  const [baseCode,details]=raw.split('|',2);
   const messages={
    SHIPPING_ORIGIN_INCOMPLETE:tr('Completa la dirección de origen en NURAI → Configuración → Logística.','Complete the shipping origin address in NURAI → Settings → Logistics.'),
    SHIPPING_PACKAGE_PROFILE_MISSING:tr('Falta un perfil de empaque válido para uno de los productos.','A valid packaging profile is missing for one of the products.'),
    SHIPPING_PRODUCT_WEIGHT_MISSING:tr('Falta el peso de Shipping en uno de los productos.','A shipping weight is missing for one of the products.'),
    SHIPPING_PACKAGE_DIMENSIONS_MISSING:tr('Faltan dimensiones en el perfil de empaque.','The packaging profile is missing dimensions.'),
+   SHIPPING_CUSTOMER_DATA_INCOMPLETE:tr('Completa tus datos para ver las tarifas de envío.','Complete your details to see shipping rates.'),
+   SHIPPING_DESTINATION_INCOMPLETE:tr('La dirección de Shipping está incompleta.','The Shipping address is incomplete.'),
    SHIPPO_TOKEN_MISSING:tr('La conexión con Shippo todavía no está disponible.','The Shippo connection is not available yet.'),
    SHIPPO_RATE_REQUEST_FAILED:tr('Shippo no pudo obtener tarifas para esta dirección. Revisa los datos e intenta nuevamente.','Shippo could not retrieve rates for this address. Check the details and try again.'),
    SHIPPO_NETWORK_FAILED:tr('No pudimos conectar con Shippo. Intenta nuevamente; si continúa, revisaremos el diagnóstico de conexión.','We could not connect to Shippo. Try again; if it continues, we will review the connection diagnostic.'),
    NO_SHIPPING_RATES:tr('No encontramos opciones de Shipping para esta dirección.','No shipping options were found for this address.'),
    SHIPPING_RATES_UNAVAILABLE:tr('No pudimos calcular Shipping en este momento.','Shipping could not be calculated right now.')
   };
-  return messages[code]||messages.SHIPPING_RATES_UNAVAILABLE;
+  const base=messages[baseCode]||messages.SHIPPING_RATES_UNAVAILABLE;
+  if(baseCode==='SHIPPING_CUSTOMER_DATA_INCOMPLETE'&&details){
+   return `${base} ${tr('Falta:','Missing:')} ${details}.`;
+  }
+  return base;
  }
  async function loadShippingRates(force=false){
   if(digitalOnly||selectedFulfillment!=='shipping'||!shippingEligible||!addressVerified)return;
@@ -120,6 +147,16 @@
   }
   const data=save();
   if(!shippingStateAllowed(data.state))return;
+  const missingCustomerFields=getMissingShippingCustomerFields(data);
+  if(missingCustomerFields.length){
+   shippingRates=[];
+   shippingShipmentId='';
+   selectedShippingRateId='';
+   const names=missingCustomerFields.map(shippingCustomerFieldLabel).join(', ');
+   shippingRateError=`SHIPPING_CUSTOMER_DATA_INCOMPLETE|${names}`;
+   render();
+   return;
+  }
   const key=shippingQuoteKey(data);
   if(!force&&key===lastShippingQuoteKey&&(shippingRates.length||shippingRatesLoading))return;
   lastShippingQuoteKey=key;shippingRatesLoading=true;shippingRateError='';shippingRates=[];shippingShipmentId='';selectedShippingRateId='';
@@ -130,7 +167,10 @@
     customer:{...data,zip:zipNorm(data.zip)}
    })});
    const body=await res.json().catch(()=>({}));
-   if(!res.ok)throw new Error(body.error||'SHIPPING_RATES_UNAVAILABLE');
+   if(!res.ok){
+    if(body?.error)console.warn('Shipping rate request rejected',{error:body.error,missing:Array.isArray(body.missing)?body.missing:[]});
+    throw new Error(body.error||'SHIPPING_RATES_UNAVAILABLE');
+   }
    shippingRates=Array.isArray(body.rates)?body.rates:[];
    shippingShipmentId=String(body.shipmentId||'');
    if(shippingRates.length)selectedShippingRateId=String(shippingRates[0].id||'');

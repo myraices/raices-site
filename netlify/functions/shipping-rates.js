@@ -132,6 +132,16 @@ function resolveOrigin(company,logistics){
   };
 }
 function validAddress(a){return Boolean(a?.name&&a?.street1&&a?.city&&/^[A-Z]{2}$/.test(a?.state||'')&&/^\d{5}(?:-\d{4})?$/.test(a?.zip||'')&&a?.country)}
+function missingAddressFields(a){
+  const missing=[];
+  if(!a?.name)missing.push('name');
+  if(!a?.street1)missing.push('street1');
+  if(!a?.city)missing.push('city');
+  if(!/^[A-Z]{2}$/.test(a?.state||''))missing.push('state');
+  if(!/^\d{5}(?:-\d{4})?$/.test(a?.zip||''))missing.push('zip');
+  if(!a?.country)missing.push('country');
+  return missing;
+}
 function quoteFingerprint(items,customer){
   const itemKey=[...items].sort((a,b)=>String(a.sku).localeCompare(String(b.sku))).map(i=>[
     String(i.sku||''),String(i.selected_variant||i.variant||''),Number(i.qty||1),String(i.shipping_package_profile||''),
@@ -245,13 +255,13 @@ exports.handler=async(event)=>{
     if(logistics.shipping_enabled!==true)return response(409,{error:'SHIPPING_DISABLED'});
 
     const origin=resolveOrigin(company,logistics);
-    if(!validAddress(origin))return response(409,{error:'SHIPPING_ORIGIN_INCOMPLETE'});
+    if(!validAddress(origin))return response(409,{error:'SHIPPING_ORIGIN_INCOMPLETE',missing:missingAddressFields(origin)});
     const destination={
       name:safeText(customer.name,100),street1:safeText(customer.address,160),street2:safeText(customer.apt,100),
       city:safeText(customer.city,100),state:safeText(customer.state,2).toUpperCase(),zip:safeText(customer.zip,10),
       country:'US',phone:safeText(customer.phone,40),email:safeText(customer.email,180)
     };
-    if(!validAddress(destination))return response(400,{error:'SHIPPING_DESTINATION_INCOMPLETE'});
+    if(!validAddress(destination))return response(400,{error:'SHIPPING_DESTINATION_INCOMPLETE',missing:missingAddressFields(destination)});
 
     const parcels=parcelGroups(physical,Array.isArray(logistics.package_profiles)?logistics.package_profiles:[]);
     const fingerprint=quoteFingerprint(physical,{...customer,zip:destination.zip,state:destination.state});
