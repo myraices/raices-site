@@ -1113,3 +1113,14 @@ img { height:auto; }
   .product-feature-tags{gap:5px}
   .product-feature-tags span{font-size:.57rem;padding:4px 8px}
 }
+
+/* 3.1.30: essential package information is visible at every screen size. */
+.product-package-label{
+  display:block;
+  margin:6px 0 2px;
+  color:var(--forest,#233b20);
+  font-size:.82rem;
+  font-weight:700;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}

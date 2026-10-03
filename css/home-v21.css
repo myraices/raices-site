@@ -1774,3 +1774,24 @@ html.cms-preview-mode #inicio .hero-inner{min-height:100vh!important}
   .product-feature-tags{gap:5px !important}
   .product-feature-tags > span{font-size:.57rem !important;padding:5px 8px !important}
 }
+
+/* 3.1.30: essential package information is visible at every screen size. */
+.product-package-label{
+  display:block;
+  margin:6px 0 2px;
+  color:var(--forest,#233b20);
+  font-size:.82rem;
+  font-weight:700;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+
+@media(max-width:760px){
+  body.app-experience .product-package-label{
+    display:block;
+    margin:4px 0 6px;
+    font-size:12px;
+    line-height:1.35;
+  }
+  body.app-experience .product-body h3:has(+ .product-package-label){margin-bottom:0}
+}

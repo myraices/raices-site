@@ -5,6 +5,16 @@
   const collectionMap = { arepas:"Signature Arepas", empanadas:"Signature Empanadas", "proteínas":"Protein Craft Collection", proteinas:"Protein Craft Collection", herbal:"Three Moments", postres:"Signature Desserts", home:"Home Rituals", "guías":"The Library", guias:"The Library" };
   const normalize = (value) => String(value || "").trim();
   const currentLanguage = () => window.raicesLang || localStorage.getItem("raices_lang") || "es";
+  // Keep package quantity visible independently of optional card metadata.
+  window.RAICES_PACKAGE_LABEL = (product) => {
+    const count = Number(product?.unitsPerPackage);
+    if (product?.category !== "Kitchen" || !Number.isInteger(count) || count <= 1) return "";
+    return currentLanguage() === "en" ? `Pack of ${count} units` : `Paquete de ${count} unidades`;
+  };
+  window.RAICES_PACKAGE_HTML = (product) => {
+    const label = window.RAICES_PACKAGE_LABEL(product);
+    return label ? `<span class="product-package-label">${label}</span>` : "";
+  };
   const INDEPENDENT_SIGNATURE_TEAPOT_SKUS = new Set(["RA-HM-001-SQ","RA-HM-001-RD"]);
   const isIndependentSignatureTeapot = (sku) => INDEPENDENT_SIGNATURE_TEAPOT_SKUS.has(normalize(sku).toUpperCase());
 

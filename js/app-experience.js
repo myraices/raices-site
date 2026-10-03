@@ -137,7 +137,7 @@
   }
   function productCard(p){
     const available=p.available!==false&&!p.soldOut;
-    return `<article class="app-product-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img src="${p.image}" alt="${p.name}" loading="lazy"><div class="app-product-info"><h3>${p.name}</h3><p>${p.subcategory||p.collection||''}</p><div class="app-product-bottom"><span class="app-price">${money(p.price)}</span>${available?`<button class="app-add" type="button" data-app-add="${p.sku}">${txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></div></button></article>`;
+    return `<article class="app-product-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img src="${p.image}" alt="${p.name}" loading="lazy"><div class="app-product-info"><h3>${p.name}</h3>${window.RAICES_PACKAGE_HTML(p)}<p>${p.subcategory||p.collection||''}</p><div class="app-product-bottom"><span class="app-price">${money(p.price)}</span>${available?`<button class="app-add" type="button" data-app-add="${p.sku}">${txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></div></button></article>`;
   }
   function bindCards(root){
     root.querySelectorAll('[data-app-view]').forEach(b=>b.addEventListener('click',e=>{ if(e.target.closest('[data-app-add]')) return; openProduct(b.dataset.appView); }));
@@ -152,7 +152,7 @@
     return `<article class="app-mini-card" data-search-product="${p.sku}">
       <button class="app-mini-view" type="button" data-app-view="${p.sku}">
         <img src="${p.image}" alt="${p.name}" loading="lazy">
-        <div class="app-mini-body"><h3>${p.name}</h3><div class="app-mini-actions"><span>${money(p.price)}</span></div></div>
+        <div class="app-mini-body"><h3>${p.name}</h3>${window.RAICES_PACKAGE_HTML(p)}<div class="app-mini-actions"><span>${money(p.price)}</span></div></div>
       </button>
       ${available?`<button class="app-mini-add" type="button" data-app-add="${p.sku}" aria-label="${txt('Agregar','Add')} ${p.name}">+</button>`:''}
     </article>`;

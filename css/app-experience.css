@@ -225,3 +225,13 @@
   body.app-experience .icon-link{width:38px;height:38px}
   body.app-experience .nav-icons .lang{min-width:38px;height:38px;padding-inline:6px;font-size:9px}
 }
+
+@media(max-width:760px){
+  body.app-experience .product-package-label{
+    display:block;
+    margin:4px 0 6px;
+    font-size:12px;
+    line-height:1.35;
+  }
+  body.app-experience .product-body h3:has(+ .product-package-label){margin-bottom:0}
+}

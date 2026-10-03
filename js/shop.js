@@ -738,6 +738,7 @@
         <div>
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
           <h3><a class="product-seo-link" href="/products/${p.slug}/">${p.name}</a></h3>
+          ${window.RAICES_PACKAGE_HTML(p)}
         </div>
         <p>${p.cardDescription || productDescription(p)}</p>
         ${productTagsHtml(p,{limit:3})}
