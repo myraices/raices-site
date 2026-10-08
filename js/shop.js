@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
         <div class="product-modal-image" id="modalProductImage" style="background-image:url('${hasVariants ? (p.variants[0]?.image || p.image) : p.image}')"></div>
         <div class="product-modal-info">
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
-          <h2>${p.name}</h2><a class="modal-product-page-link" href="/products/${p.slug}/">${currentLang()==='es' ? 'Ver página del producto' : 'View product page'} →</a>
+          <h2>${p.name}</h2><a class="modal-product-page-link" href="/products/${p.slug}/?lang=${currentLang()}">${currentLang()==='es' ? 'Ver página del producto' : 'View product page'} →</a>
           <p class="modal-description">${productDescription(p)}</p>
           ${productTagsHtml(p,{modal:true})}
           <div class="product-meta modal-meta">${productMeta(p)}</div>
@@ -735,7 +735,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
       <div class="product-body">
         <div>
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
-          <h3><a class="product-seo-link" href="/products/${p.slug}/">${p.name}</a></h3>
+          <h3><a class="product-seo-link" href="/products/${p.slug}/?lang=${currentLang()}">${p.name}</a></h3>
           ${window.RAICES_PACKAGE_HTML(p)}
         </div>
         <p>${p.cardDescription || productDescription(p)}</p>

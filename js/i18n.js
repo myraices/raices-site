@@ -31,11 +31,15 @@ window.RAICES_I18N = {
   }
 };
 
+const requestedLanguage=new URLSearchParams(location.search).get('lang');
+if(['es','en'].includes(requestedLanguage)){localStorage.setItem('raices_lang',requestedLanguage);localStorage.setItem('raices_lang_manual','1');}
 window.raicesLang = localStorage.getItem('raices_lang') || 'es';
 window.raicesT = function(key){ return (window.RAICES_I18N[window.raicesLang] && window.RAICES_I18N[window.raicesLang][key]) || key; };
 window.applyRaicesLanguage = function(lang){
   window.raicesLang = lang || window.raicesLang || 'es';
   localStorage.setItem('raices_lang', window.raicesLang);
+  const languageUrl=new URL(location.href);
+  if(languageUrl.searchParams.has('lang')&&languageUrl.searchParams.get('lang')!==window.raicesLang){languageUrl.searchParams.set('lang',window.raicesLang);history.replaceState(null,'',languageUrl.pathname+languageUrl.search+languageUrl.hash);}
   document.documentElement.lang = window.raicesLang;
   document.querySelectorAll('[data-i18n]').forEach(function(el){
     const key = el.getAttribute('data-i18n');
