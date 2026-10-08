@@ -56,7 +56,7 @@
       category: displayCategory, collection: displayCollection, subcategory: normalize(row.subcategory_label) || normalize(row.category),
       compareAtPrice: row.compare_at_price === null || row.compare_at_price === undefined ? null : Number(row.compare_at_price),
       imagePosition: normalize(row.image_position) || "center",
-      unit: normalize(row.unit_label) || (Number(row.units_per_pack || 1) > 1 ? "Paquete" : (row.weight_unit === "digital" ? "Digital" : "Unidad")),
+      unit: normalize(row.unit_label) || (Number(row.units_per_pack || 1) > 1 ? "Paquete" : (row.weight_unit === "digital" ? "Digital" : row.weight_unit === "lb" ? "Lbs" : "Unidad")),
       unitsPerPackage: Number(row.units_per_pack || 1), unitWeight: normalize(row.unit_weight_label) || formatWeight(row), netWeight: normalize(row.net_weight_label),
       price: Number(row.price || 0), unitPrice: Number(row.unit_price || 0), image: normalize(row.image_url) || FALLBACK_IMAGE,
       available: row._inventory_available === null || row._inventory_available === undefined

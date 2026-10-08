@@ -1124,3 +1124,6 @@ img { height:auto; }
   line-height:1.4;
   overflow-wrap:anywhere;
 }
+
+/* Keep selling unit and weight visible on mobile. */
+@media(max-width:600px){.product-meta .chip:nth-child(n+2){display:inline-flex!important}.product-meta{gap:5px}.product-meta .chip{font-size:.7rem;padding:4px 7px}}

@@ -1,3 +1,6 @@
+// Keep the editorial count aligned with public grouped catalog cards.
+const syncCatalogCount=()=>document.querySelectorAll('[data-catalog-count],.editorial-proof span:first-child b').forEach(el=>{if(Array.isArray(window.RAICES_PRODUCTS))el.textContent=String(window.RAICES_PRODUCTS.length)});
+document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addEventListener('raices:siteContentUpdated',syncCatalogCount);setTimeout(syncCatalogCount,1500);});
 (function(){
   function initialize(){
 
@@ -480,11 +483,6 @@
         activeCollection = "All";
         renderFilters();
         renderProducts();
-  const requestedProductSlug = new URLSearchParams(window.location.search).get('product');
-  if(requestedProductSlug){
-    const requestedProduct = products.find(item => item.slug === requestedProductSlug);
-    if(requestedProduct){ setTimeout(() => openProductModal(requestedProduct.sku), 180); }
-  }
         setTimeout(scrollToShopStart, 60);
       });
     });
@@ -1070,6 +1068,12 @@
   renderFilters();
   renderProducts();
   renderCart();
+  syncCatalogCount();
+  const requestedProductSlug = new URLSearchParams(window.location.search).get('product');
+  if(requestedProductSlug){
+    const requestedProduct = products.find(item => item.slug === requestedProductSlug);
+    if(requestedProduct){ setTimeout(() => openProductModal(requestedProduct.sku), 180); }
+  }
 
   // Returning from checkout to review the cart should open the cart drawer once.
   const returnParams = new URLSearchParams(window.location.search);

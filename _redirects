@@ -1,3 +1,9 @@
+
+/products/:slug/ /.netlify/functions/catalog-page?kind=products&slug=:slug 200!
+/products/:slug /.netlify/functions/catalog-page?kind=products&slug=:slug 200!
+/collections/:slug/ /.netlify/functions/catalog-page?kind=collections&slug=:slug 200!
+/collections/:slug /.netlify/functions/catalog-page?kind=collections&slug=:slug 200!
+/sitemaps/products.xml /.netlify/functions/sitemap-products 200!
 /arepas    /#arepas    301
 /empanadas /#empanadas 301
 /proteinas /#proteinas 301

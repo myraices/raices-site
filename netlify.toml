@@ -50,3 +50,33 @@
   to = "/.netlify/functions/blog-article-ssr"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/products/:slug/"
+  to = "/.netlify/functions/catalog-page?kind=products&slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/products/:slug"
+  to = "/.netlify/functions/catalog-page?kind=products&slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/collections/:slug/"
+  to = "/.netlify/functions/catalog-page?kind=collections&slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/collections/:slug"
+  to = "/.netlify/functions/catalog-page?kind=collections&slug=:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/sitemaps/products.xml"
+  to = "/.netlify/functions/sitemap-products"
+  status = 200
+  force = true
