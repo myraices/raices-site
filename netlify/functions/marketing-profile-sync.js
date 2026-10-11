@@ -34,6 +34,7 @@ exports.handler = async function(event) {
     if (!userResponse.ok) return json(401, { message: "Sesión inválida." });
     const user = await userResponse.json();
     if (!user?.email) return json(400, { message: "Usuario sin email." });
+    if (!user.email_confirmed_at) return json(403, { message: "Confirma tu email antes de activar la suscripción." });
 
     const payload = JSON.parse(event.body || "{}");
     const reason = payload.reason === "confirmed_user" ? "confirmed_user" : "profile_update";

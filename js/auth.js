@@ -30,6 +30,10 @@ let lastUnconfirmedEmail = "";
 let isPasswordRecoveryMode = false;
 let signupTurnstileWidgetId = null;
 let forgotTurnstileWidgetId = null;
+let loginTurnstileWidgetId = null;
+let loginTurnstileToken = "";
+let loginRequestPending = false;
+let signupRequestPending = false;
 let signupTurnstileToken = "";
 let forgotTurnstileToken = "";
 let passwordRecoverySessionReady = false;
@@ -54,6 +58,14 @@ async function renderTurnstileWidgets() {
   const sitekey = String(window.RAICES_TURNSTILE_SITE_KEY || "").trim();
   if (!sitekey || sitekey.includes("__TURNSTILE")) throw new Error("Turnstile site key is not configured");
   const turnstileApi = await waitForTurnstile();
+  if (document.getElementById("loginTurnstile") && loginTurnstileWidgetId === null) {
+    loginTurnstileWidgetId = turnstileApi.render("#loginTurnstile", {
+      sitekey: sitekey, action: "login", theme: "light", size: "normal",
+      callback: function(token){ loginTurnstileToken = token; },
+      "expired-callback": function(){ loginTurnstileToken = ""; },
+      "error-callback": function(){ loginTurnstileToken = ""; }
+    });
+  }
   if (document.getElementById("signupTurnstile") && signupTurnstileWidgetId === null) {
     signupTurnstileWidgetId = turnstileApi.render("#signupTurnstile", {
       sitekey: sitekey, action: "signup", theme: "light", size: "normal",
@@ -70,17 +82,6 @@ async function renderTurnstileWidgets() {
       "error-callback": function(){ forgotTurnstileToken = ""; }
     });
   }
-}
-
-async function verifyTurnstile(token, action) {
-  if (!token) throw new Error("captcha_required");
-  const response = await fetch("/.netlify/functions/verify-turnstile", {
-    method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ token: token, action: action })
-  });
-  const result = await response.json().catch(function(){ return {}; });
-  if (!response.ok || !result.ok) throw new Error(result.error || "captcha_failed");
-  return true;
 }
 
 function validateSignupName(value) {
@@ -137,6 +138,7 @@ function showLogin(clearMessage = true) {
   authLoggedOut.classList.remove("hidden");
   loginTab.classList.add("active"); signupTab.classList.remove("active");
   loginForm.classList.remove("hidden"); signupForm.classList.add("hidden");
+  renderTurnstileWidgets().catch(function(err){ console.error("Raíces Turnstile load error:", err); });
   if (clearMessage) authMessage.textContent = "";
 }
 function showSignup(clearMessage = true) {
@@ -316,12 +318,21 @@ async function resendConfirmationEmail() {
     setAuthPlainMessage(authText("Escribe tu email y vuelve a intentarlo.", "Enter your email and try again."));
     return;
   }
+  if (!loginTurnstileToken) {
+    setUnconfirmedMessage(email);
+    const help = document.createElement("div");
+    help.textContent = authText("Completa la verificación de seguridad y pulsa Reenviar confirmación.", "Complete the security verification, then click Resend confirmation.");
+    authMessage.appendChild(help);
+    return;
+  }
+  if (loginRequestPending) return;
+  loginRequestPending = true;
   setAuthPlainMessage(authText("Reenviando confirmación...", "Resending confirmation..."));
   try {
     const { error } = await raicesSupabase.auth.resend({
       type: "signup",
       email: email,
-      options: { emailRedirectTo: "https://myraices.com/" }
+      options: { emailRedirectTo: "https://myraices.com/", captchaToken: loginTurnstileToken }
     });
     if (error) {
       setUnconfirmedMessage(email);
@@ -337,7 +348,11 @@ async function resendConfirmationEmail() {
     ));
   } catch (err) {
     console.error("Raíces resend confirmation error:", err);
-    setAuthPlainMessage(authText("No se pudo reenviar el correo. Intenta de nuevo.", "We could not resend the email. Try again."));
+    setUnconfirmedMessage(email);
+  } finally {
+    loginTurnstileToken = "";
+    resetTurnstileWidget(loginTurnstileWidgetId);
+    loginRequestPending = false;
   }
 }
 
@@ -451,25 +466,42 @@ async function checkAuthState() {
 
 loginForm.addEventListener("submit", async function(e) {
   e.preventDefault();
-  authMessage.textContent = "Verificando...";
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
-  const { data, error } = await raicesSupabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    if (isEmailNotConfirmedError(error)) {
-      setUnconfirmedMessage(email);
-    } else {
-      setAuthPlainMessage(error.message);
-    }
+  if (loginRequestPending) return;
+  if (!loginTurnstileToken) {
+    setAuthPlainMessage(authText("Completa la verificación de seguridad.", "Complete the security verification."));
     return;
   }
-  if (data && data.user) syncConfirmedUserToBrevo(data.user);
-  setAuthPlainMessage(authText("Sesión iniciada.", "Signed in."));
-  checkAuthState();
+  loginRequestPending = true;
+  const submit = loginForm.querySelector('[type="submit"]');
+  if (submit) submit.disabled = true;
+  setAuthPlainMessage(authText("Verificando...", "Verifying..."));
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+  try {
+    const { data, error } = await raicesSupabase.auth.signInWithPassword({
+      email, password, options: { captchaToken: loginTurnstileToken }
+    });
+    if (error) {
+      if (isEmailNotConfirmedError(error)) setUnconfirmedMessage(email);
+      else setAuthPlainMessage(error.message);
+      return;
+    }
+    if (data && data.user) syncConfirmedUserToBrevo(data.user);
+    setAuthPlainMessage(authText("Sesión iniciada.", "Signed in."));
+    checkAuthState();
+  } catch (err) {
+    setAuthPlainMessage(authText("No se pudo iniciar sesión. Intenta de nuevo.", "We could not sign you in. Try again."));
+  } finally {
+    loginTurnstileToken = "";
+    resetTurnstileWidget(loginTurnstileWidgetId);
+    loginRequestPending = false;
+    if (submit) submit.disabled = false;
+  }
 });
 
 signupForm.addEventListener("submit", async function(e) {
   e.preventDefault();
+  if (signupRequestPending) return;
 
   const name = document.getElementById("signupName").value.trim().replace(/\s+/g, " ");
   const email = document.getElementById("signupEmail").value.trim().toLowerCase();
@@ -484,14 +516,18 @@ signupForm.addEventListener("submit", async function(e) {
     setAuthPlainMessage(authText("Completa la verificación de seguridad.", "Complete the security verification."));
     return;
   }
+  signupRequestPending = true;
+  const submit = signupForm.querySelector('[type="submit"]');
+  if (submit) submit.disabled = true;
   authMessage.textContent = authText("Verificando y creando cuenta...", "Verifying and creating account...");
 
   try {
-    await verifyTurnstile(signupTurnstileToken, "signup");
+    // Supabase validates this token once; do not consume it with a separate Siteverify call.
     const { data, error } = await raicesSupabase.auth.signUp({
       email: email,
       password: password,
       options: {
+        captchaToken: signupTurnstileToken,
         data: {
           full_name: name,
           first_name: name,
@@ -545,6 +581,8 @@ signupForm.addEventListener("submit", async function(e) {
   } finally {
     signupTurnstileToken = "";
     resetTurnstileWidget(signupTurnstileWidgetId);
+    signupRequestPending = false;
+    if (submit) submit.disabled = false;
   }
 });
 
@@ -557,17 +595,17 @@ forgotPasswordBtn.addEventListener("click", async function() {
 });
 
 if (sendResetPasswordBtn) sendResetPasswordBtn.addEventListener("click", async function() {
+  if (sendResetPasswordBtn.disabled) return;
   const email = document.getElementById("loginEmail").value.trim().toLowerCase();
   if (!email) { setAuthPlainMessage(authText("Escribe tu email arriba.", "Enter your email above.")); return; }
   if (!forgotTurnstileToken) { setAuthPlainMessage(authText("Completa la verificación de seguridad.", "Complete the security verification.")); return; }
   sendResetPasswordBtn.disabled = true;
   setAuthPlainMessage(authText("Verificando...", "Verifying..."));
   try {
-    await verifyTurnstile(forgotTurnstileToken, "password_reset");
     // Keep a query marker because Supabase may consume and remove the auth
     // token from the URL before this script attaches its auth listener.
     const resetUrl = window.location.origin + "/?mode=reset-password";
-    const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
+    const { error } = await raicesSupabase.auth.resetPasswordForEmail(email, { redirectTo: resetUrl, captchaToken: forgotTurnstileToken });
     setAuthPlainMessage(error ? error.message : authText("Te enviamos un correo para recuperar tu contraseña.", "We sent you a password reset email."));
     if (!error && forgotPasswordPanel) forgotPasswordPanel.classList.add("hidden");
   } catch (err) {

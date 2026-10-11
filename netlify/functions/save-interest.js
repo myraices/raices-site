@@ -25,7 +25,7 @@ async function verifyTurnstile(event, token, action) {
     body: params.toString()
   });
   const result = await response.json();
-  return Boolean(result.success && (!result.action || result.action === action));
+  return Boolean(result.success && result.action === action);
 }
 
 
@@ -107,20 +107,24 @@ exports.handler = async function(event) {
     const delivery = cart && cart.delivery ? cart.delivery : {};
     const customer = cart && cart.customer ? cart.customer : {};
     const product = payload.product || null;
-    const protectedSource = source === "waitlist" || source === "checkout_waitlist" || source === "product_back_in_stock" || source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter";
-
-    if (protectedSource) {
-      if (String(payload.honeypot || "").trim()) {
-        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Invalid submission." }) };
-      }
-      if (source !== "blog_newsletter" && !validHumanName(name)) {
-        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Nombre inválido." }) };
-      }
-      const verificationAction = source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter" ? "newsletter" : "waitlist";
-      const verified = await verifyTurnstile(event, String(payload.turnstile_token || "").trim(), verificationAction);
-      if (!verified) {
-        return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Verificación de seguridad inválida." }) };
-      }
+    const allowedSources = new Set(["waitlist", "checkout_waitlist", "product_back_in_stock", "newsletter", "newsletter_section", "blog_newsletter"]);
+    const marketingSource = source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter";
+    if (!allowedSources.has(source)) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Origen inválido." }) };
+    }
+    if (String(payload.honeypot || "").trim()) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Invalid submission." }) };
+    }
+    if (source !== "blog_newsletter" && !validHumanName(name)) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Nombre inválido." }) };
+    }
+    if (marketingSource && payload.consent !== true) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Consentimiento de marketing requerido." }) };
+    }
+    const verificationAction = marketingSource ? "newsletter" : "waitlist";
+    const verified = await verifyTurnstile(event, String(payload.turnstile_token || "").trim(), verificationAction);
+    if (!verified) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Verificación de seguridad inválida." }) };
     }
 
     if (!email || !email.includes("@")) {
@@ -202,12 +206,8 @@ exports.handler = async function(event) {
     }
 
     const data = await response.json().catch(() => []);
-    const marketingSource = source === "newsletter" || source === "newsletter_section" || source === "blog_newsletter";
     let marketing = null;
     if (marketingSource) {
-      if (payload.consent !== true) {
-        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Consentimiento de marketing requerido." }) };
-      }
       marketing = await upsertMarketingSubscriber({ supabaseUrl, serviceRoleKey, email, name: name || customer.name || "", language, source: source === "blog_newsletter" ? "blog" : "home", userId });
     }
     const brevo = await syncBrevoInternally(event, {

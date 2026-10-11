@@ -103,8 +103,12 @@ exports.handler = async function(event) {
     const protectedSources = new Set(["newsletter", "waitlist", "product_back_in_stock", "signup", "confirmed_user", "profile_update", "account_preferences"]);
     const internalSecret = String(event.headers["x-raices-internal-secret"] || "").trim();
     const expectedSecret = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
-    if (protectedSources.has(normalizedSource) && (!expectedSecret || internalSecret !== expectedSecret)) {
+    if (!expectedSecret || internalSecret !== expectedSecret) {
       return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ message: "Protected endpoint." }) };
+    }
+
+    if (!protectedSources.has(normalizedSource)) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ message: "Origen inválido." }) };
     }
 
     if (!email || !email.includes("@")) {
