@@ -1,0 +1,82 @@
+MYRAÍCES 3.2.0 / NURAI 23.10.0 — CÓDIGOS PROMOCIONALES
+23 de octubre de 2026
+
+ORDEN DE INSTALACIÓN
+1. En el SQL Editor del mismo proyecto Supabase que utilizan MyRaíces y NURAI,
+   ejecutar el archivo supabase/promotion_codes_v3.2.0.sql UNA VEZ.
+   El mismo SQL está incluido en ambos ZIP. Es aditivo y puede repetirse sin
+   restablecer las promociones que ya hayas editado.
+2. Desplegar NURAI 23.10.0 con el procedimiento habitual de Netlify.
+3. Desplegar MyRaíces 3.2.0 con el procedimiento habitual de Netlify.
+   Usar el proyecto completo y su build; las funciones del servidor son necesarias.
+   No basta con subir únicamente los archivos HTML.
+4. Actualizar NURAI si aparece el aviso de nueva versión. Ir a Marketing →
+   Códigos promocionales y confirmar BIENVENIDO10: activo, 10%, solo primera compra.
+5. Verificar el flujo en Square Sandbox antes de habilitarlo para ventas reales.
+   No se han cambiado las variables ni el modo actual de Square.
+
+CONFIGURACIÓN INICIAL
+BIENVENIDO10: 10% sobre el subtotal de todos los productos, incluyendo digitales.
+Solo primera compra, sin mínimo, sin vencimiento y sin límite total de campaña.
+No descuenta delivery ni shipping. Mantiene las promociones de envío gratis ya
+existentes y sus umbrales sobre el subtotal físico antes del descuento.
+Solo un código por pedido. No se añade un descuento automático sin introducirlo.
+Los impuestos de los artículos gravados se calculan sobre sus importes netos.
+Si un código deja el pedido en cero, se solicita contactar con Raíces: este flujo
+no crea pedidos gratuitos mediante Square.
+
+PRIMERA COMPRA
+El cliente debe iniciar sesión con una cuenta de correo confirmado. El correo
+del pedido debe coincidir con el correo de esa cuenta. Se comprueban los pedidos
+anteriores pagados del mismo correo, incluidos los hechos como invitado, y los
+usos previos vinculados a la cuenta. Un reembolso no restablece la primera compra.
+La elegibilidad se valida al solicitar el código y de nuevo al crear el pago.
+Las compras e intentos Sandbox se separan de las compras de producción.
+No se puede garantizar una única promoción por persona si utiliza otra cuenta
+con otro correo. No se introducen comprobaciones por domicilio ni por teléfono.
+
+PAGOS PENDIENTES
+Solo puede existir un intento con descuento de primera compra por cuenta y
+entorno. Una reserva evita que dos pestañas generen dos enlaces con ese beneficio.
+Si el cliente vuelve tras abandonar Square, puede aplicar el código y pulsar
+«Cancelar pago pendiente». El servidor cancela el enlace anterior en Square y
+comprueba que su pedido quedó cancelado ANTES de liberar la reserva. Después
+puede aplicar el código de nuevo. Un pago ya procesándose no se cancela así.
+Los errores 4xx definitivos al crear un enlace liberan la reserva. Si una caída
+impide saber si Square creó un enlace, la reserva se conserva por seguridad y
+puede requerir revisión administrativa. Nunca borrar reservas manualmente sin
+haber comprobado y cancelado antes el enlace correspondiente en Square.
+
+GESTIÓN FUTURA EN NURAI
+Marketing → Códigos promocionales → Crear código / Editar.
+Opciones: porcentaje o importe fijo USD, mínimo, fecha de inicio y fin, límite
+máximo de usos y solo primera compra. Fechas inclusivas, horario de Houston.
+Solo los administradores pueden modificar las promociones.
+El límite total contempla pagos confirmados más reservas no liberadas, por
+entorno. La pantalla muestra estadísticas de producción. Los enlaces pendientes
+conservan su descuento aunque después se edite o desactive el código.
+La información de descuento y código se conserva en el pedido y aparece en
+NURAI y en el correo inicial de confirmación.
+
+COMPROBACIÓN TRAS INSTALAR
+- Cuenta nueva confirmada: aplicar BIENVENIDO10 y revisar subtotal, descuento,
+  entrega e importe fiscal en Square antes de completar un pago Sandbox.
+- Después del pago, verificar el descuento y código en NURAI y en el correo.
+- La misma cuenta no debe poder reutilizar el código.
+- Un correo con una compra anterior como invitado tampoco debe poder usarlo.
+- Sin código debe seguir disponible el checkout habitual.
+- Para probar de nuevo con la misma cuenta, usar una cuenta de prueba distinta;
+  un reembolso no vuelve a habilitar el beneficio de primera compra.
+
+VALIDACIÓN DEL PAQUETE
+Se comprobaron cálculos y reparto exacto de centavos, validación autenticada,
+rechazo de compras anteriores y de un segundo intento, tax de carritos mixtos,
+reserva previa al cobro, cancelación segura de enlaces, compatibilidad sin código,
+pantallas de checkout y administración en móvil/escritorio, construcción de NURAI y
+migración SQL en una base PostgreSQL embebida. Las llamadas a Square en las
+pruebas locales están simuladas. Falta la prueba real Sandbox con tus credenciales
+tras ejecutar el SQL y desplegar. Estos archivos no se han desplegado por sí solos.
+
+BASE UTILIZADA
+Los ZIP originales NURAI(7).zip y raices-site(6).zip aportados en esta conversación.
+No se incorporó el arreglo de direcciones de otra versión que no desplegaste.

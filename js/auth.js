@@ -711,3 +711,14 @@ renderTurnstileWidgets().catch(function(err){ console.warn("Raíces Turnstile in
 window.addEventListener("raices:languageChanged", function(){
   checkAuthState().catch(function(err){ console.warn("Raíces account label language warning:", err); });
 });
+
+// The checkout login entry point always returns to this same-site checkout.
+if (new URLSearchParams(window.location.search).get('promoCheckout') === '1' && !urlLooksLikeRecovery()) {
+  raicesSupabase.auth.getUser().then(({data})=>{
+    if(data?.user?.email_confirmed_at)window.location.assign('/checkout-preview.html');
+    else openAuthModal();
+  });
+  raicesSupabase.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN' && session?.user?.email_confirmed_at)setTimeout(()=>window.location.assign('/checkout-preview.html'),0);
+  });
+}

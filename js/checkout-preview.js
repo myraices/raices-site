@@ -192,6 +192,69 @@
  function save(){const d={};Object.entries(fields).forEach(([k,id])=>d[k]=document.getElementById(id)?.value.trim()||'');d.addressVerified=addressVerified;localStorage.setItem('raices_checkout_customer',JSON.stringify(d));return d}
  function eta(){const d=new Date();d.setHours(d.getHours()+Number(rules.estimatedDeliveryMinHours||24));const e=new Date();e.setHours(e.getHours()+Number(rules.estimatedDeliveryMaxHours||48));const f=x=>x.toLocaleDateString('es-US',{weekday:'short',month:'short',day:'numeric'});return `${f(d)} – ${f(e)}`}
  function shippingStateAllowed(state){return shippingAllowedStates.includes(String(state||'').trim().toUpperCase())}
+ let appliedPromotion=null,promotionBusy=false,promotionRequest=0,paymentStarting=false;
+ const promoInput=document.getElementById('checkoutPromoCode');
+ const promoApply=document.getElementById('checkoutPromoApply');
+ const promoRemove=document.getElementById('checkoutPromoRemove');
+ const promoMessage=document.getElementById('checkoutPromoMessage');
+ async function promotionHeaders(){
+  const session=await window.raicesSupabase?.auth.getSession();
+  const token=session?.data?.session?.access_token;
+  return {'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})};
+ }
+ function promotionError(code){
+  const messages={
+   PROMO_LOGIN_REQUIRED:tr('Inicia sesión o crea tu cuenta y confirma tu correo para usar este código de primera compra.','Sign in or create an account and confirm your email to use this first-purchase code.'),
+   PROMO_NOT_FIRST_PURCHASE:tr('Este código es solo para la primera compra. Tu cuenta o correo ya tiene una compra pagada.','This code is for your first purchase. Your account or email already has a paid order.'),
+   PROMO_EMAIL_MISMATCH:tr('Usa el correo de tu cuenta para aplicar este código.','Use your account email to apply this code.'),
+   PROMO_PENDING_REVIEW:tr('No pudimos confirmar el estado del pago anterior. Espera un momento e intenta de nuevo; si continúa, contáctanos.','We could not confirm the previous payment status. Wait a moment and try again; if it continues, contact us.'),
+   PROMO_PAYMENT_PROCESSING:tr('El pago anterior está siendo procesado. Espera su confirmación antes de crear otro.','The previous payment is being processed. Wait for confirmation before creating another.'),
+   PROMO_PENDING_CHECKOUT:tr('Tienes un pago con descuento pendiente. Puedes cancelarlo abajo para empezar uno nuevo.','You have a pending discounted payment. You can cancel it below to start a new one.'),
+   PROMO_INVALID:tr('Este código no es válido o está desactivado.','This code is invalid or inactive.'),
+   PROMO_EXPIRED:tr('Este código no está vigente.','This code is not currently valid.'),
+   PROMO_LIMIT_REACHED:tr('Este código alcanzó su límite de usos.','This code has reached its usage limit.'),
+   PROMO_MINIMUM:tr('Tu pedido no alcanza la compra mínima para este código.','Your order does not meet the minimum purchase for this code.'),
+   PROMO_CHANGED:tr('El código cambió. Aplícalo de nuevo para revisar el descuento.','The code has changed. Apply it again to review the discount.'),
+   PROMO_ZERO_TOTAL:tr('Este código deja el pedido sin importe a cobrar. Contáctanos para completar la compra.','This code leaves no payable amount. Contact us to complete your order.'),
+   PROMO_CALCULATION_MISMATCH:tr('No pudimos confirmar el descuento. Intenta de nuevo.','We could not confirm the discount. Please try again.'),
+   PROMO_UNAVAILABLE:tr('No pudimos validar el código. Intenta de nuevo.','We could not validate the code. Please try again.')
+  };
+  return messages[code]||messages.PROMO_UNAVAILABLE;
+ }
+ function promoStatus(message,state='idle'){document.getElementById('checkoutPromoCancelPending')?.setAttribute('hidden','');if(promoMessage){promoMessage.textContent=message;promoMessage.dataset.state=state;}}
+ promoInput?.addEventListener('input',()=>{
+  if(paymentStarting)return;
+  promotionRequest++;promotionBusy=false;appliedPromotion=null;
+  promoStatus('');render();
+ });
+ async function applyPromotion(){
+  if(promotionBusy||paymentStarting)return;
+  const code=String(promoInput?.value||'').trim().toUpperCase();
+  if(!code){promoStatus(tr('Escribe un código promocional.','Enter a promotional code.'),'error');promoInput?.focus();return;}
+  const requestId=++promotionRequest;promotionBusy=true;appliedPromotion=null;render();
+  promoStatus(tr('Validando código…','Validating code…'));
+  try{
+   const r=await fetch('/.netlify/functions/validate-promotion',{method:'POST',headers:await promotionHeaders(),body:JSON.stringify({code,items:items.map(i=>({sku:i.sku,qty:i.qty}))})});
+   const b=await r.json();if(requestId!==promotionRequest)return;
+   if(!r.ok)throw new Error(b.error||'PROMO_UNAVAILABLE');
+   appliedPromotion=b;promoInput.value=b.code;
+   promoStatus(`${b.code}: ${tr('ahorras','you save')} ${money(b.discountCents/100)}.`, 'ok');
+  }catch(e){if(requestId===promotionRequest){promoStatus(promotionError(e.message),'error');if(e.message==='PROMO_PENDING_CHECKOUT')document.getElementById('checkoutPromoCancelPending')?.removeAttribute('hidden');}}
+  finally{if(requestId===promotionRequest){promotionBusy=false;render();}}
+ }
+ document.getElementById('checkoutPromoCancelPending')?.addEventListener('click',async()=>{
+  if(promotionBusy||paymentStarting)return;
+  promotionBusy=true;render();
+  try{
+   const r=await fetch('/.netlify/functions/cancel-promotion-checkout',{method:'POST',headers:await promotionHeaders(),body:'{}'});
+   const b=await r.json();if(!r.ok)throw new Error(b.error||'PROMO_UNAVAILABLE');
+   promoStatus(tr('El pago anterior fue cancelado. Aplica el código de nuevo.','The previous payment was canceled. Apply the code again.'),'ok');
+  }catch(e){promoStatus(promotionError(e.message),'error');}
+  finally{promotionBusy=false;render();}
+ });
+ promoApply?.addEventListener('click',applyPromotion);
+ promoInput?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyPromotion();}});
+ promoRemove?.addEventListener('click',()=>{if(paymentStarting)return;promotionRequest++;promotionBusy=false;appliedPromotion=null;promoInput.value='';promoStatus('');render();});
  function render(){
   const data=save(),zip=zipNorm(data.zip),zone=digitalOnly?{name:'Entrega digital',fee:0}:(addressVerified&&zip.length===5?zoneFor(zip):null),subtotal=Number(summary.subtotal||0);
   const physicalSubtotal=items.filter(i=>!isDigitalItem(i)).reduce((sum,i)=>sum+Number(i.lineTotal||((i.qty||0)*Number(i.price||0))),0);
@@ -278,7 +341,14 @@
   previewSubtotal.textContent=money(subtotal);
   const feeLabel=document.getElementById('previewFulfillmentLabel');if(feeLabel)feeLabel.textContent=digitalOnly?tr('Entrega','Delivery'):(isShipping?'Shipping':tr('Delivery','Local Delivery'));
   previewDelivery.textContent=digitalOnly?tr('No aplica','N/A'):(isShipping?(rate?(shippingFree?tr('Gratis','Free'):money(delivery)):(shippingRatesLoading?tr('Calculando…','Calculating…'):'—')):(zone?(qualifies?tr('Gratis','Free'):money(delivery)):'—'));
-  previewTotal.textContent=money(subtotal+delivery);
+  const discount=Math.min(subtotal,Number(appliedPromotion?.discountCents||0)/100);
+  const discountRow=document.getElementById('checkoutDiscountRow');if(discountRow)discountRow.hidden=!appliedPromotion;
+  const discountValue=document.getElementById('previewDiscount');if(discountValue)discountValue.textContent=`−${money(discount)}`;
+  const discountLabel=document.getElementById('checkoutDiscountLabel');if(discountLabel)discountLabel.textContent=`${tr('Descuento','Discount')} ${appliedPromotion?.code||''}`;
+  if(promoApply)promoApply.disabled=promotionBusy||paymentStarting;
+  if(promoRemove){promoRemove.hidden=!appliedPromotion;promoRemove.disabled=paymentStarting;}
+  if(promoInput)promoInput.disabled=paymentStarting;
+  previewTotal.textContent=money(subtotal-discount+delivery);
   checkoutEta.textContent=digitalOnly?tr('Acceso digital después de confirmar el pago.','Digital access after payment is confirmed.'):isShipping?(rate?(rate.estimatedDays?tr(`Aproximadamente ${rate.estimatedDays} día${rate.estimatedDays===1?'':'s'} hábil${rate.estimatedDays===1?'':'es'}.`,`Approximately ${rate.estimatedDays} business day${rate.estimatedDays===1?'':'s'}.`):(rate.durationTerms||tr('Según el servicio seleccionado.','Based on the selected service.'))):tr('Selecciona una opción de Shipping.','Select a Shipping option.')):(items.length?`${eta()} · ${tr('normalmente dentro de 24–48 horas.','normally within 24–48 hours.')}`:tr('Agrega productos para calcular la entrega.','Add products to calculate delivery.'));
   const left=Math.max(0,freeAt-physicalSubtotal);
   freeDeliveryProgress.textContent=digitalOnly?tr('Los productos digitales no tienen cargo de delivery.','Digital products have no delivery charge.'):isShipping?(shippingPromoQualifies?tr('Has desbloqueado Shipping gratis en la opción económica. Los servicios superiores solo cobran la diferencia.','You unlocked free Shipping on the economy option. Faster services only charge the difference.'):(freeShippingActive&&freeShippingThreshold>0?`${tr('Agrega','Add')} ${money(Math.max(0,freeShippingThreshold-physicalSubtotal))} ${tr('más para Shipping gratis.','more for free Shipping.')}`:'')):(!freeDeliveryEnabled?'':!freeDeliveryActive?(freeDeliveryStartDate?`${tr('Delivery gratis disponible desde','Free delivery available from')} ${freeDeliveryStartDate}.`:''):freeAt===0?tr('Delivery gratis en todas las compras físicas.','Free delivery on all physical purchases.'):qualifies?tr('Has desbloqueado delivery gratis.','You unlocked free delivery.'):`${tr('Agrega','Add')} ${money(left)} ${tr('más en productos físicos para delivery gratis.','more in physical products for free delivery.')}`);
@@ -298,10 +368,10 @@
   const payButton=document.getElementById('previewPayButton');
   if(payButton){
    const shippingReady=!isShipping||(Boolean(rate)&&!shippingRatesLoading&&!shippingRateError);
-   payButton.disabled=!items.length||!shippingReady;
+   payButton.disabled=!items.length||!shippingReady||promotionBusy||paymentStarting;
    payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
   }
-  summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk&&Boolean(rate):!!zone&&addressVerified),zone:isShipping?(rate?`${rate.provider} · ${rate.service}`:'Shipping'):(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,total:subtotal+delivery,customer:data,addressVerified,estimatedDelivery:isShipping?(rate?.durationTerms||'Shipping'):eta(),shippingRate:rate||null,shippingShipmentId};
+  summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk&&Boolean(rate):!!zone&&addressVerified),zone:isShipping?(rate?`${rate.provider} · ${rate.service}`:'Shipping'):(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,discountAmount:Number(appliedPromotion?.discountCents||0)/100,promotionCode:appliedPromotion?.code||null,total:subtotal+delivery-Number(appliedPromotion?.discountCents||0)/100,customer:data,addressVerified,estimatedDelivery:isShipping?(rate?.durationTerms||'Shipping'):eta(),shippingRate:rate||null,shippingShipmentId};
   localStorage.setItem('raices_cart_summary',JSON.stringify(summary));
 
   if(isShipping&&shippingDestinationOk&&!shippingRatesLoading&&!shippingRateError&&!shippingRates.length){
@@ -311,6 +381,11 @@
  function applyCheckoutLanguage(){
   const set=(selector,es,en)=>{const el=document.querySelector(selector);if(el)el.textContent=tr(es,en)};
   set('.checkout-preview-header span','Checkout seguro','Secure checkout');
+  set('#checkoutPromoLabel','Código promocional','Promotional code');
+  set('#checkoutPromoApply','Aplicar','Apply');
+  set('#checkoutPromoRemove','Quitar','Remove');
+  set('#checkoutPromoCancelPending','Cancelar pago pendiente','Cancel pending payment');
+  set('#checkoutPromoLogin','Iniciar sesión / Crear cuenta','Sign in / Create account');
   set('#checkoutProgressDelivery','1 · Entrega','1 · Delivery');
   const progress=document.querySelectorAll('.checkout-progress span');if(progress[1])progress[1].textContent=tr('2 · Revisión','2 · Review');if(progress[2])progress[2].textContent=tr('3 · Pago','3 · Payment');
   set('.checkout-preview-intro .eyebrow','Compra segura','Secure purchase');
@@ -387,6 +462,7 @@
   try{
    const {data}=await window.raicesSupabase.auth.getUser();
    const user=data?.user;if(!user)return;
+   const loginLink=document.getElementById('checkoutPromoLogin');if(loginLink)loginLink.hidden=true;
    const meta=user.user_metadata||{};
    const accountName=[meta.first_name,meta.last_name].filter(Boolean).join(' ').trim()||String(meta.full_name||meta.name||'').trim();
    const nameInput=document.getElementById('checkoutName'),emailInput=document.getElementById('checkoutEmail');
@@ -410,6 +486,8 @@
  applyDigitalCheckoutMode();
  if(termsCheckbox)termsCheckbox.addEventListener('change',()=>{if(termsCheckbox.checked&&payMessage?.dataset.state==='error')payMessage.hidden=true;});
  if(payButton)payButton.addEventListener('click',async()=>{
+  if(paymentStarting||promotionBusy)return;
+  if(promoInput?.value.trim()&&!appliedPromotion){promoStatus(tr('Aplica el código o bórralo para continuar.','Apply the code or clear it to continue.'),'error');promoInput.focus();return;}
   const data=save();
   if(!items.length){paymentMessage(tr('Tu carrito está vacío.','Your cart is empty.'),'error');return;}
   if(!data.name){paymentMessage('Escribe tu nombre y apellido para continuar.','error');document.getElementById('checkoutName')?.focus();return;}
@@ -427,10 +505,12 @@
   if(!digitalOnly&&selectedFulfillment==='shipping'&&(!chosenRate||!shippingShipmentId)){paymentMessage(tr('Selecciona una opción de Shipping para continuar.','Select a Shipping option to continue.'),'error');return;}
   if(!termsCheckbox?.checked){paymentMessage('Debes aceptar los Términos y las políticas de compra antes de continuar al pago.','error');termsCheckbox?.focus();return;}
   payButton.disabled=true;payButton.textContent=tr('PREPARANDO PAGO…','PREPARING PAYMENT…');paymentMessage(tr('Serás dirigido a una página de pago segura para completar tu compra.','You will be redirected to a secure payment page to complete your purchase.'),'idle');
+  paymentStarting=true;render();
   try{
-   const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:await promotionHeaders(),body:JSON.stringify({
     items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),
     acceptedTerms:true,
+    promotionCode:appliedPromotion?.code||null,
     fulfillmentType:digitalOnly?'digital':selectedFulfillment,
     shippingRateId:(!digitalOnly&&selectedFulfillment==='shipping')?selectedShippingRate()?.id:null,
     shippingShipmentId:(!digitalOnly&&selectedFulfillment==='shipping')?shippingShipmentId:null,
@@ -446,7 +526,9 @@
    const messages={
     EMPTY_CART:tr('Tu carrito está vacío.','Your cart is empty.'),DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:tr('Selecciona una dirección completa de las sugerencias de Google.','Select a complete address from Google suggestions.'),DELIVERY_DATA_INCOMPLETE:'Completa el teléfono y todos los datos de entrega.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',DELIVERY_CONFIG_UNAVAILABLE:'No se pudo cargar la configuración de delivery. Intenta nuevamente.',LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART:'Este carrito no admite Delivery local.',SHIPPING_DISABLED:tr('Shipping todavía está desactivado en NURAI.','Shipping is still disabled in NURAI.'),SHIPPING_NOT_AVAILABLE_FOR_CART:'Uno o más productos no están habilitados para Shipping.',SHIPPING_PRODUCT_SETUP_INCOMPLETE:'Falta peso o perfil de empaque en uno de los productos.',SHIPPING_DESTINATION_NOT_ALLOWED:tr('Shipping no está habilitado para este destino.','Shipping is not available for this destination.'),SHIPPO_TOKEN_MISSING:tr('La conexión con Shippo no está disponible.','The Shippo connection is unavailable.'),SHIPPING_RATE_REQUIRED:tr('Selecciona una opción de Shipping.','Select a Shipping option.'),SHIPPING_RATE_INVALID:tr('La tarifa de Shipping expiró o cambió. Vuelve a calcularla.','The Shipping rate expired or changed. Recalculate it.'),SHIPPING_RATE_UNAVAILABLE:tr('No se pudo validar la tarifa de Shipping.','The Shipping rate could not be validated.'),TAX_RULE_NOT_CONFIGURED:'No hay una regla activa de Sales Tax para este estado. Revisa Configuración → Pagos en NURAI.',SQUARE_TAX_CALCULATION_FAILED:'Square no pudo validar el cálculo del tax. Intenta nuevamente.',TAX_CALCULATION_MISMATCH:'El cálculo fiscal no coincidió con Square y el pago fue bloqueado por seguridad.',DIGITAL_TAX_REVIEW_REQUIRED:'Este producto digital todavía está en revisión fiscal.',DIGITAL_FILE_MISSING:'Este producto digital todavía no tiene su archivo PDF cargado. Intenta nuevamente más tarde.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'
    };
-   paymentMessage(messages[code]||messages.CHECKOUT_UNAVAILABLE,'error');payButton.disabled=false;payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
+   paymentStarting=false;render();
+   if(code==='PROMO_PENDING_CHECKOUT')document.getElementById('checkoutPromoCancelPending')?.removeAttribute('hidden');
+   paymentMessage(code.startsWith('PROMO_')?promotionError(code):(messages[code]||messages.CHECKOUT_UNAVAILABLE),'error');payButton.disabled=false;payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
   }
  });
  async function refreshLiveFulfillmentSettings(){

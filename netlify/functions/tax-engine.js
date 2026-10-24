@@ -41,7 +41,7 @@ function calculateManualTax({ customer, items, deliveryCents, salesTax }) {
   if (!rule) return zeroTaxResult({state,reason:'STATE_NOT_CONFIGURED'});
   if (!rule.nexus) return zeroTaxResult({state,ruleName:rule.name||state,reason:'NEXUS_INACTIVE'});
   if (!rule.active) return zeroTaxResult({state,ruleName:rule.name||state,nexus:true,reason:'COLLECTION_INACTIVE'});
-  const itemsTaxableCents = taxableItems.reduce((sum,item)=>sum+Number(item.unitCents||0)*Number(item.qty||0),0);
+  const itemsTaxableCents = taxableItems.reduce((sum,item)=>sum+Math.max(0,Number(item.unitCents||0)*Number(item.qty||0)-Number(item.discountCents||0)),0);
   const freightTaxable = config.taxDeliveryWhenTaxable && taxablePhysical.length>0 && Number(deliveryCents||0)>0;
   const taxableAmountCents = itemsTaxableCents + (freightTaxable?Number(deliveryCents||0):0);
   const taxCents = Math.round(taxableAmountCents*Number(rule.rate)/100);

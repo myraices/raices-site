@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { calculateManualTax } = require('./tax-engine');
+const {loadPromotion,calculatePromotion,squareDiscounts,firstPurchaseCustomer} = require('./promotion-engine');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 const allowedOrigins = new Set(['https://myraices.com', 'https://www.myraices.com']);
@@ -330,6 +331,15 @@ exports.handler = async (event) => {
       : fulfillmentType === 'shipping'
         ? Math.max(0, carrierShippingCents - freeShippingCreditCents)
         : 0;
+    let promotion = null, promotionCustomer=null;
+    if (String(payload.promotionCode || '').trim()) {
+      const {promo,used}=await loadPromotion(payload.promotionCode,supabaseRequest);
+      promotionCustomer=await firstPurchaseCustomer(promo,event,supabaseRequest);
+      if(promotionCustomer&&promotionCustomer.email!==String(customer.email||'').trim().toLowerCase())throw new Error('PROMO_EMAIL_MISMATCH');
+      promotion=calculatePromotion(promo,validated,used);
+      validated.forEach((item,index)=>{item.discountCents=promotion.allocations[index];});
+    }
+
     const hasTaxablePhysical = validated.some(i => i.taxStatus === 'physical_taxable');
     const hasTaxableItems = validated.some(i => i.taxStatus === 'physical_taxable' || i.taxStatus === 'digital_taxable');
     const hasDigitalReview = validated.some(i => i.taxStatus === 'digital_review');
@@ -345,13 +355,14 @@ exports.handler = async (event) => {
       if (taxError.message === 'TAX_RULE_NOT_CONFIGURED') return response(503, { error: 'TAX_RULE_NOT_CONFIGURED', state: taxError.details?.state || safeText(customer.state,20) }, origin);
       throw taxError;
     }
-    const preTaxTotalCents = subtotal + deliveryCents;
-    const taxCentsExpected = Number(taxResult.taxCents || 0);
+    const preTaxTotalCents = subtotal - (promotion?.discountCents || 0) + deliveryCents;
+    let taxCentsExpected = Number(taxResult.taxCents || 0);
 
     console.log('[checkout] tax_calculated', { provider: taxResult.provider, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
     const pendingOrderPayload = {
       fulfillment_type: fulfillmentType,
       subtotal: subtotal / 100,
+      ...(promotion ? {discount_amount:promotion.discountCents/100,promotion_code:promotion.code,promotion_user_id:promotionCustomer?.id||null} : {}),
       delivery_amount: deliveryCents / 100,
       subtotal_cents: subtotal,
       delivery_cents: deliveryCents,
@@ -385,7 +396,8 @@ exports.handler = async (event) => {
 
     const TAX_UID = 'RAICES-SALES-TAX';
     const appliedTax = { tax_uid: TAX_UID };
-    const lineItems = validated.map(i => ({
+    const lineItems = validated.map((i,index) => ({
+      ...(promotion?.allocations[index] > 0 ? {applied_discounts:[{discount_uid:`PROMO-${index}`}]} : {}),
       name: i.variant ? `${i.name} · ${i.variant}` : i.name,
       quantity: String(i.qty),
       base_price_money: { amount: i.unitCents, currency: 'USD' },
@@ -412,8 +424,8 @@ exports.handler = async (event) => {
       scope: 'LINE_ITEM'
     }] : [];
 
-    const squareOrderPayload = { location_id: locationId, line_items: lineItems, ...(orderTaxes.length ? { taxes: orderTaxes } : {}) };
-    if (taxCentsExpected > 0) {
+    const squareOrderPayload = { location_id: locationId, line_items: lineItems, ...(promotion ? {discounts:squareDiscounts(promotion)} : {}), ...(orderTaxes.length ? { taxes: orderTaxes } : {}) };
+    if (taxCentsExpected > 0 || promotion) {
       const squareBaseForCalc = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
       const calcRes = await fetch(`${squareBaseForCalc}/v2/orders/calculate`, {
         method: 'POST',
@@ -425,12 +437,20 @@ exports.handler = async (event) => {
       try { calcData = calcText ? JSON.parse(calcText) : {}; } catch {}
       if (!calcRes.ok || !calcData.order) return response(502, { error: 'SQUARE_TAX_CALCULATION_FAILED', details: calcData.errors || [] }, origin);
       const squareTaxCents = Number(calcData.order.total_tax_money?.amount || calcData.order.net_amounts?.tax_money?.amount || 0);
+      if (promotion) {
+        const calculatedDiscount=Number(calcData.order.total_discount_money?.amount||0);
+        const calculatedTotal=Number(calcData.order.total_money?.amount||0);
+        if(calculatedDiscount!==promotion.discountCents || calculatedTotal!==preTaxTotalCents+squareTaxCents) return response(503,{error:'PROMO_CALCULATION_MISMATCH'},origin);
+        // Square calculates and rounds tax on each discounted line, using the configured rate.
+        taxCentsExpected=squareTaxCents;
+      }
       if (Math.abs(squareTaxCents - taxCentsExpected) > 1) {
         console.error('[checkout] tax_mismatch', { taxCentsExpected, squareTaxCents });
         return response(503, { error: 'TAX_CALCULATION_MISMATCH' }, origin);
       }
     }
 
+    if (preTaxTotalCents + taxCentsExpected <= 0) return response(409,{error:'PROMO_ZERO_TOTAL'},origin);
     const checkoutId = crypto.randomUUID();
     await supabaseRequest('checkout_sessions', {
       method: 'POST',
@@ -466,6 +486,14 @@ exports.handler = async (event) => {
       })
     });
 
+    if (promotion) {
+      try {
+        await supabaseRequest('rpc/reserve_promotion',{method:'POST',body:JSON.stringify({p_code:promotion.code,p_session_id:checkoutId,p_subtotal_cents:subtotal,p_discount_cents:promotion.discountCents,p_updated_at:promotion.updatedAt,p_user_id:promotionCustomer?.id||null,p_email:promotionCustomer?.email||null,p_environment:environment})});
+      } catch (e) {
+        const code=['PROMO_LOGIN_REQUIRED','PROMO_NOT_FIRST_PURCHASE','PROMO_PENDING_CHECKOUT','PROMO_EMAIL_MISMATCH','PROMO_INVALID','PROMO_EXPIRED','PROMO_LIMIT_REACHED','PROMO_MINIMUM','PROMO_CHANGED'].find(code=>e.message.includes(code))||'PROMO_UNAVAILABLE';
+        return response(409,{error:code},origin);
+      }
+    }
     const baseUrl = process.env.URL || 'https://myraices.com';
     const squareBase = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
     console.log('[checkout] create_square_link:start', { checkoutId, taxProfile: validated.map(i => ({ sku:i.sku, taxStatus:i.taxStatus })) });
@@ -473,7 +501,7 @@ exports.handler = async (event) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Square-Version': '2026-07-15', 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        idempotency_key: crypto.randomUUID(),
+        idempotency_key: checkoutId,
         order: { ...squareOrderPayload, reference_id: checkoutId },
         checkout_options: {
           redirect_url: `${baseUrl}/order-confirmation.html?checkout=${encodeURIComponent(checkoutId)}`,
@@ -487,6 +515,8 @@ exports.handler = async (event) => {
     const squareText = await squareRes.text();
     const squareData = squareText ? JSON.parse(squareText) : {};
     if (!squareRes.ok || !squareData.payment_link?.url) {
+      // A definitive 4xx rejection issued no payable link. Ambiguous network/5xx failures stay reserved.
+      if(promotion && squareRes.status>=400 && squareRes.status<500)await supabaseRequest(`promotion_redemptions?session_id=eq.${checkoutId}&state=eq.reserved`,{method:'PATCH',body:JSON.stringify({state:'released'})});
       await supabaseRequest(`checkout_sessions?id=eq.${checkoutId}`, { method: 'PATCH', body: JSON.stringify({ status: 'failed', updated_at: new Date().toISOString() }) });
       return response(502, { error: 'SQUARE_CHECKOUT_FAILED', details: squareData.errors || [] }, origin);
     }
@@ -502,10 +532,10 @@ exports.handler = async (event) => {
       updated_at: new Date().toISOString()
     }) });
     console.log('[checkout] finish_checkout', { checkoutId, taxCents, totalCents: squareTotalCents });
-    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, taxCents, totalCents: squareTotalCents, fulfillmentType, shipping: selectedShipping ? { provider:selectedShipping.provider, service:selectedShipping.service, amount:deliveryCents/100, rateId:selectedShipping.rateId, shipmentId:selectedShipping.shipmentId } : null }, origin);
+    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, discountCents:promotion?.discountCents||0, taxCents, totalCents: squareTotalCents, fulfillmentType, shipping: selectedShipping ? { provider:selectedShipping.provider, service:selectedShipping.service, amount:deliveryCents/100, rateId:selectedShipping.rateId, shipmentId:selectedShipping.shipmentId } : null }, origin);
   } catch (err) {
     console.error('create-square-checkout', err);
-    const known = ['PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED','SHIPPO_TOKEN_MISSING','SHIPPING_RATE_REQUIRED','SHIPPING_RATE_INVALID'];
+    const known = ['PROMO_LOGIN_REQUIRED','PROMO_NOT_FIRST_PURCHASE','PROMO_PENDING_CHECKOUT','PROMO_EMAIL_MISMATCH','PROMO_INVALID','PROMO_EXPIRED','PROMO_LIMIT_REACHED','PROMO_MINIMUM','PROMO_CHANGED','PROMO_UNAVAILABLE','PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED','SHIPPO_TOKEN_MISSING','SHIPPING_RATE_REQUIRED','SHIPPING_RATE_INVALID'];
     return response(known.includes(err.message) ? 409 : 500, { error: known.includes(err.message) ? err.message : 'CHECKOUT_UNAVAILABLE' }, origin);
   }
 };
