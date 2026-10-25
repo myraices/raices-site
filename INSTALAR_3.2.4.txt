@@ -1,0 +1,35 @@
+MyRaices 3.2.4 — Corrección de imágenes móvil y editorial
+
+ACTUALIZACIÓN
+Actualizar solo MyRaices con el contenido de raices-site de este ZIP.
+Mantener NURAI 23.10.3. Sin SQL ni variables nuevas.
+Proceso habitual: python3 scripts/build.py; carpeta de publicación dist.
+Es código fuente, no una carpeta dist para Netlify Drop.
+Esta entrega no se ha desplegado automáticamente.
+
+CAUSA Y CORRECCIÓN
+La versión 3.2.3 generaba peticiones con fit=inside. Netlify las rechaza con
+HTTP 400. Se cambió por fit=contain, que mantiene las proporciones.
+El cambio se aplica a fotos de producto, galerías, categorías y editorial.
+El editorial y las categorías móviles ahora esperan a que la imagen nueva
+cargue antes de reemplazar el fondo. Si falla la optimización, cargan el
+original; si tampoco carga, conservan el fondo que ya había.
+
+VALIDACIÓN
+- Error anterior reproducido contra Netlify: HTTP 400 con fit=inside.
+- Solicitudes corregidas comprobadas contra el servicio real: 72 imágenes
+  únicas de productos, galerías y contenido público, todas HTTP 200 y
+  decodificadas correctamente como imágenes.
+- La imagen editorial principal corregida también se abrió en el navegador:
+  carga correcta, 960x640 píxeles.
+- 42 pruebas automatizadas de MyRaices/NURAI correctas, incluidas nuevas
+  verificaciones de parámetros válidos y recuperación de fondos.
+- Build MyRaices con claves ficticias correcto; dist de prueba excluido.
+La vista completa de la web con el código corregido debe revisarse después
+ del despliegue. No se completó un pago real ni una prueba dentro de Instagram.
+
+COMPROBACIÓN DESPUÉS DE DESPLEGAR
+Recargar la web y revisar ambos fondos del editorial en escritorio y las
+categorías, fotos de producto y galería en móvil. Si aparece contenido anterior,
+abrir una nueva pestaña o recargar completamente. El build cambia las versiones
+ de los archivos JS/CSS para evitar que el navegador reutilice el código previo.

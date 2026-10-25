@@ -47,7 +47,7 @@
         Wellness:'/assets/categories/category-wellness.webp'
       };
       const image=categoryImage(cat,fallbacks[cat]||'');
-      if(image) button.style.backgroundImage=`url(${JSON.stringify(window.RaicesImages.url(image,480))})`;
+      if(image) window.RaicesImages.background(button,image,480);
     });
   }
 

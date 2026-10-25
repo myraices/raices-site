@@ -13,7 +13,7 @@
       const remote=u.origin===storage && /^\/storage\/v1\/object\/public\/(product-images|site-media|blog-media)\//.test(u.pathname);
       const local=u.origin===origin && u.pathname.startsWith('/assets/');
       if(!remote&&!local)return source;
-      return '/.netlify/images?'+new URLSearchParams({url:local?u.pathname: u.href,w:String(width),fit:'inside',q:'82',fm:'webp'});
+      return '/.netlify/images?'+new URLSearchParams({url:local?u.pathname: u.href,w:String(width),fit:'contain',q:'82',fm:'webp'});
     }catch{return source;}
   }
   function srcset(value,widths=[320,480,640,960]){
@@ -27,7 +27,32 @@
     image.sizes=sizes||'(max-width:760px) 46vw, 320px';
     image.srcset=srcset(value,widths); image.src=url(value);
   }
-  const api={url,srcset,attrs,set,original};
+  // A CSS background has no DOM error event. Do not replace a working
+  // background until its replacement has decoded, and recover the original.
+  const backgrounds=new WeakMap();
+  function background(element,value,width=960,property='background-image'){
+    if(!element||!value)return;
+    const source=original(value),optimized=url(source,width);
+    let properties=backgrounds.get(element);
+    if(!properties){properties=new Map();backgrounds.set(element,properties);}
+    if(properties.get(property)?.source===optimized)return;
+    const state={source:optimized};properties.set(property,state);
+    const load=address=>{
+      const probe=new root.Image();
+      probe.onload=()=>{
+        if(properties.get(property)!==state)return;
+        element.style.setProperty(property,'url("'+String(address).replace(/"/g,'%22')+'")');
+      };
+      probe.onerror=()=>{
+        if(properties.get(property)!==state)return;
+        if(address!==source)load(source);
+        else properties.delete(property); // Keep the existing background; allow retry.
+      };
+      probe.src=address;
+    };
+    load(optimized);
+  }
+  const api={url,srcset,attrs,set,original,background};
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root.document){
     root.RaicesImages=api;
