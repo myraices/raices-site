@@ -759,6 +759,10 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
       </div>
     </article>`;
     }).join("");
+    productGrid.querySelectorAll('.product-card-shop .product-media').forEach((media,index)=>{
+      const product=list[index];
+      window.RaicesCardGallery.mount(media,[{url:product.image,alt:product.name},...(product.gallery||[])],currentLang());
+    });
     productGrid.querySelectorAll("[data-add]").forEach(btn => {
       btn.addEventListener("click", function(){
         addToCart(this.dataset.add);

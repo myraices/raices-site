@@ -1,0 +1,9 @@
+MyRaíces 3.2.2 — Galería en tarjetas de la primera pantalla
+
+Desplegar solo MyRaíces con el mismo procedimiento y variables Netlify de Production. Comando: python3 scripts/build.py; carpeta de publicación: dist. No cambiar NURAI ni repetir SQL.
+
+Las tarjetas de la tienda muestran las fotos adicionales ya guardadas por producto. En móvil se pueden deslizar horizontalmente; también hay flechas y contador. No hay reproducción automática. Una sola foto no genera controles ni espacios vacíos. El botón de favoritos y las acciones de compra siguen disponibles.
+
+Tras desplegar, recargar la web. Comprobar una tarjeta con varias imágenes y otra con solo una.
+
+Pruebas: compilación local con claves ficticias (dist de prueba excluido); 15 pruebas de catálogo e idiomas correctas; prueba DOM de navegación, límites, imagen única, duplicados y filtros de URL correcta. No se completó prueba visual de gesto en navegador real: verificar en móvil después del despliegue.
