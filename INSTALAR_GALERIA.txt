@@ -1,0 +1,27 @@
+ACTUALIZACIÓN · GALERÍA DE PRODUCTOS
+MyRaíces 3.2.1 + NURAI 23.10.1
+
+QUÉ INCLUYE
+Foto principal y hasta 8 imágenes adicionales por producto, miniaturas en la ventana de compra y ficha pública, ampliación y zoom. Cada variante agrupada usa su propia galería. NURAI permite ordenar las fotos adicionales. PNG mantiene formato sin pérdida, con lado máximo de 3600 px; JPG/WebP se optimiza hasta 1800 px.
+
+INSTALACIÓN
+1. Descomprime este paquete y los dos ZIP de proyectos.
+2. Conserva las variables de entorno actuales de ambos sitios, incluidas las de Production y promociones.
+3. Si nunca ejecutaste supabase/product_gallery_v23.9.35.sql de NURAI, ejecútalo en el SQL Editor de Supabase antes de guardar galerías. Ya está incluido en NURAI. Si ya lo ejecutaste, no hace falta repetirlo. No elimina productos ni cambia sus pesos.
+4. Despliega el proyecto MyRaíces con su configuración Netlify: comando python3 scripts/build.py y carpeta dist. Requiere GOOGLE_MAPS_API_KEY y las demás variables actuales. No se incluye un dist con claves de prueba: Netlify debe compilarlo con tus variables.
+5. Despliega NURAI: npm ci y npm run build, carpeta dist, funciones netlify/functions. Usa tu procedimiento actual para conservar las funciones del servidor.
+6. Recarga ambos sitios y verifica un producto antes de añadir todas las etiquetas.
+
+CÓMO SUBIR UNA ETIQUETA
+Productos → Editar → pestaña Imagen → Galería de la ficha → Subir foto a la galería.
+Selecciona el PNG, escribe una descripción como “Información nutricional”, ajusta el orden y guarda o publica. La foto principal se mantiene. Comprueba la miniatura en la ventana de compra y en “Ver página del producto”. Toca la imagen para ampliar; toca de nuevo la imagen ampliada para ver su tamaño completo y desplázate para leerla.
+
+PESOS Y CONTENIDO
+Los pesos y las etiquetas no se han modificado ni subido. Revisa cada producto y su imagen antes de publicarlos. Esta actualización solo cambia la gestión y visualización de imágenes. Los campos PEND. de los archivos originales seguirán visibles si subes esos PNG tal cual.
+
+VERIFICACIÓN
+NURAI: compilación Vite correcta.
+MyRaíces: compilación correcta con variables ficticias solo para validar el proceso local; ese resultado no se distribuye.
+30 pruebas existentes de catálogo, idiomas y promociones correctas.
+Prueba DOM de galería correcta: selección, deduplicación, filtrado de URLs, ampliación, zoom, cierre, imagen única y cambio de variante.
+No se ejecutó una prueba visual en navegador ni una subida contra Supabase Production. Tras desplegar, comprueba guardar, recargar NURAI y abrir la galería en móvil.

@@ -637,12 +637,16 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     productModal.setAttribute('aria-hidden','false');
 
     const modalImage = productModalContent.querySelector('#modalProductImage');
+    const galleryHost = document.createElement('div');
+    modalImage.replaceWith(galleryHost);
+    const showGallery = variant => window.RaicesGallery.mount(galleryHost, [{url:variant?.image||p.image,alt:p.name}, ...(variant?.gallery||p.gallery||[])], currentLang());
+    showGallery(hasVariants ? p.variants[0] : null);
     const modalAdd = productModalContent.querySelector('[data-modal-add]');
     productModalContent.querySelectorAll('.variant-option').forEach(btn => {
       btn.addEventListener('click', function(){
         productModalContent.querySelectorAll('.variant-option').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        if(modalImage) modalImage.style.backgroundImage = `url('${this.dataset.variantImage}')`;
+        showGallery(p.variants.find(v=>(v.sku||p.sku)===this.dataset.variantSku && variantDisplay(v)===this.dataset.variant));
         if(modalAdd){
           modalAdd.dataset.selectedVariant = this.dataset.variant;
           modalAdd.dataset.modalAdd = this.dataset.variantSku || p.sku;

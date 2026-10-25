@@ -2,7 +2,8 @@
 (function () {
   const essentialScripts = [
     "js/catalog.js?v=23.2.4",
-    "js/shop.js?v=23.2.4",
+    "js/gallery-viewer.js?v=3.2.1",
+    "js/shop.js?v=3.2.1",
   ];
   const deferredScripts = [
     "js/analytics.js?v=23.2.4",
