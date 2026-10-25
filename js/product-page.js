@@ -52,7 +52,7 @@
     setText(".details .detail:nth-child(3) p", conservation);
     setText(".details .detail:nth-child(4) p", preparation);
     const image = document.querySelector(".product-image img");
-    if (image && row.image_url) { image.src = row.image_url; image.alt = name || image.alt; image.style.objectPosition = normalize(row.image_position) || "center"; }
+    if (image && row.image_url) { window.RaicesImages.set(image,row.image_url,'(max-width:760px) 100vw, 650px',[480,640,960,1280]); image.alt = name || image.alt; image.style.objectPosition = normalize(row.image_position) || "center"; }
     if (name) document.title = `${name} | Raíces`;
     const meta = document.querySelector('meta[name="description"]'); if (meta && intro) meta.content = intro;
     const ogTitle = document.querySelector('meta[property="og:title"]'); if (ogTitle && name) ogTitle.content = `${name} | Raíces`;

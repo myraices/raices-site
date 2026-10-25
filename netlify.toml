@@ -80,3 +80,6 @@
   to = "/.netlify/functions/sitemap-products"
   status = 200
   force = true
+
+[images]
+  remote_images = ['https://tqtnffinhqbyesjdollk\.supabase\.co/storage/v1/object/public/(product-images|site-media|blog-media)/.*']

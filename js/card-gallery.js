@@ -8,7 +8,7 @@
     if(photos.length<2)return;
     const en=lang==='en',image=media.querySelector('.product-media-img');if(!image)return;
     const track=document.createElement('div');track.className='rcg-track';track.tabIndex=0;track.setAttribute('role','group');track.setAttribute('aria-label',en?'Product photos. Swipe or use arrow keys.':'Fotos del producto. Desliza o usa las teclas de flecha.');
-    photos.forEach((photo,i)=>{const img=document.createElement('img');img.src=photo.url;img.alt=photo.alt||image.alt;img.loading='lazy';img.decoding='async';img.draggable=false;track.append(img);});
+    photos.forEach((photo,i)=>{const img=document.createElement('img');window.RaicesImages.set(img,photo.url);img.alt=photo.alt||image.alt;img.loading='lazy';img.decoding='async';img.draggable=false;track.append(img);});
     image.replaceWith(track);media.classList.add('has-card-gallery');
     let index=0;
     const controls=document.createElement('div');controls.className='rcg-controls';

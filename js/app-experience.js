@@ -47,7 +47,7 @@
         Wellness:'/assets/categories/category-wellness.webp'
       };
       const image=categoryImage(cat,fallbacks[cat]||'');
-      if(image) button.style.backgroundImage=`url(${JSON.stringify(image)})`;
+      if(image) button.style.backgroundImage=`url(${JSON.stringify(window.RaicesImages.url(image,480))})`;
     });
   }
 
@@ -137,7 +137,7 @@
   }
   function productCard(p){
     const available=p.available!==false&&!p.soldOut;
-    return `<article class="app-product-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img src="${p.image}" alt="${p.name}" loading="lazy"><div class="app-product-info"><h3>${p.name}</h3>${window.RAICES_PACKAGE_HTML(p)}<p>${p.subcategory||p.collection||''}</p><div class="app-product-bottom"><span class="app-price">${money(p.price)}</span>${available?`<button class="app-add" type="button" data-app-add="${p.sku}">${txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></div></button></article>`;
+    return `<article class="app-product-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img ${window.RaicesImages.attrs(p.image,"(max-width:760px) 72vw, 320px")} alt="${p.name}" loading="lazy"><div class="app-product-info"><h3>${p.name}</h3>${window.RAICES_PACKAGE_HTML(p)}<p>${p.subcategory||p.collection||''}</p><div class="app-product-bottom"><span class="app-price">${money(p.price)}</span>${available?`<button class="app-add" type="button" data-app-add="${p.sku}">${txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></div></button></article>`;
   }
   function bindCards(root){
     root.querySelectorAll('[data-app-view]').forEach(b=>b.addEventListener('click',e=>{ if(e.target.closest('[data-app-add]')) return; openProduct(b.dataset.appView); }));
@@ -151,7 +151,7 @@
     const available=p.available!==false&&!p.soldOut;
     return `<article class="app-mini-card" data-search-product="${p.sku}">
       <button class="app-mini-view" type="button" data-app-view="${p.sku}">
-        <img src="${p.image}" alt="${p.name}" loading="lazy">
+        <img ${window.RaicesImages.attrs(p.image,"(max-width:760px) 72vw, 320px")} alt="${p.name}" loading="lazy">
         <div class="app-mini-body"><h3>${p.name}</h3>${window.RAICES_PACKAGE_HTML(p)}<div class="app-mini-actions"><span>${money(p.price)}</span></div></div>
       </button>
       ${available?`<button class="app-mini-add" type="button" data-app-add="${p.sku}" aria-label="${txt('Agregar','Add')} ${p.name}">+</button>`:''}
@@ -232,7 +232,7 @@
   window.addEventListener('raices:productAdded',event=>{
     const product=event.detail?.product; if(!product) return;
     const qty=Number(event.detail?.quantity||1); const toast=ensureToast();
-    toast.querySelector('img').src=product.image||'/assets/raices-logo.webp';
+    toast.querySelector('img').src=window.RaicesImages.url(product.image||'/assets/raices-logo.webp',160);
     toast.querySelector('img').alt=product.name||'';
     toast.querySelector('strong').textContent=product.name||'';
     toast.querySelector('small').textContent=language()==='es' ? `${qty} agregado${qty>1?'s':''} al carrito` : `${qty} added to cart`;

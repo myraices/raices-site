@@ -21,6 +21,8 @@
     });
   }
 
+  // Preload in parallel, but preserve execution order and the catalog barrier.
+  essentialScripts.forEach(src=>{const link=document.createElement('link');link.rel='preload';link.as='script';link.href=src;document.head.appendChild(link);});
   async function start() {
     await (window.RAICES_CATALOG_DATABASE_READY || Promise.resolve());
 

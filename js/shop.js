@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     categoryDoors.innerHTML = order.map(cat => {
       const item = categories[cat];
       return `<a class="door-card" href="#shop" data-category-door="${cat}">
-        <span class="door-bg"><img class="door-bg-img" src="${item.image}" alt="" loading="lazy" decoding="async"></span>
+        <span class="door-bg"><img class="door-bg-img" ${window.RaicesImages.attrs(item.image,"(max-width:760px) 90vw, 400px")} alt="" loading="lazy" decoding="async"></span>
         <span class="door-content">
           <span class="eyebrow">${categoryLabel(cat)}</span>
           <h3>${currentLang()==='es' ? (item.spanish || item.title) : item.title}</h3>
@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     const p = products.find(item => item.sku === sku);
     if(!p || !productModal || !productModalContent) return;
     const benefits = benefitList(p).map(b => `<li>${b}</li>`).join('');
-    const related = relatedProducts(p).map(r => `<button class="ritual-card" ${isProductAvailable(r) ? `data-related-add="${r.sku}"` : `data-related-view="${r.sku}"`}><span style="background-image:url('${r.image}')"></span><strong>${r.name}</strong><em>${money(r.price)}${isProductAvailable(r) ? '' : ` · ${t('sold_out')}`}</em></button>`).join('');
+    const related = relatedProducts(p).map(r => `<button class="ritual-card" ${isProductAvailable(r) ? `data-related-add="${r.sku}"` : `data-related-view="${r.sku}"`}><span style="background-image:url('${window.RaicesImages.url(r.image,320)}')"></span><strong>${r.name}</strong><em>${money(r.price)}${isProductAvailable(r) ? '' : ` · ${t('sold_out')}`}</em></button>`).join('');
     const hasVariants = Array.isArray(p.variants) && p.variants.length;
     const selectedVariant = hasVariants ? variantDisplay(p.variants[0]) : "";
     const selectedVariantSku = hasVariants ? (p.variants[0]?.sku || p.sku) : p.sku;
@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
       </div>` : '';
     productModalContent.innerHTML = `
       <div class="product-modal-grid">
-        <div class="product-modal-image" id="modalProductImage" style="background-image:url('${hasVariants ? (p.variants[0]?.image || p.image) : p.image}')"></div>
+        <div class="product-modal-image" id="modalProductImage" style="background-image:url('${window.RaicesImages.url(hasVariants ? (p.variants[0]?.image || p.image) : p.image,960)}')"></div>
         <div class="product-modal-info">
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
           <h2>${p.name}</h2><a class="modal-product-page-link" href="/products/${p.slug}/?lang=${currentLang()}">${currentLang()==='es' ? 'Ver página del producto' : 'View product page'} →</a>
@@ -732,7 +732,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
             : `<button class="text-product-link" data-view="${p.sku}">${p.cardCta || (p.category==='Wellness' ? (currentLang()==='es' ? 'Explorar guía' : 'Explore guide') : t('view_product'))}</button>
              <button class="btn add-btn" data-add="${p.sku}">${t('add')}</button>`;
       return `<article class="product-card-shop ${isRitualBox ? 'is-ritual-box' : ''} ${isProductAvailable(p) ? '' : 'is-sold-out'}">
-      <div class="product-media"><img class="product-media-img" src="${p.image}" alt="${p.name}" loading="lazy" decoding="async" style="object-position:${p.imagePosition || 'center'}">
+      <div class="product-media"><img class="product-media-img" ${window.RaicesImages.attrs(p.image)} alt="${p.name}" loading="lazy" decoding="async" style="object-position:${p.imagePosition || 'center'}">
         <span class="product-badge">${isProductAvailable(p) ? (p.badge || (isRitualBox ? (currentLang()==='es' ? 'Personalizable' : 'Customizable') : (p.category==='Wellness' ? (currentLang()==='es' ? 'Guía digital' : 'Digital guide') : translateSubcategory(p.subcategory)))) : t('sold_out')}</span>
         <button type="button" class="product-favorite-btn ${isFavorite(p.sku) ? 'active' : ''}" data-favorite="${p.sku}" aria-pressed="${String(isFavorite(p.sku))}" aria-label="${currentLang()==='es' ? 'Guardar en favoritos' : 'Save to favorites'}">${isFavorite(p.sku) ? '♥' : '♡'}</button>
       </div>
@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
       const unit = translateUnit(item.product.unit);
       const stockNote = '';
       return `<div class="cart-item">
-      <div class="cart-item-img" style="background-image:url('${variantImage}')"></div>
+      <div class="cart-item-img" style="background-image:url('${window.RaicesImages.url(variantImage,160)}')"></div>
       <div class="cart-item-main">
         <div class="cart-item-title-row">
           <h4>${item.product.name}</h4>

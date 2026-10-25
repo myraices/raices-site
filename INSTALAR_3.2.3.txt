@@ -1,0 +1,49 @@
+MyRaices 3.2.3 — Optimización de carga móvil
+Base: MyRaices 3.2.2 Galería Tarjetas. Fecha: 25 octubre 2026.
+
+DESPLIEGUE
+1. Actualiza el proyecto MyRaices con el contenido de raices-site de este ZIP,
+   incluido netlify.toml y el nuevo js/responsive-images.js.
+2. Usa el proceso habitual de Netlify Production: python3 scripts/build.py;
+   carpeta de publicación dist. Conserva las variables actuales.
+3. Despliega también NURAI 23.10.3 con npm run build y carpeta dist.
+No hay SQL nuevo ni variables nuevas. Estos ZIP contienen código fuente;
+no son una carpeta dist para arrastrar a Netlify Drop. No se ha desplegado nada.
+
+CAMBIOS
+- Las tarjetas, carruseles, fotos de producto y miniaturas solicitan imágenes
+  adaptadas al tamaño de pantalla a través de Netlify Image CDN.
+- Se aplica también a imágenes ya publicadas de los buckets públicos del proyecto.
+  Los originales y sus URLs en Supabase permanecen disponibles.
+- Las etiquetas se abren en su resolución original al tocar para ampliar.
+- Si falla la transformación de una imagen, se intenta cargar su original.
+- El móvil no solicita la foto del Hero de escritorio oculto. La vista previa
+  de NURAI conserva el Hero. El Hero visible usa una versión redimensionada.
+- Los archivos esenciales del catálogo se descargan en paralelo mientras llega
+  la base de datos y se ejecutan en el orden que necesitan.
+- Fuentes cargadas desde el HTML en lugar de importaciones dentro del CSS.
+- La librería de Supabase ya no bloquea la lectura inicial del HTML desde el head.
+Se conservan promociones, precios, disponibilidad, navegación y galería.
+
+VALIDACIÓN COMPLETADA
+- Build de MyRaices con claves ficticias; dist de prueba excluido del ZIP.
+- 39 pruebas automatizadas de catálogo, idiomas, promociones, impuestos,
+  checkout simulado, publicación y galería: correctas.
+- Chromium, ventanas 390x844 y 1440x1000 a escala 2: catálogo, galería, zoom,
+  carrito y conservación al recargar correctos; sin errores JavaScript.
+- No descarga del Hero oculto en móvil; Hero de escritorio optimizado.
+- Recuperación del original ante fallo del servicio de imágenes.
+- Fotos de páginas de producto generadas por el servidor correctas.
+Las llamadas a datos, imágenes y servicios externos se simularon para estas
+pruebas. No se midió velocidad real de red móvil ni se ejecutó un pago real.
+
+COMPROBAR DESPUÉS DEL DESPLIEGUE
+1. Abre myraices.com desde el enlace de Instagram en iPhone/Android.
+2. Revisa imágenes de categorías/productos y desliza una tarjeta con galería.
+3. Amplía una etiqueta y comprueba su lectura.
+4. Agrega productos, recarga y comprueba el carrito.
+5. Inicia sesión, aplica BIENVENIDO10 con una cuenta elegible, selecciona una
+   dirección de Google y revisa importes en Square antes de autorizar el pago.
+6. Regresa de Square a la web y revisa el carrito/estado del pedido.
+Las transformaciones reales de Netlify deben comprobarse tras desplegar;
+la prueba local sustituye ese servicio y no demuestra su respuesta en Production.
