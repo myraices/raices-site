@@ -1,8 +1,21 @@
 (function(){
   const mq = window.matchMedia('(max-width:760px)');
-  if(!mq.matches) return;
+  if(!mq.matches||new URLSearchParams(location.search).get('cmsPreview')==='1') return;
   document.body.classList.add('app-experience');
 
+  const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let pendingCategory=null;
+  let selectedCategory="All";
+  const categoryKeys=['Kitchen','Herbal','Desserts','Home','Wellness'];
+  const categoryName=cat=>({Kitchen:txt('Cocina','Kitchen'),Herbal:'Herbal',Desserts:txt('Dulces','Desserts'),Home:'Home',Wellness:txt('Guías','Guides')})[cat];
+  const configurable=p=>(p.variants||[]).length>0||p.slug==='ritual-box';
+  const shortName=p=>String(p.name||'').replace(/\s*\([^)]*(?:pulgadas|inch|porciones|servings)[^)]*\)/gi,'').trim();
+  window.RAICES_MOBILE_NAME=p=>escapeHTML(shortName(p));
+  window.RAICES_MOBILE_PRESENTATION=p=>{
+    const size=String(p.name||'').match(/(\d+(?:\.\d+)?)\s*(?:pulgadas|inch)/i);
+    const count=window.RAICES_PACKAGE_LABEL?.(p);
+    return count||(size?size[1]+'″ · ':'')+(p.netWeight||p.unitWeight||p.unit||'');
+  };
   const money = value => '$' + Number(value || 0).toFixed(2);
   const lang = () => window.raicesLang || localStorage.getItem('raices_lang') || 'es';
   const txt = (es,en) => lang()==='es' ? es : en;
@@ -28,9 +41,36 @@
     openProduct(sku);
   }
   function chooseCategory(cat){
-    clickExisting(`[data-category-nav="${cat}"]`);
-    setActive('shop');
-    setTimeout(()=>document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+    selectedCategory=cat;closeSearch();document.body.classList.add('mobile-catalog-active');setActive('shop');
+    if(window.RAICES_BROWSE_CATEGORY)window.RAICES_BROWSE_CATEGORY(cat);
+    else pendingCategory=cat;
+    document.querySelectorAll('[data-mobile-cat]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mobileCat===cat)));
+    requestAnimationFrame(()=>document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  }
+  function updateHero(){
+    const image=document.getElementById('mobileHeroImage');if(!image)return;
+    const content=window.RAICES_SITE_CONTENT||{};
+    const editorial=content.editorial?.primary_image_url;
+    const explicit=!editorial&&content.hero?.image_mobile_url;
+    const value=editorial||explicit||categoryImage('Kitchen','/assets/empanadas-signature-board.webp');
+    if(image.dataset.original===value)return;
+    image.dataset.original=value;
+    window.RaicesImages.set(image,value,'(max-width:760px) 100vw, 600px',[480,640,960]);
+    image.alt=explicit?(content.hero?.['image_alt_'+lang()]||content.hero?.image_alt_es||txt('Raíces: volver a lo esencial','Raíces: back to our roots')):txt('Alimentos artesanales de Raíces','Handcrafted Raíces foods');
+  }
+  async function checkDelivery(form){
+    const input=form.querySelector('input'),message=form.querySelector('[role="status"]'),button=form.querySelector('button');
+    if(!/^\d{5}$/.test(input.value)){message.textContent=txt('Escribe un ZIP de 5 dígitos.','Enter a 5-digit ZIP code.');input.focus();return;}
+    button.disabled=true;message.textContent=txt('Consultando cobertura…','Checking delivery…');message.dataset.state='idle';
+    try{
+      if(!window.RAICES_CHECK_DELIVERY)throw new Error('not-ready');
+      const state=await window.RAICES_CHECK_DELIVERY(input.value);
+      message.dataset.state=state.valid?'ok':'error';
+      message.textContent=state.valid
+        ? txt(`Sí, entregamos en ${state.zone}. Tarifa base: ${money(state.cost)}. El total se confirma en el carrito.`,`Yes, we deliver to ${state.zone}. Base fee: ${money(state.cost)}. The cart confirms the final total.`)
+        : txt('Tu ZIP no aparece en la cobertura local. Consulta por WhatsApp; las guías digitales no requieren entrega.','Your ZIP is outside our listed local coverage. Ask us on WhatsApp; digital guides need no delivery.');
+    }catch{message.textContent=txt('No pudimos consultar la cobertura. Intenta de nuevo en unos momentos.','We could not check delivery. Please try again shortly.');message.dataset.state='error';}
+    finally{button.disabled=false;}
   }
   function pulseCart(){ document.querySelector('.app-nav-cart')?.animate([{transform:'scale(1)'},{transform:'scale(1.13)'},{transform:'scale(1)'}],{duration:360}); }
   function categoryImage(cat,fallback){
@@ -44,6 +84,7 @@
         Kitchen:'/assets/categories/category-kitchen.webp',
         Herbal:'/assets/categories/category-herbal.webp',
         Desserts:'/assets/categories/category-desserts.webp',
+        Home:'/assets/categories/category-home.webp',
         Wellness:'/assets/categories/category-wellness.webp'
       };
       const image=categoryImage(cat,fallbacks[cat]||'');
@@ -54,23 +95,13 @@
   function createShell(){
     const shell=document.createElement('section'); shell.className='app-shell'; shell.id='appHome';
     shell.innerHTML=`
-      <div class="app-greeting"><div><small>${txt('Bienvenido a Raíces','Welcome to Raíces')}</small><h1>${txt('¿Qué necesitas hoy?','What do you need today?')}</h1></div><button class="app-avatar js-auth-open" aria-label="Perfil">R</button></div>
-      <button class="app-search-trigger" type="button"><span>⌕</span><span>${txt('Buscar arepas, tés, proteínas...','Search arepas, teas, proteins...')}</span></button>
-      <div class="app-prompt"><h2>${txt('Compra según tu momento','Shop for your moment')}</h2></div>
-      <div class="app-intent-grid">
-        <button class="app-intent" data-cat="Kitchen" style="background-image:url('${categoryImage('Kitchen','/assets/categories/category-kitchen.webp')}')"><span>${txt('Comer fácil','Easy meals')}<small>${txt('Arepas, empanadas y proteínas','Arepas, empanadas & proteins')}</small></span></button>
-        <button class="app-intent" data-cat="Herbal" style="background-image:url('${categoryImage('Herbal','/assets/categories/category-herbal.webp')}')"><span>${txt('Un momento de calma','A moment of calm')}<small>${txt('Tés e infusiones','Teas & infusions')}</small></span></button>
-        <button class="app-intent" data-cat="Desserts" style="background-image:url('${categoryImage('Desserts','/assets/categories/category-desserts.webp')}')"><span>${txt('Algo dulce','Something sweet')}<small>${txt('Postres artesanales','Handcrafted desserts')}</small></span></button>
-        <button class="app-intent" data-cat="Wellness" style="background-image:url('${categoryImage('Wellness','/assets/categories/category-wellness.webp')}')"><span>${txt('Volver a mí','Come back to me')}<small>${txt('Guías y rituales','Guides & rituals')}</small></span></button>
-      </div>
-      <div class="app-section-row"><h2 class="app-section-title">${txt('Para comenzar','Start here')}</h2><button data-see-all>${txt('Ver todo','See all')}</button></div>
-      <div class="app-product-rail" id="appFeatured"></div>
-      <div class="app-section-row"><h2 class="app-section-title">${txt('Accesos rápidos','Quick access')}</h2></div>
-      <div class="app-quick-strip">
-        <button class="app-quick" data-cat="Kitchen"><b>🥟</b><small>${txt('Cocina','Kitchen')}</small></button>
-        <button class="app-quick" data-cat="Home"><b>🫖</b><small>Home</small></button>
-        <button class="app-quick" data-search-open><b>⌕</b><small>${txt('Buscar','Search')}</small></button>
-      </div>`;
+      <section class="mobile-hero" aria-labelledby="mobileHeroTitle">
+        <div class="mobile-hero-photo"><img id="mobileHeroImage" src="/assets/empanadas-signature-board.webp" alt="${txt('Alimentos artesanales de Raíces','Handcrafted Raíces foods')}" width="960" height="640" fetchpriority="high" decoding="async"></div>
+        <div class="mobile-hero-copy"><p class="eyebrow">${txt('La salud comienza desde la raíz','Health begins at the root')}</p><h1 id="mobileHeroTitle">${txt('Nutre tu cuerpo.<br>Vuelve a tus raíces.','Nourish your body.<br>Return to your roots.')}</h1><p>${txt('Alimentos artesanales y rituales de bienestar para tu día a día.','Handcrafted foods and wellness rituals for everyday life.')}</p><button class="btn" type="button" data-browse>${txt('Comprar ahora','Shop now')} <span aria-hidden="true">↗</span></button></div>
+      </section>
+      <section class="mobile-delivery" aria-labelledby="mobileDeliveryTitle"><p class="eyebrow">${txt('Cerca de ti','Close to you')}</p><h2 id="mobileDeliveryTitle">${txt('¿Entregamos en tu zona?','Do we deliver to you?')}</h2><p>${txt('Consulta la cobertura local con tu ZIP.','Check local delivery with your ZIP code.')}</p><form id="mobileDeliveryForm" novalidate><label class="sr-only" for="mobileDeliveryZip">ZIP Code</label><div class="mobile-zip-row"><input id="mobileDeliveryZip" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="ZIP Code"><button type="submit">${txt('Consultar','Check')}</button></div><p role="status" aria-live="polite"></p></form></section>
+      <section class="mobile-collections" aria-labelledby="mobileCollectionTitle"><div class="app-section-row"><div><p class="eyebrow">${txt('Una misma raíz','One shared root')}</p><h2 id="mobileCollectionTitle">${txt('Explora nuestras colecciones','Explore our collections')}</h2></div></div><div class="app-intent-grid">${categoryKeys.map(cat=>`<button type="button" class="app-intent" data-cat="${cat}"><span>${categoryName(cat)}<small>${({Kitchen:txt('Arepas, empanadas y proteínas','Arepas, empanadas & proteins'),Herbal:txt('Tés e infusiones','Teas & infusions'),Desserts:txt('Postres para compartir','Desserts to share'),Home:txt('Objetos para tus rituales','Objects for your rituals'),Wellness:txt('Bienestar para aprender','Wellness to discover')})[cat]}</small></span></button>`).join('')}</div></section>
+      <section class="mobile-featured" aria-labelledby="mobileFeaturedTitle"><div class="app-section-row"><div><p class="eyebrow">${txt('Elegidos para ti','Selected for you')}</p><h2 id="mobileFeaturedTitle">${txt('Para comenzar','Start here')}</h2></div><button type="button" data-see-all>${txt('Ver todo','View all')} ↗</button></div><div class="app-product-rail" id="appFeatured"><p role="status">${txt('Cargando productos…','Loading products…')}</p></div></section>`;
     const main=document.querySelector('main'); main?.parentNode.insertBefore(shell,main);
 
     const search=document.createElement('section'); search.className='app-search-screen'; search.id='appSearch';
@@ -79,16 +110,19 @@
 
     const nav=document.createElement('nav'); nav.className='app-bottom-nav'; nav.setAttribute('aria-label','App');
     nav.innerHTML=`
-      <button class="app-nav-btn active" data-app-tab="home">${icon('home')}<span>${txt('Inicio','Home')}</span></button>
-      <button class="app-nav-btn" data-app-tab="search">${icon('search')}<span>${txt('Buscar','Search')}</span></button>
-      <button class="app-nav-btn app-nav-cart" data-app-tab="cart">${icon('cart')}<span>${txt('Carrito','Cart')}</span><i class="app-nav-badge" id="appCartCount">0</i></button>
-      <button class="app-nav-btn" data-app-tab="blog">${icon('blog')}<span>Blog</span></button>
-      <button class="app-nav-btn" data-app-tab="orders">${icon('orders')}<span>${txt('Pedidos','Orders')}</span></button>
-      <button class="app-nav-btn" data-app-tab="profile">${icon('profile')}<span>${txt('Perfil','Profile')}</span></button>`;
+      <button type="button" class="app-nav-btn active" data-app-tab="home" aria-current="page">${icon('home')}<span>${txt('Inicio','Home')}</span></button>
+      <button type="button" class="app-nav-btn" data-app-tab="shop">${icon('search')}<span>${txt('Tienda','Shop')}</span></button>
+      <button type="button" class="app-nav-btn app-nav-cart" data-app-tab="cart">${icon('cart')}<span>${txt('Carrito','Cart')}</span><i class="app-nav-badge" id="appCartCount">0</i></button>
+      <button type="button" class="app-nav-btn" data-app-tab="profile">${icon('profile')}<span>${txt('Mi cuenta','My account')}</span></button>`;
     document.body.appendChild(nav);
 
     shell.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click',()=>chooseCategory(b.dataset.cat)));
-    shell.querySelector('[data-see-all]')?.addEventListener('click',()=>chooseCategory('Kitchen'));
+    shell.querySelectorAll('[data-see-all],[data-browse]').forEach(b=>b.addEventListener('click',()=>chooseCategory('All')));
+    const form=shell.querySelector('#mobileDeliveryForm');
+    form.querySelector('input').value=localStorage.getItem('raices_delivery_zip')||'';
+    form.addEventListener('submit',e=>{e.preventDefault();checkDelivery(form);});
+    form.querySelector('input').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,5);});
+    updateHero();updateMobileCategoryImages();
     shell.querySelectorAll('.app-search-trigger,[data-search-open]').forEach(b=>b.addEventListener('click',openSearch));
     search.querySelector('.app-back').addEventListener('click',closeSearch);
     search.querySelector('#appSearchInput').addEventListener('input',e=>renderSearch(e.target.value));
@@ -96,13 +130,14 @@
   }
 
   function handleTab(tab){
-    if(tab==='home'){ closeSearch(); setActive('home'); window.scrollTo({top:0,behavior:'smooth'}); }
+    if(tab==='home'){ closeSearch(); document.body.classList.remove('mobile-catalog-active');setActive('home');const input=document.getElementById('mobileDeliveryZip');const zip=localStorage.getItem('raices_delivery_zip')||'';if(input&&input.value!==zip){input.value=zip;document.querySelector('#mobileDeliveryForm [role=status]').textContent='';} window.scrollTo({top:0,behavior:'smooth'}); }
+    if(tab==='shop')chooseCategory('All');
     if(tab==='search') openSearch();
     if(tab==='cart'){ document.getElementById('openCart')?.click(); setActive('cart'); }
     if(tab==='blog'){ location.href='/blog'; return; }
     if(tab==='orders'||tab==='profile'){ document.querySelector('.js-auth-open')?.click(); setActive(tab); }
   }
-  function setActive(tab){ document.querySelectorAll('.app-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.appTab===tab)); }
+  function setActive(tab){ document.querySelectorAll('.app-nav-btn').forEach(b=>{const active=b.dataset.appTab===tab;b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}); }
   function setPreopeningBannerVisible(visible){
     document.querySelectorAll('.preopening-bar').forEach(bar=>{
       if(visible){
@@ -133,19 +168,23 @@
     screen?.setAttribute('aria-hidden','true');
     document.body.classList.remove('app-search-open');
     setPreopeningBannerVisible(true);
-    setActive('home');
+    setActive(document.body.classList.contains('mobile-catalog-active')?'shop':'home');
   }
   function productCard(p){
-    const available=p.available!==false&&!p.soldOut;
-    return `<article class="app-product-card"><button type="button" data-app-view="${p.sku}" style="border:0;padding:0;background:none;width:100%;text-align:left"><img ${window.RaicesImages.attrs(p.image,"(max-width:760px) 72vw, 320px")} alt="${p.name}" loading="lazy"><div class="app-product-info"><h3>${p.name}</h3>${window.RAICES_PACKAGE_HTML(p)}<p>${p.subcategory||p.collection||''}</p><div class="app-product-bottom"><span class="app-price">${money(p.price)}</span>${available?`<button class="app-add" type="button" data-app-add="${p.sku}">${txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></div></button></article>`;
+    const available=p.available!==false&&!p.soldOut,needsOptions=configurable(p);
+    const name=escapeHTML(shortName(p)),sku=escapeHTML(p.sku);
+    const presentation=window.RAICES_MOBILE_PRESENTATION(p);
+    return `<article class="app-product-card"><button class="mobile-featured-view" type="button" data-app-view="${sku}"><img ${window.RaicesImages.attrs(p.image,'(max-width:760px) 46vw, 320px')} alt="${name}" loading="lazy" decoding="async"><h3>${name}</h3></button><div class="app-product-info"><p class="mobile-presentation">${escapeHTML(presentation)}</p><strong class="app-price">${money(p.price)}</strong>${available?`<button class="app-add" type="button" ${needsOptions?'data-app-view':'data-app-add'}="${sku}">${needsOptions?txt('Elegir opciones','Choose options'):txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></article>`;
   }
   function bindCards(root){
     root.querySelectorAll('[data-app-view]').forEach(b=>b.addEventListener('click',e=>{ if(e.target.closest('[data-app-add]')) return; openProduct(b.dataset.appView); }));
-    root.querySelectorAll('[data-app-add]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();addProduct(b.dataset.appAdd);}));
+    root.querySelectorAll('[data-app-add]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const product=getProducts().find(p=>p.sku===b.dataset.appAdd);if(product&&configurable(product))openProduct(product.sku);else addProduct(b.dataset.appAdd);}));
   }
   function renderFeatured(){
     const root=document.getElementById('appFeatured'); if(!root) return;
-    const ps=getProducts().filter(p=>p.available!==false&&!p.soldOut).slice(0,8); root.innerHTML=ps.map(productCard).join(''); bindCards(root);
+    const available=getProducts().filter(p=>p.available!==false&&!p.soldOut);
+    const featured=available.filter(p=>p.featured);
+    const ps=(featured.length?featured:available).slice(0,4); root.innerHTML=ps.length?ps.map(productCard).join(''):`<p>${txt('No hay productos disponibles en este momento.','No products are available right now.')}</p>`; bindCards(root);
   }
   function miniCard(p){
     const available=p.available!==false&&!p.soldOut;
@@ -177,12 +216,18 @@
 
   function init(){
     createShell();
+    const headerSearch=document.createElement('button');headerSearch.type='button';headerSearch.className='icon-link mobile-header-search';headerSearch.setAttribute('aria-label',txt('Buscar productos','Search products'));headerSearch.innerHTML=icon('search');headerSearch.addEventListener('click',openSearch);document.querySelector('.nav-icons')?.prepend(headerSearch);
+    const chips=document.createElement('nav');chips.className='mobile-category-tabs';chips.setAttribute('aria-label',txt('Colecciones','Collections'));
+    const rebuildChips=()=>{chips.innerHTML=['All',...categoryKeys].map(cat=>`<button type="button" data-mobile-cat="${cat}" aria-pressed="${cat===selectedCategory}">${cat==='All'?txt('Todo','All'):categoryName(cat)}</button>`).join('');chips.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>chooseCategory(b.dataset.mobileCat)));};rebuildChips();document.querySelector('#shopResults .shop-main')?.prepend(chips);
+    document.addEventListener('click',event=>{const home=event.target.closest('a[href="#inicio"]');if(home){event.preventDefault();handleTab('home');return;}const story=event.target.closest('a[href="#nosotros"]');if(story)document.body.classList.remove('mobile-catalog-active');const anchor=event.target.closest('a[href="#shop"],a[href="#shopResults"]');if(!anchor)return;if(anchor.dataset.categoryNav){selectedCategory=anchor.dataset.categoryNav;chips.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mobileCat===selectedCategory)));}document.body.classList.add('mobile-catalog-active');setActive('shop');});
+    if(['#shop','#shopResults'].includes(location.hash))chooseCategory('All');
+    window.addEventListener('hashchange',()=>{if(['#shop','#shopResults'].includes(location.hash))chooseCategory('All');});
     let tries=0; const timer=setInterval(()=>{tries++; if(getProducts().length){clearInterval(timer);renderFeatured();renderSearch('');} if(tries>80)clearInterval(timer);},125);
     watchCart();
-    window.addEventListener('raices:store-ready',()=>{ renderFeatured(); renderSearch(document.getElementById('appSearchInput')?.value||''); });
+    window.addEventListener('raices:store-ready',()=>{ if(pendingCategory!==null){const cat=pendingCategory;pendingCategory=null;chooseCategory(cat);}renderFeatured(); renderSearch(document.getElementById('appSearchInput')?.value||''); });
     // CMS collections are loaded asynchronously. Keep the conversion-focused mobile
     // cards synchronized with the same images published from NURAI Contenido Web.
-    window.addEventListener('raices:siteContentUpdated',updateMobileCategoryImages);
+    window.addEventListener('raices:siteContentUpdated',()=>{updateMobileCategoryImages();updateHero();});
     updateMobileCategoryImages();
     // v13.1.1: never force a page reload on language/auth changes.
     // The previous reload handler could create an endless refresh loop after login
@@ -197,7 +242,7 @@
       document.getElementById('appHome')?.remove();
       document.getElementById('appSearch')?.remove();
       document.querySelector('.app-bottom-nav')?.remove();
-      createShell();
+      createShell();rebuildChips();headerSearch.setAttribute('aria-label',txt('Buscar productos','Search products'));
 
       renderFeatured();
       renderSearch(currentQuery);

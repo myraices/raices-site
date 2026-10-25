@@ -625,7 +625,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
           <div class="modal-price-row"><div><strong id="modalVariantPrice">${money(hasVariants ? (p.variants[0]?.price ?? p.price) : p.price)}</strong><span id="modalVariantSoldOut" class="sold-out-label" style="display:${selectedVariantAvailable?'none':'inline-flex'}">${t('sold_out')}</span></div><div class="modal-buy-controls" id="modalBuyControls" style="display:${selectedVariantAvailable?'flex':'none'}"><div class="modal-qty" aria-label="${currentLang()==='es' ? 'Cantidad' : 'Quantity'}"><button type="button" data-modal-qty="-1" aria-label="${currentLang()==='es' ? 'Reducir cantidad' : 'Decrease quantity'}">−</button><strong id="modalQtyValue">1</strong><button type="button" data-modal-qty="1" aria-label="${currentLang()==='es' ? 'Aumentar cantidad' : 'Increase quantity'}">+</button></div><button class="btn modal-sticky-add" data-modal-add="${selectedVariantSku}" data-quantity="1" ${hasVariants ? `data-selected-variant="${selectedVariant}"` : ''}>${t('add_to_cart')}</button></div></div>
           <div class="modal-sections product-accordion">
             <details open><summary>${t('benefits')}</summary><div><ul>${benefits}</ul></div></details>
-            <details><summary>${t('ingredients')}</summary><div><p>${localizedIngredients(p)}</p></div></details>
+            <details><summary>${t('ingredients')}${['Kitchen','Herbal','Desserts'].includes(p.category)?(currentLang()==='es'?' y alérgenos':' & allergens'):''}</summary><div><p>${localizedIngredients(p)}</p>${['Kitchen','Herbal','Desserts'].includes(p.category)?`<a class="mobile-allergen-link" href="https://wa.me/16577937685">${currentLang()==='es'?'Consultar alérgenos con Raíces':'Ask Raíces about allergens'} →</a>`:''}</div></details>
             <details><summary>${t('conservation')}</summary><div><p>${productConservation(p)}</p></div></details>
             <details><summary>${t('preparation')}</summary><div><p>${productPreparation(p)}</p></div></details>
             <details><summary>${t('ideal_moment')}</summary><div><p>${p.moment || (currentLang()==='es' ? 'Un ritual cotidiano de bienestar.' : 'An everyday wellness ritual.')}</p></div></details>
@@ -739,8 +739,8 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
       <div class="product-body">
         <div>
           <p class="eyebrow">${collections[p.collection]?.title || p.collection}</p>
-          <h3><a class="product-seo-link" href="/products/${p.slug}/?lang=${currentLang()}">${p.name}</a></h3>
-          ${window.RAICES_PACKAGE_HTML(p)}
+          <h3><a class="product-seo-link" href="/products/${p.slug}/?lang=${currentLang()}">${window.RAICES_MOBILE_NAME?window.RAICES_MOBILE_NAME(p):p.name}</a></h3>
+          ${window.RAICES_MOBILE_PRESENTATION?`<span class="product-package-label">${String(window.RAICES_MOBILE_PRESENTATION(p)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</span>`:window.RAICES_PACKAGE_HTML(p)}
         </div>
         <p>${p.cardDescription || productDescription(p)}</p>
         ${productTagsHtml(p,{limit:3})}
@@ -1093,7 +1093,19 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     window.history.replaceState({}, '', cleanUrl);
   }
 
-  loadDeliveryConfig();
+  const deliveryReady=loadDeliveryConfig();
+  window.RAICES_CHECK_DELIVERY=async value=>{
+    await deliveryReady;
+    if(!deliveryConfigReady)await loadDeliveryConfig();
+    if(!deliveryConfigReady)throw new Error('DELIVERY_CONFIG_UNAVAILABLE');
+    const zip=normalizeZip(value);
+    if(zip.length!==5)throw new Error('INVALID_ZIP');
+    setDeliveryZip(zip);renderCart();
+    return buildDeliveryState(zip);
+  };
+  window.RAICES_BROWSE_CATEGORY=category=>{
+    activeCategory=categories[category]?category:'All';activeCollection='All';renderFilters();renderProducts();
+  };
   reconcilePendingPaidOrder();
   initializeCartSync();
   window.addEventListener("pageshow",async()=>{

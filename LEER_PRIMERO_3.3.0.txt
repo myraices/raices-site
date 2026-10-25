@@ -1,0 +1,61 @@
+MyRaices 3.3.0 — Nueva experiencia móvil Raíces
+Base: MyRaices 3.2.4. Fecha: 25 octubre 2026.
+
+DESPLIEGUE
+Actualizar solo el proyecto MyRaices con el contenido de raices-site de este ZIP.
+Usar el proceso habitual de Production:
+  comando: python3 scripts/build.py
+  carpeta de publicación: dist
+Conservar las variables de Netlify actuales. Sin SQL nuevo ni variables nuevas.
+NURAI permanece en 23.10.3; no hace falta volver a desplegarlo.
+El paquete contiene código fuente, no una carpeta dist para Netlify Drop.
+Esta entrega NO ha sido desplegada automáticamente.
+
+NUEVA VISTA MÓVIL (hasta 760 px)
+- Encabezado compacto con logo, buscador, carrito e idioma.
+- Hero propio, imagen visible y botón Comprar ahora; se elimina el Hero de
+  escritorio de la vista móvil y el espacio superior que quedaba vacío.
+- La fotografía de portada se toma de NURAI > Contenido Web > Editorial >
+  Imagen principal. Si no existe, usa la imagen móvil del Hero y después una
+  imagen incluida en la web. El Hero de escritorio conserva su configuración.
+- Consulta por ZIP antes de comprar. Usa exactamente la configuración de entrega
+  del carrito, guarda el ZIP y muestra zona y tarifa base. El carrito calcula
+  el importe final y los beneficios que correspondan.
+- Cinco colecciones: Cocina, Herbal, Dulces, Home y Guías.
+- Hasta cuatro productos destacados en Inicio. Se toman de Productos de NURAI:
+  casilla Mostrar como producto destacado. Si no hay destacados disponibles,
+  se muestran los primeros productos disponibles según el orden existente.
+- El catálogo completo se abre con Comprar ahora, una colección o Tienda.
+  Incluye pestañas por categoría y selector por colección.
+- Tarjetas con nombre más corto, presentación y precio; los detalles completos
+  permanecen disponibles al abrir el producto. Los productos con variantes
+  abren sus opciones antes de agregarse.
+- Galería ampliable y consulta de alérgenos por WhatsApp desde los ingredientes.
+  No se inventan declaraciones de ausencia de alérgenos.
+- Navegación inferior: Inicio, Tienda, Carrito y Mi cuenta.
+- Historia breve, formulario de comunidad y pie de página más compacto.
+- Español e inglés, búsqueda, cuenta, carrito y promociones se conservan.
+- Se mantiene la corrección de imágenes 3.2.4 (fit=contain y recuperación del
+  original en caso de fallo del servicio de imágenes).
+
+COMPROBACIONES COMPLETADAS
+- Chromium a 320, 390 y 760 px: Hero visible, Hero de escritorio oculto,
+  sin espacio superior vacío ni desplazamiento horizontal, cuatro accesos,
+  cinco categorías y hasta cuatro destacados.
+- Consulta ZIP cubierto/no cubierto, persistencia del ZIP, filtros del catálogo,
+  galería, ampliación, agregar al carrito, persistencia del carrito al recargar,
+  búsqueda y cambio ES/EN correctos.
+- Nueva comprobación final a 390 px incluida apertura/cierre de Mi cuenta.
+- Escritorio a 1440 px conserva su diseño y no muestra la portada móvil.
+- Imágenes solicitadas a Netlify real durante las pruebas de navegador.
+  Catálogo y configuración de entrega se usaron desde copias de sus respuestas
+  públicas actuales; no se editaron datos ni se hicieron compras.
+- 42 pruebas automatizadas correctas (catálogo, idiomas, imágenes, promociones,
+  impuestos, checkout simulado y galería).
+- Build con claves ficticias correcto; dist de prueba excluido del ZIP.
+
+VALIDACIÓN FINAL EN TU TELÉFONO TRAS DESPLEGAR
+Abrir desde Instagram: Inicio > ZIP > colección > producto > carrito > dirección
+Google > Square. Revisar importes y descuento de una cuenta elegible antes de
+pagar. Comprobar regresar del pago. No se ha hecho una compra real ni se ha
+validado el navegador integrado de Instagram en un iPhone/Android físico.
