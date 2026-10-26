@@ -1,8 +1,6 @@
 User-agent: *
+Allow: /.netlify/images
 Disallow: /.netlify/
 Allow: /
-Disallow: /account.html
-Disallow: /checkout-preview.html
-Disallow: /order-confirmation.html
 
 Sitemap: https://myraices.com/sitemap.xml

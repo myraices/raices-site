@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://myraices.com/collections/cocina/</loc><lastmod>2026-08-10</lastmod></url>
-  <url><loc>https://myraices.com/collections/herbal/</loc><lastmod>2026-08-10</lastmod></url>
-  <url><loc>https://myraices.com/collections/dulces/</loc><lastmod>2026-08-10</lastmod></url>
-  <url><loc>https://myraices.com/collections/home/</loc><lastmod>2026-08-10</lastmod></url>
-  <url><loc>https://myraices.com/collections/wellness/</loc><lastmod>2026-08-10</lastmod></url>
+  <url><loc>https://myraices.com/collections/cocina/</loc></url>
+  <url><loc>https://myraices.com/collections/cocina/?lang=en</loc></url>
+  <url><loc>https://myraices.com/collections/herbal/</loc></url>
+  <url><loc>https://myraices.com/collections/herbal/?lang=en</loc></url>
+  <url><loc>https://myraices.com/collections/dulces/</loc></url>
+  <url><loc>https://myraices.com/collections/dulces/?lang=en</loc></url>
+  <url><loc>https://myraices.com/collections/home/</loc></url>
+  <url><loc>https://myraices.com/collections/home/?lang=en</loc></url>
+  <url><loc>https://myraices.com/collections/wellness/</loc></url>
+  <url><loc>https://myraices.com/collections/wellness/?lang=en</loc></url>
 </urlset>

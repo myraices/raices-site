@@ -62,7 +62,14 @@
       if(img.tagName!=='IMG')return;
       const failed=img.currentSrc||img.src;
       const source=original(failed);
-      if(source===failed)return;
+      if(source===failed){
+        if(img.matches('#heroCmsImage,#mobileHeroImage,.door-bg-img')){
+          img.closest('picture')?.querySelectorAll('source').forEach(s=>s.removeAttribute('srcset'));
+          img.removeAttribute('srcset');
+          img.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+        }
+        return;
+      }
       const picture=img.closest('picture');
       picture?.querySelectorAll('source').forEach(s=>s.removeAttribute('srcset'));
       img.removeAttribute('srcset');img.src=source;

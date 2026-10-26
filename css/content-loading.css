@@ -1,0 +1,6 @@
+/* Reserve the existing layout with neutral colors while publication loads. */
+body.home-first-impression .editorial-image-main,
+body.home-first-impression .editorial-image-secondary{background-image:none;background-color:#e6dfd0}
+body.home-first-impression #heroCmsVisual{--cms-hero-bg:none}
+body.home-first-impression #inicio[hidden]{display:none!important}
+body.home-first-impression .editorial-intro[hidden]{display:none!important}

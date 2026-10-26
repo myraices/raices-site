@@ -7,6 +7,10 @@
   let pendingCategory=null;
   let selectedCategory="All";
   const categoryKeys=['Kitchen','Herbal','Desserts','Home','Wellness'];
+  const collectionSlugs={Kitchen:'cocina',Herbal:'herbal',Desserts:'dulces',Home:'home',Wellness:'wellness'};
+  const collectionUrl=cat=>'/collections/'+collectionSlugs[cat]+'/'+(lang()==='en'?'?lang=en':'');
+  const productUrl=p=>'/products/'+encodeURIComponent(p.slug)+'/'+(lang()==='en'?'?lang=en':'');
+  const ordinaryClick=e=>e.button===0&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&!e.altKey;
   const categoryName=cat=>({Kitchen:txt('Cocina','Kitchen'),Herbal:'Herbal',Desserts:txt('Dulces','Desserts'),Home:'Home',Wellness:txt('Guías','Guides')})[cat];
   const configurable=p=>(p.variants||[]).length>0||p.slug==='ritual-box';
   const shortName=p=>String(p.name||'').replace(/\s*\([^)]*(?:pulgadas|inch|porciones|servings)[^)]*\)/gi,'').trim();
@@ -48,7 +52,7 @@
     requestAnimationFrame(()=>document.getElementById('shopResults')?.scrollIntoView({behavior:'smooth',block:'start'}));
   }
   function updateHero(){
-    const image=document.getElementById('mobileHeroImage');if(!image)return;
+    const image=document.getElementById('mobileHeroImage');if(!image||window.RAICES_CONTENT_STATUS==='loading')return;
     const content=window.RAICES_SITE_CONTENT||{};
     const editorial=content.editorial?.primary_image_url;
     const explicit=!editorial&&content.hero?.image_mobile_url;
@@ -78,6 +82,7 @@
     return value || fallback;
   }
   function updateMobileCategoryImages(){
+    if(window.RAICES_CONTENT_STATUS==='loading')return;
     document.querySelectorAll('.app-intent[data-cat]').forEach(button=>{
       const cat=button.dataset.cat;
       const fallbacks={
@@ -96,11 +101,11 @@
     const shell=document.createElement('section'); shell.className='app-shell'; shell.id='appHome';
     shell.innerHTML=`
       <section class="mobile-hero" aria-labelledby="mobileHeroTitle">
-        <div class="mobile-hero-photo"><img id="mobileHeroImage" src="/assets/empanadas-signature-board.webp" alt="${txt('Alimentos artesanales de Raíces','Handcrafted Raíces foods')}" width="960" height="640" fetchpriority="high" decoding="async"></div>
+        <div class="mobile-hero-photo"><img id="mobileHeroImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="${txt('Alimentos artesanales de Raíces','Handcrafted Raíces foods')}" width="960" height="640" fetchpriority="high" decoding="async"></div>
         <div class="mobile-hero-copy"><p class="eyebrow">${txt('La salud comienza desde la raíz','Health begins at the root')}</p><h1 id="mobileHeroTitle">${txt('Nutre tu cuerpo.<br>Vuelve a tus raíces.','Nourish your body.<br>Return to your roots.')}</h1><p>${txt('Alimentos artesanales y rituales de bienestar para tu día a día.','Handcrafted foods and wellness rituals for everyday life.')}</p><button class="btn" type="button" data-browse>${txt('Comprar ahora','Shop now')} <span aria-hidden="true">↗</span></button></div>
       </section>
       <section class="mobile-delivery" aria-labelledby="mobileDeliveryTitle"><p class="eyebrow">${txt('Cerca de ti','Close to you')}</p><h2 id="mobileDeliveryTitle">${txt('¿Entregamos en tu zona?','Do we deliver to you?')}</h2><p>${txt('Consulta la cobertura local con tu ZIP.','Check local delivery with your ZIP code.')}</p><form id="mobileDeliveryForm" novalidate><label class="sr-only" for="mobileDeliveryZip">ZIP Code</label><div class="mobile-zip-row"><input id="mobileDeliveryZip" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="ZIP Code"><button type="submit">${txt('Consultar','Check')}</button></div><p role="status" aria-live="polite"></p></form></section>
-      <section class="mobile-collections" aria-labelledby="mobileCollectionTitle"><div class="app-section-row"><div><p class="eyebrow">${txt('Una misma raíz','One shared root')}</p><h2 id="mobileCollectionTitle">${txt('Explora nuestras colecciones','Explore our collections')}</h2></div></div><div class="app-intent-grid">${categoryKeys.map(cat=>`<button type="button" class="app-intent" data-cat="${cat}"><span>${categoryName(cat)}<small>${({Kitchen:txt('Arepas, empanadas y proteínas','Arepas, empanadas & proteins'),Herbal:txt('Tés e infusiones','Teas & infusions'),Desserts:txt('Postres para compartir','Desserts to share'),Home:txt('Objetos para tus rituales','Objects for your rituals'),Wellness:txt('Bienestar para aprender','Wellness to discover')})[cat]}</small></span></button>`).join('')}</div></section>
+      <section class="mobile-collections" aria-labelledby="mobileCollectionTitle"><div class="app-section-row"><div><p class="eyebrow">${txt('Una misma raíz','One shared root')}</p><h2 id="mobileCollectionTitle">${txt('Explora nuestras colecciones','Explore our collections')}</h2></div></div><div class="app-intent-grid">${categoryKeys.map(cat=>`<a class="app-intent" href="${collectionUrl(cat)}" data-cat="${cat}"><span>${categoryName(cat)}<small>${({Kitchen:txt('Arepas, empanadas y proteínas','Arepas, empanadas & proteins'),Herbal:txt('Tés e infusiones','Teas & infusions'),Desserts:txt('Postres para compartir','Desserts to share'),Home:txt('Objetos para tus rituales','Objects for your rituals'),Wellness:txt('Bienestar para aprender','Wellness to discover')})[cat]}</small></span></a>`).join('')}</div></section>
       <section class="mobile-featured" aria-labelledby="mobileFeaturedTitle"><div class="app-section-row"><div><p class="eyebrow">${txt('Elegidos para ti','Selected for you')}</p><h2 id="mobileFeaturedTitle">${txt('Para comenzar','Start here')}</h2></div><button type="button" data-see-all>${txt('Ver todo','View all')} ↗</button></div><div class="app-product-rail" id="appFeatured"><p role="status">${txt('Cargando productos…','Loading products…')}</p></div></section>`;
     const main=document.querySelector('main'); main?.parentNode.insertBefore(shell,main);
 
@@ -116,7 +121,7 @@
       <button type="button" class="app-nav-btn" data-app-tab="profile">${icon('profile')}<span>${txt('Mi cuenta','My account')}</span></button>`;
     document.body.appendChild(nav);
 
-    shell.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click',()=>chooseCategory(b.dataset.cat)));
+    shell.querySelectorAll('[data-cat]').forEach(b=>b.addEventListener('click',event=>{if(!ordinaryClick(event))return;event.preventDefault();chooseCategory(b.dataset.cat);}));
     shell.querySelectorAll('[data-see-all],[data-browse]').forEach(b=>b.addEventListener('click',()=>chooseCategory('All')));
     const form=shell.querySelector('#mobileDeliveryForm');
     form.querySelector('input').value=localStorage.getItem('raices_delivery_zip')||'';
@@ -174,10 +179,10 @@
     const available=p.available!==false&&!p.soldOut,needsOptions=configurable(p);
     const name=escapeHTML(shortName(p)),sku=escapeHTML(p.sku);
     const presentation=window.RAICES_MOBILE_PRESENTATION(p);
-    return `<article class="app-product-card"><button class="mobile-featured-view" type="button" data-app-view="${sku}"><img ${window.RaicesImages.attrs(p.image,'(max-width:760px) 46vw, 320px')} alt="${name}" loading="lazy" decoding="async"><h3>${name}</h3></button><div class="app-product-info"><p class="mobile-presentation">${escapeHTML(presentation)}</p><strong class="app-price">${money(p.price)}</strong>${available?`<button class="app-add" type="button" ${needsOptions?'data-app-view':'data-app-add'}="${sku}">${needsOptions?txt('Elegir opciones','Choose options'):txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></article>`;
+    return `<article class="app-product-card"><a class="mobile-featured-view" href="${productUrl(p)}" data-app-view="${sku}"><img ${window.RaicesImages.attrs(p.image,'(max-width:760px) 46vw, 320px')} alt="${name}" loading="lazy" decoding="async"><h3>${name}</h3></a><div class="app-product-info"><p class="mobile-presentation">${escapeHTML(presentation)}</p><strong class="app-price">${money(p.price)}</strong>${available?`<button class="app-add" type="button" ${needsOptions?'data-app-view':'data-app-add'}="${sku}">${needsOptions?txt('Elegir opciones','Choose options'):txt('Agregar','Add')}</button>`:`<span>${txt('Agotado','Sold out')}</span>`}</div></article>`;
   }
   function bindCards(root){
-    root.querySelectorAll('[data-app-view]').forEach(b=>b.addEventListener('click',e=>{ if(e.target.closest('[data-app-add]')) return; openProduct(b.dataset.appView); }));
+    root.querySelectorAll('[data-app-view]').forEach(b=>b.addEventListener('click',e=>{ if(e.target.closest('[data-app-add]')) return;if(b.tagName==='A'){if(!ordinaryClick(e))return;e.preventDefault();}openProduct(b.dataset.appView); }));
     root.querySelectorAll('[data-app-add]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const product=getProducts().find(p=>p.sku===b.dataset.appAdd);if(product&&configurable(product))openProduct(product.sku);else addProduct(b.dataset.appAdd);}));
   }
   function renderFeatured(){
@@ -219,7 +224,7 @@
     const headerSearch=document.createElement('button');headerSearch.type='button';headerSearch.className='icon-link mobile-header-search';headerSearch.setAttribute('aria-label',txt('Buscar productos','Search products'));headerSearch.innerHTML=icon('search');headerSearch.addEventListener('click',openSearch);document.querySelector('.nav-icons')?.prepend(headerSearch);
     const chips=document.createElement('nav');chips.className='mobile-category-tabs';chips.setAttribute('aria-label',txt('Colecciones','Collections'));
     const rebuildChips=()=>{chips.innerHTML=['All',...categoryKeys].map(cat=>`<button type="button" data-mobile-cat="${cat}" aria-pressed="${cat===selectedCategory}">${cat==='All'?txt('Todo','All'):categoryName(cat)}</button>`).join('');chips.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>chooseCategory(b.dataset.mobileCat)));};rebuildChips();document.querySelector('#shopResults .shop-main')?.prepend(chips);
-    document.addEventListener('click',event=>{const home=event.target.closest('a[href="#inicio"]');if(home){event.preventDefault();handleTab('home');return;}const story=event.target.closest('a[href="#nosotros"]');if(story)document.body.classList.remove('mobile-catalog-active');const anchor=event.target.closest('a[href="#shop"],a[href="#shopResults"]');if(!anchor)return;if(anchor.dataset.categoryNav){selectedCategory=anchor.dataset.categoryNav;chips.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mobileCat===selectedCategory)));}document.body.classList.add('mobile-catalog-active');setActive('shop');});
+    document.addEventListener('click',event=>{const home=event.target.closest('a[href="#inicio"]');if(home){event.preventDefault();handleTab('home');return;}const story=event.target.closest('a[href="#nosotros"]');if(story)document.body.classList.remove('mobile-catalog-active');const anchor=event.target.closest('a[href="#shop"],a[href="#shopResults"],a[data-category-nav]');if(!anchor||!ordinaryClick(event))return;if(anchor.dataset.categoryNav){selectedCategory=anchor.dataset.categoryNav;chips.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mobileCat===selectedCategory)));}document.body.classList.add('mobile-catalog-active');setActive('shop');});
     if(['#shop','#shopResults'].includes(location.hash))chooseCategory('All');
     window.addEventListener('hashchange',()=>{if(['#shop','#shopResults'].includes(location.hash))chooseCategory('All');});
     let tries=0; const timer=setInterval(()=>{tries++; if(getProducts().length){clearInterval(timer);renderFeatured();renderSearch('');} if(tries>80)clearInterval(timer);},125);

@@ -1,0 +1,86 @@
+MyRaices 3.3.1 — Rastreo e indexación
+Base: 3.3.0 Nueva experiencia móvil.
+
+DESPLIEGUE
+Actualizar solo MyRaices con el contenido de raices-site de este ZIP.
+Incluir netlify.toml, robots.txt, _headers y las funciones nuevas/actualizadas.
+Comando: python3 scripts/build.py. Carpeta de publicación: dist.
+Mantener las variables de Production actuales. No ejecutar SQL.
+NURAI permanece en 23.10.3. Esta entrega no se despliega automáticamente.
+Paquete de código fuente; no es una carpeta dist para Netlify Drop.
+
+HALLAZGOS EN LA WEB PUBLICADA 3.3.0
+- Se comprobaron 95 URLs públicas: 74 versiones de productos (37 ES/EN),
+  5 colecciones ES, 6 páginas generales y 10 artículos. Todas respondieron 200
+  y mostraron canonical coherente con la URL solicitada. Esto no demuestra
+  que Google ya las haya indexado.
+- El sitemap de productos funcionaba y contenía las 74 versiones.
+- El sitemap de artículos devolvía 503: la consulta pedía updated_at,
+  una columna que no existe en blog_articles_public. La consulta corregida
+  a la vista pública devuelve 10 artículos.
+- robots.txt bloqueaba /.netlify/, incluida la ruta de imágenes optimizadas.
+- Las categorías y destacados de la portada móvil usaban botones. Los enlaces
+  a colecciones también existían por otras vías, pero conviene que los accesos
+  visibles sean enlaces rastreables, conservando la compra dentro de la app.
+- Las fechas lastmod fijas de los sitemaps no describían las actualizaciones.
+- La colección de Guías no tenía productos publicados en el catálogo actual.
+
+CORRECCIONES
+1. Imágenes optimizadas permitidas en robots.txt. Las funciones internas siguen
+   bloqueadas para rastreo. Las páginas de cuenta/pago pueden ser visitadas por
+   el rastreador para leer su noindex; se refuerza ese encabezado en sus aliases.
+   robots.txt y noindex no sustituyen los controles de acceso existentes.
+2. Sitemap del blog corregido sin cambios en Supabase. No se inventan fechas
+   de última edición a partir de la fecha de publicación.
+3. Enlaces reales a colecciones y fichas de producto desde la portada móvil.
+   Un clic normal conserva la navegación dentro de la tienda; el enlace ofrece
+   una URL pública válida y admite abrirse en otra pestaña.
+4. Enlaces a colecciones presentes en el HTML inicial del encabezado/pie.
+5. Sitemap de colecciones dinámico ES/EN, solo para categorías con productos
+   publicados. Las colecciones vacías siguen disponibles para las personas,
+   con noindex, follow; entran automáticamente al sitemap al tener productos.
+6. Fechas lastmod fijas retiradas. URLs canónicas y enlaces de las políticas
+   uniformados a sus rutas públicas sin extensión .html.
+7. Datos estructurados de artículos protegidos contra texto que cierre el
+   bloque script; no se inventan valoraciones, reseñas, GTIN ni atributos.
+Se conserva el diseño de la versión 3.3.0 y la corrección de imágenes 3.2.4.
+
+VALIDACIÓN
+- 48 pruebas automatizadas correctas.
+- 74 bloques Product de datos estructurados generados con el catálogo público
+  actual y sus versiones ES/EN se analizaron correctamente como JSON.
+- XML de sitemaps y configuración Netlify válidos.
+- Pruebas de navegador a 390 px: categorías/destacados son enlaces reales y
+  conservan la apertura dentro de la tienda, además de ZIP, filtros, galería,
+  carrito persistente, búsqueda, cuenta e idioma.
+- Comprobación a 1440 px: escritorio conserva el diseño.
+- Build con claves ficticias correcto; dist de prueba excluido del paquete.
+Las llamadas de pago están simuladas en las pruebas. No hubo compra real.
+
+DESPUÉS DE DESPLEGAR
+1. Comprobar https://myraices.com/robots.txt y confirmar Allow: /.netlify/images.
+2. Abrir https://myraices.com/sitemap.xml y sus cuatro sitemaps; los cuatro deben
+   responder con XML, incluido /sitemaps/articles.xml.
+3. En Google Search Console, seleccionar la propiedad de myraices.com.
+   Si no existe, crear/verificar una propiedad de dominio mediante DNS.
+4. En Sitemaps, revisar/enviar https://myraices.com/sitemap.xml.
+5. En Inspección de URLs, probar la portada, una colección con productos, una
+   ficha de producto y un artículo. Revisar rastreo permitido, carga de recursos,
+   canonical elegido y datos estructurados. Pedir indexación de páginas clave
+   si la inspección en vivo es correcta. No hace falta solicitarla para cada URL.
+6. Revisar Indexación > Páginas y los informes de productos. Distinguir entre
+   bloqueo técnico, duplicado/canonical y rastreada/descubierta sin indexar.
+
+ALCANCE
+No se accedió a tu Search Console ni se envió el sitemap a Google. La revisión
+comprueba la accesibilidad y el código público. Google decide qué URLs indexar;
+ni un sitemap ni estas correcciones garantizan indexación o posicionamiento.
+Las fichas y colecciones disponen de versiones ES/EN con canonical/hreflang.
+La portada y el blog conservan su arquitectura de idiomas actual; indexar
+versiones inglesas independientes de esas páginas requeriría trabajo adicional.
+
+REFERENCIAS
+https://developers.google.com/search/docs/crawling-indexing/links-crawlable
+https://developers.google.com/search/docs/crawling-indexing/mobile/mobile-sites-mobile-first-indexing
+https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
+https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview

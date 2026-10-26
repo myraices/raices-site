@@ -1,0 +1,90 @@
+MyRaices 3.3.2 — Imágenes sin destello y revisión del informe de Google
+Base: 3.3.1 SEO. Incluye también todos los cambios móviles de 3.3.0.
+
+DESPLIEGUE
+Actualizar solo MyRaices con el contenido de raices-site de este ZIP.
+Comando Netlify: python3 scripts/build.py. Carpeta de publicación: dist.
+Mantener las variables de Production actuales. Sin SQL ni variables nuevas.
+NURAI permanece en 23.10.3. Esta entrega no se ha desplegado automáticamente.
+El ZIP contiene código fuente; no es una carpeta dist para Netlify Drop.
+
+CORRECCIÓN DE IMÁGENES
+- El HTML inicial del Hero de escritorio/móvil usa una imagen transparente y
+  conserva el espacio mediante el diseño existente.
+- Los fondos editoriales y las categorías esperan el contenido publicado.
+- Se eliminó la precarga de la fotografía antigua del Hero.
+- Durante la consulta se muestra un fondo neutro; no se solicitan las fotos
+  antiguas de respaldo para sustituirlas un instante después.
+- Tras recibir el contenido publicado, se solicitan directamente sus imágenes.
+- Si la consulta falla o supera su tiempo de espera de 8 segundos, se habilitan
+  los recursos de respaldo. En ese caso sí pueden aparecer imágenes por defecto;
+  es una recuperación ante un fallo confirmado, no la carga normal.
+- Se conserva la recuperación del original si falla una transformación de Netlify.
+  Si tampoco existe el original del Hero/categoría, se mantiene una imagen neutra.
+- No se leen copias antiguas de contenido desde localStorage. Los cambios publicados
+  en NURAI siguen llegando de su fuente pública al abrir/recargar la página.
+- Los fondos editoriales ocultos no se solicitan innecesariamente en móvil.
+
+CAPTURA DE SEARCH CONSOLE
+La captura es un resumen; no contiene las URLs afectadas ni fechas de rastreo.
+No todos sus renglones representan fallos que haya que eliminar:
+
+21 Alternate page with proper canonical tag:
+   Puede ser correcto para duplicados, parámetros o aliases. Revisar que la
+   canonical elegida sea la página deseada. No quitar todas las canonicals.
+6 Page with redirect:
+   Puede ser correcto para rutas antiguas. La URL de destino es la que debe
+   ser rastreable/indexable. No eliminar redirecciones útiles solo por ese estado.
+2 Blocked due to other 4xx issue:
+   PENDIENTE de las URLs exactas. Probar el código HTTP y el recurso afectado.
+1 Redirect error:
+   PENDIENTE de la URL exacta y su cadena de redirecciones.
+1 Excluded by noindex:
+   Comprobar la URL. Es correcto para cuenta, pago y contenido no destinado
+   a búsqueda; sería un problema en una ficha pública que deba indexarse.
+43 Discovered - currently not indexed:
+   Google conoce las URLs y aún no las ha indexado. Enlaces/sitemaps correctos
+   ayudan al descubrimiento, pero un cambio de código no obliga a indexarlas.
+2 Crawled - currently not indexed:
+   Revisar las URLs, contenido, duplicados y canonical elegida por Google.
+
+COMPROBACIONES Y MEJORAS DE REDIRECCIÓN
+Se probaron 11 rutas/variantes públicas conocidas: seis rutas antiguas, /blog/,
+/blog, /index.html, HTTP y www. No se encontraron bucles; todas terminaron en 200.
+Esto NO identifica por sí solo el Redirect error de la captura.
+En esta versión /arepas, /empanadas y /proteinas redirigen directamente a
+/collections/cocina/, y /teas a /collections/herbal/. Antes apuntaban a fragmentos
+antiguos de la portada. /about y /contact conservan sus secciones válidas.
+Los estados legítimos de redirección pueden seguir apareciendo en Search Console.
+Se conservan todas las correcciones de rastreo y sitemaps de 3.3.1.
+
+CÓMO COMPARTIR LAS URLS PENDIENTES
+En Indexación > Páginas, abrir Blocked due to other 4xx issue. Copiar las dos
+URLs de la tabla inferior o exportarlas. Repetir con Redirect error y, para
+comprobar su intención, Excluded by noindex. Enviar las URLs completas, con
+parámetros si los tienen. No hacen falta credenciales ni acceso a tu cuenta.
+La captura actual no permite afirmar que esos tres errores concretos estén resueltos.
+
+PRUEBAS
+- 51 pruebas automatizadas correctas.
+- Chromium móvil/escritorio: consulta CMS detenida deliberadamente. Mientras
+  está pendiente, Hero neutro y ninguna petición a las imágenes antiguas.
+- Con respuesta correcta, carga la imagen publicada sin pedir la de respaldo.
+- Fallo del CMS probado en móvil y escritorio; recuperación correcta.
+- Consulta sin respuesta probada en móvil; recuperación tras el timeout.
+- Navegación, ZIP, filtros, galería, ampliación, carrito persistente, búsqueda,
+  cuenta e idioma comprobados a 390 px; escritorio revisado a 1440 px.
+- Las respuestas de contenido/catalogo para las pruebas son copias públicas
+  controladas; las imágenes se solicitaron al servicio real cuando fue necesario.
+- Build con claves ficticias correcto; dist de prueba excluido del paquete.
+No hubo pago real ni se accedió a tu Search Console.
+
+DESPUÉS DE DESPLEGAR
+Recargar escritorio y móvil. Puede verse brevemente el fondo neutro mientras
+llega la selección publicada; no debería verse primero la fotografía anterior.
+Verificar imágenes actuales, galería, carrito y apertura desde Instagram.
+Revisar los sitemaps y usar Inspección de URLs con la prueba en vivo para las
+páginas concretas. El informe de Google puede tardar en reflejar nuevos rastreos.
+
+REFERENCIA OFICIAL
+https://support.google.com/webmasters/answer/7440203?hl=es

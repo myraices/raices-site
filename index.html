@@ -6,7 +6,7 @@
   <title>Alimentos saludables en Katy, TX | MyRaices</title>
   <meta name="description" content="Alimentos artesanales, arepas de yuca, infusiones y productos de bienestar con delivery local en Katy, Texas y áreas seleccionadas de Houston."/>
   <link rel="canonical" href="https://myraices.com/"/>
-  <meta name="robots" content="index, follow"/>
+  <meta name="robots" content="index, follow, max-image-preview:large"/>
   <meta property="og:type" content="website"/>
   <meta property="og:site_name" content="MyRaices"/>
   <meta property="og:title" content="Alimentos saludables en Katy, TX | MyRaices"/>
@@ -25,9 +25,8 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin>
   <link rel="dns-prefetch" href="//www.googletagmanager.com">
-  <link rel="preload" as="image" media="(min-width:761px)" href="/assets/hero-hand-plant.webp" fetchpriority="high">
   <meta name="theme-color" content="#233b20"/>
-  <meta name="raices-build" content="3.3.0-mobile-redesign"/>
+  <meta name="raices-build" content="3.3.2-content-loading"/>
   <link href="/favicon.ico" rel="icon" sizes="any"/>
   <link href="/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
   <link href="/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
@@ -38,6 +37,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&amp;family=Outfit:wght@300;400;500;600;700;800&amp;display=swap">
 <link rel="preconnect" href="https://tqtnffinhqbyesjdollk.supabase.co" crossorigin>
 <link rel="stylesheet" href="css/mobile-v3.css?v=3.3.0">
+<link rel="stylesheet" href="css/content-loading.css?v=3.3.2">
 </head>
 <body class="home-first-impression">
   <div class="intro"><div><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><p>La salud comienza desde la raíz</p></div></div>
@@ -53,11 +53,11 @@
       <a class="logo" href="#inicio"><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"></a>
       <nav class="menu" aria-label="Principal">
         <a href="#inicio" data-i18n="nav_home">Inicio</a>
-        <a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a>
-        <a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a>
-        <a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a>
-        <a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a>
-        <a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a>
+        <a href="/collections/cocina/" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a>
+        <a href="/collections/herbal/" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a>
+        <a href="/collections/dulces/" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a>
+        <a href="/collections/home/" data-category-nav="Home" data-i18n="nav_home_line">Home</a>
+        <a href="/collections/wellness/" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a>
         <a href="#nosotros" data-i18n="nav_about">Nosotros</a>
         <a href="/blog">Blog</a>
       </nav>
@@ -81,7 +81,7 @@
 
   <aside class="drawer" id="drawer">
     <div class="drawer-head"><img src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><button id="closeDrawer">×</button></div>
-    <a href="#usuario" class="js-auth-open drawer-account-link" id="drawerAccountLink">👤 Iniciar sesión</a><a href="#inicio" data-i18n="nav_home">Inicio</a><a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a><a href="#nosotros" data-i18n="nav_about">Nosotros</a><a href="/blog">Blog</a><button class="drawer-lang" id="drawerLangBtn" type="button">ES ▾</button>
+    <a href="#usuario" class="js-auth-open drawer-account-link" id="drawerAccountLink">👤 Iniciar sesión</a><a href="#inicio" data-i18n="nav_home">Inicio</a><a href="/collections/cocina/" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="/collections/herbal/" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="/collections/dulces/" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="/collections/home/" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="/collections/wellness/" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a><a href="#nosotros" data-i18n="nav_about">Nosotros</a><a href="/blog">Blog</a><button class="drawer-lang" id="drawerLangBtn" type="button">ES ▾</button>
   </aside>
   <div class="backdrop" id="backdrop"></div>
 
@@ -100,7 +100,7 @@
       <div id="heroCmsVisual" class="hero-media-cms" aria-label="Raíces: volver a lo esencial">
         <picture class="hero-media-picture">
           <source id="heroCmsMobileSource" media="(max-width: 760px)" srcset="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">
-          <img id="heroCmsImage" class="hero-media-image" src="/assets/hero-hand-plant.webp" alt="Raíces: volver a lo esencial" width="1400" height="760" loading="eager" fetchpriority="high" decoding="sync" sizes="(max-width: 900px) 100vw, 56vw">
+          <img id="heroCmsImage" class="hero-media-image" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="Raíces: volver a lo esencial" width="1400" height="760" loading="eager" fetchpriority="high" decoding="sync" sizes="(max-width: 900px) 100vw, 56vw">
         </picture>
         <div class="hero-cms-overlay" aria-hidden="true"></div>
         <div class="hero-seal" aria-hidden="true"><img src="assets/raices-logo.webp" alt="" width="94" height="94"></div>
@@ -369,9 +369,9 @@
   <footer>
     <div class="container footer-grid">
       <div><img class="footer-logo" src="assets/raices-logo.webp" alt="Raíces"/ width="640" height="640" decoding="async"><p data-i18n="footer_tagline">La salud comienza desde la raíz.</p></div>
-      <div><h3 data-i18n="footer_explore">Explora</h3><a href="#shop" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="#shop" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="#shop" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="#shop" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="#shop" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a><a href="/blog">Blog</a></div>
-      <div><h3 data-i18n="footer_account">Cuenta</h3><a href="#usuario" class="js-auth-open" data-i18n="footer_my_account">Mi cuenta</a><a href="#" id="footerCartLink" data-i18n="footer_cart">Carrito</a><a href="#contacto" data-i18n="footer_newsletter">Newsletter</a><a href="delivery-policy.html" data-i18n="footer_delivery">Entregas</a><a href="refund-policy.html" data-i18n="footer_cancellations">Devoluciones y reembolsos</a></div>
-      <div><h3>Raíces</h3><p>Houston, Texas</p><p><a href="https://wa.me/16577937685">WhatsApp (657) 793-7685</a></p><p>info@myraices.com</p><p><a href="terms.html" data-i18n="footer_terms">Términos</a> · <a href="privacy.html" data-i18n="footer_privacy">Privacidad</a></p></div>
+      <div><h3 data-i18n="footer_explore">Explora</h3><a href="/collections/cocina/" data-category-nav="Kitchen" data-i18n="nav_kitchen">Cocina</a><a href="/collections/herbal/" data-category-nav="Herbal" data-i18n="nav_herbal">Herbal</a><a href="/collections/dulces/" data-category-nav="Desserts" data-i18n="nav_desserts">Dulces</a><a href="/collections/home/" data-category-nav="Home" data-i18n="nav_home_line">Home</a><a href="/collections/wellness/" data-category-nav="Wellness" data-i18n="nav_wellness">Wellness</a><a href="/blog">Blog</a></div>
+      <div><h3 data-i18n="footer_account">Cuenta</h3><a href="#usuario" class="js-auth-open" data-i18n="footer_my_account">Mi cuenta</a><a href="#" id="footerCartLink" data-i18n="footer_cart">Carrito</a><a href="#contacto" data-i18n="footer_newsletter">Newsletter</a><a href="/delivery-policy" data-i18n="footer_delivery">Entregas</a><a href="/refund-policy" data-i18n="footer_cancellations">Devoluciones y reembolsos</a></div>
+      <div><h3>Raíces</h3><p>Houston, Texas</p><p><a href="https://wa.me/16577937685">WhatsApp (657) 793-7685</a></p><p>info@myraices.com</p><p><a href="/terms" data-i18n="footer_terms">Términos</a> · <a href="/privacy" data-i18n="footer_privacy">Privacidad</a></p></div>
     </div>
     <div class="container copy"><span>© 2026 Raíces</span><span data-i18n="footer_love">Hecho con amor · Para ti y para el planeta</span></div>
   </footer>

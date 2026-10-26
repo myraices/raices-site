@@ -9,22 +9,22 @@
 
 [[redirects]]
   from = "/arepas"
-  to = "/#arepas"
+  to = "/collections/cocina/"
   status = 301
 
 [[redirects]]
   from = "/empanadas"
-  to = "/#empanadas"
+  to = "/collections/cocina/"
   status = 301
 
 [[redirects]]
   from = "/proteinas"
-  to = "/#proteinas"
+  to = "/collections/cocina/"
   status = 301
 
 [[redirects]]
   from = "/teas"
-  to = "/#tes"
+  to = "/collections/herbal/"
   status = 301
 
 [[redirects]]
@@ -83,3 +83,9 @@
 
 [images]
   remote_images = ['https://tqtnffinhqbyesjdollk\.supabase\.co/storage/v1/object/public/(product-images|site-media|blog-media)/.*']
+
+[[redirects]]
+  from = "/sitemaps/collections.xml"
+  to = "/.netlify/functions/sitemap-collections"
+  status = 200
+  force = true

@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     categoryDoors.innerHTML = order.map(cat => {
       const item = categories[cat];
       return `<a class="door-card" href="#shop" data-category-door="${cat}">
-        <span class="door-bg"><img class="door-bg-img" ${window.RaicesImages.attrs(item.image,"(max-width:760px) 90vw, 400px")} alt="" loading="lazy" decoding="async"></span>
+        <span class="door-bg"><img class="door-bg-img" ${window.RaicesImages.attrs(window.RAICES_CONTENT_STATUS==='loading'?'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=':item.image,"(max-width:760px) 90vw, 400px")} alt="" loading="lazy" decoding="async"></span>
         <span class="door-content">
           <span class="eyebrow">${categoryLabel(cat)}</span>
           <h3>${currentLang()==='es' ? (item.spanish || item.title) : item.title}</h3>
@@ -990,6 +990,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
 
   document.querySelectorAll('[data-category-nav]').forEach(link => {
     link.addEventListener('click', function(e){
+      if(e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
       e.preventDefault();
       activeCategory = this.dataset.categoryNav;
       activeCollection = 'All';
