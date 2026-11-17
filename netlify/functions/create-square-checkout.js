@@ -460,6 +460,7 @@ exports.handler = async (event) => {
         environment,
         payload: {
           order: pendingOrderPayload,
+          orderLanguage: payload.orderLanguage === 'en' ? 'en' : 'es',
           items: pendingItemsPayload,
           expected: {
             tax_cents: taxCentsExpected,

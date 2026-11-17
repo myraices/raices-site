@@ -164,6 +164,7 @@ async function createOrderFromCheckoutDirect(sessionId, payment, finalAmounts) {
     tax_cents:Number(finalAmounts?.taxCents||0),
     total_cents:Number(finalAmounts?.totalCents||0),
     customer_name:o.customer_name||'',
+    ...(payload.orderLanguage === 'en' || payload.orderLanguage === 'es' ? {review_email_language:payload.orderLanguage} : {}),
     customer_email:String(o.customer_email||'').toLowerCase(),
     customer_phone:o.customer_phone||null,
     delivery_address:o.delivery_address||'',
@@ -235,7 +236,7 @@ async function completePaidOrder(orderId, paymentId, paidAt) {
 
 async function supabaseGetOrderDetails(orderId) {
   const { url, key } = supabaseConfig();
-  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,fulfillment_type,subtotal,delivery_amount,tax_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,completed_at,manage_token,order_items(id,product_id,product_name,variant_name,quantity,unit_price,line_total,sku)`, {
+  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,customer_name,customer_email,customer_phone,delivery_address,delivery_apt,delivery_city,delivery_state,delivery_zip,delivery_zone,fulfillment_type,subtotal,delivery_amount,tax_amount,total_amount,currency,payment_status,status,paid_at,confirmation_email_sent_at,completed_at,manage_token,is_test,checkout_environment,team_order_email_sent_at,order_items(id,product_id,product_name,variant_name,quantity,unit_price,line_total,sku)`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` }
   });
   if (!res.ok) throw new Error(`SUPABASE_ORDER_DETAILS_${res.status}:${await res.text()}`);
@@ -298,6 +299,84 @@ async function ensureDigitalEntitlements(order) {
   return results;
 }
 
+async function updateTeamEmailState(orderId, filters, values) {
+  const { url, key } = supabaseConfig();
+  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&${filters}&select=id`, {
+    method: 'PATCH',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify(values)
+  });
+  if (!res.ok) throw new Error(`SUPABASE_TEAM_EMAIL_${res.status}`);
+  return (await res.json()).length === 1;
+}
+
+async function sendTeamOrderAlert(order) {
+  const emails = [...new Set((process.env.ORDER_ALERT_EMAILS || '').split(',')
+    .map(email => email.trim().toLowerCase()).filter(Boolean))];
+  if (!emails.length || order.team_order_email_sent_at || order.is_test === true || order.checkout_environment === 'sandbox') return;
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey || emails.some(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+    throw new Error('TEAM_EMAIL_CONFIGURATION_INVALID');
+  }
+
+  const claim = new Date().toISOString();
+  const staleBefore = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const claimed = await updateTeamEmailState(order.id,
+    `team_order_email_sent_at=is.null&or=(team_order_email_claimed_at.is.null,team_order_email_claimed_at.lt.${encodeURIComponent(staleBefore)})`,
+    { team_order_email_claimed_at: claim });
+  if (!claimed) {
+    const { url, key } = supabaseConfig();
+    const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}&select=team_order_email_sent_at`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` }
+    });
+    if (!res.ok || !(await res.json())?.[0]?.team_order_email_sent_at) {
+      throw new Error('TEAM_EMAIL_DELIVERY_IN_PROGRESS');
+    }
+    return;
+  }
+
+  const claimFilter = `team_order_email_claimed_at=eq.${encodeURIComponent(claim)}`;
+  const number = order.order_number || String(order.id).slice(0, 8);
+  const fulfillment = { delivery: 'Entrega local', shipping: 'Envío', digital: 'Entrega digital' }[order.fulfillment_type] || 'Ver detalles en NURAI';
+  const orderUrl = `https://admin.myraices.com/orders?order=${encodeURIComponent(order.id)}`;
+  const textContent = [
+    `El pedido #${number} de MyRaíces está pagado.`,
+    `Total: ${money(order.total_amount)}`,
+    `Modalidad: ${fulfillment}`,
+    `Abrir en NURAI: ${orderUrl}`
+  ].join('\n');
+
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json', 'api-key': apiKey },
+    signal: AbortSignal.timeout(8000),
+    body: JSON.stringify({
+      sender: {
+        name: process.env.BREVO_SENDER_NAME || 'Raíces',
+        email: process.env.BREVO_SENDER_EMAIL || 'info@myraices.com'
+      },
+      to: emails.map(email => ({ email })),
+      subject: `MyRaíces | Nuevo pedido #${number} pagado`,
+      textContent
+    })
+  });
+  if (!res.ok) {
+    await updateTeamEmailState(order.id, claimFilter, { team_order_email_claimed_at: null });
+    throw new Error(`BREVO_TEAM_EMAIL_${res.status}`);
+  }
+  const recorded = await updateTeamEmailState(order.id, claimFilter, {
+    team_order_email_sent_at: new Date().toISOString(),
+    team_order_email_claimed_at: null
+  });
+  if (!recorded) throw new Error('TEAM_EMAIL_DELIVERY_STATE_NOT_RECORDED');
+  console.log('[square-webhook] team_email:sent', { orderId: order.id });
+}
+
 async function sendOrderConfirmation(order, entitlements = []) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey || !order?.customer_email) {
@@ -314,7 +393,10 @@ async function sendOrderConfirmation(order, entitlements = []) {
       ? 'Pago confirmado · Preparando para envío'
       : 'Pago confirmado · En preparación';
   const fulfillmentLabel = order.fulfillment_type === 'shipping' ? 'Shipping' : 'Entrega';
-  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: ${escapeHtml(orderStatusText)}</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr>${Number(order.discount_amount||0)>0?`<tr><td>Descuento ${escapeHtml(order.promotion_code||'')}</td><td style="text-align:right">−${money(order.discount_amount)}</td></tr>`:''}<tr><td>${fulfillmentLabel}</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td>Sales tax</td><td style="text-align:right">${money(order.tax_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table>${entitlements.length ? `<div style="margin-top:22px;padding:18px;background:#f3f7f5;border-radius:12px"><strong>Tus descargas digitales</strong><p style="margin:8px 0 12px">Accede a tus ebooks desde estos enlaces seguros:</p>${entitlements.map(e=>`<p style="margin:8px 0"><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/.netlify/functions/digital-download?token='+e.token)}" style="display:inline-block;padding:10px 16px;background:#174f45;color:#fff;text-decoration:none;border-radius:8px">Descargar ${escapeHtml(e.name)}</a></p>`).join('')}</div>` : ''}<p style="margin-top:22px"><strong>${fulfillmentLabel}:</strong><br>${address}</p><p>${order.fulfillment_type === 'digital' ? 'También encontrarás tus descargas en Mi Cuenta si compraste con una cuenta de Raíces.' : 'Te mantendremos informado cuando tu pedido avance.'}</p>${order.manage_token ? `<div style="margin-top:24px;padding:18px;background:#fbf5ea;border-radius:12px"><strong>¿Necesitas cancelar o reportar un problema?</strong><p style="margin:8px 0 14px">Puedes gestionar las opciones disponibles para este pedido desde un enlace seguro. Las cancelaciones solo están disponibles antes de que el pedido salga a entrega o sea despachado.</p><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/manage-order.html?token='+order.manage_token)}" style="display:inline-block;padding:11px 18px;background:#174f45;color:#fff;text-decoration:none;border-radius:999px;font-weight:700">Gestionar pedido</a></div>` : ''}</div></body></html>`;
+  const deliveryEstimate = order.fulfillment_type === 'delivery'
+    ? '<p><strong>Tiempo estimado de entrega:</strong> normalmente dentro de 24–48 horas desde la confirmación del pago.</p>'
+    : '';
+  const htmlContent = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#173d38;background:#f5f7f6;padding:24px"><div style="max-width:620px;margin:auto;background:#fff;padding:32px;border-radius:16px"><h1 style="margin-top:0">Gracias por tu compra</h1><p>Hola ${escapeHtml(order.customer_name || '')}, tu pago fue confirmado y recibimos correctamente tu pedido.</p><p><strong>Pedido #${escapeHtml(order.order_number || '')}</strong><br>Estado: ${escapeHtml(orderStatusText)}</p><table style="width:100%;border-collapse:collapse">${items}</table><table style="width:100%;margin-top:18px"><tr><td>Subtotal</td><td style="text-align:right">${money(order.subtotal)}</td></tr>${Number(order.discount_amount||0)>0?`<tr><td>Descuento ${escapeHtml(order.promotion_code||'')}</td><td style="text-align:right">−${money(order.discount_amount)}</td></tr>`:''}<tr><td>${fulfillmentLabel}</td><td style="text-align:right">${money(order.delivery_amount)}</td></tr><tr><td>Sales tax</td><td style="text-align:right">${money(order.tax_amount)}</td></tr><tr><td style="padding-top:8px"><strong>Total pagado</strong></td><td style="padding-top:8px;text-align:right"><strong>${money(order.total_amount)}</strong></td></tr></table>${entitlements.length ? `<div style="margin-top:22px;padding:18px;background:#f3f7f5;border-radius:12px"><strong>Tus descargas digitales</strong><p style="margin:8px 0 12px">Accede a tus ebooks desde estos enlaces seguros:</p>${entitlements.map(e=>`<p style="margin:8px 0"><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/.netlify/functions/digital-download?token='+e.token)}" style="display:inline-block;padding:10px 16px;background:#174f45;color:#fff;text-decoration:none;border-radius:8px">Descargar ${escapeHtml(e.name)}</a></p>`).join('')}</div>` : ''}<p style="margin-top:22px"><strong>${fulfillmentLabel}:</strong><br>${address}</p>${deliveryEstimate}<p>${order.fulfillment_type === 'digital' ? 'También encontrarás tus descargas en Mi Cuenta si compraste con una cuenta de Raíces.' : 'Te mantendremos informado cuando tu pedido avance.'}</p>${order.manage_token ? `<div style="margin-top:24px;padding:18px;background:#fbf5ea;border-radius:12px"><strong>¿Necesitas cancelar o reportar un problema?</strong><p style="margin:8px 0 14px">Puedes gestionar las opciones disponibles para este pedido desde un enlace seguro. Las cancelaciones solo están disponibles antes de que el pedido salga a entrega o sea despachado.</p><a href="${escapeHtml((process.env.URL||'https://myraices.com')+'/manage-order.html?token='+order.manage_token)}" style="display:inline-block;padding:11px 18px;background:#174f45;color:#fff;text-decoration:none;border-radius:999px;font-weight:700">Gestionar pedido</a></div>` : ''}</div></body></html>`;
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { accept: 'application/json', 'content-type': 'application/json', 'api-key': apiKey },
@@ -487,16 +569,33 @@ exports.handler = async (event) => {
         await completeDigitalOrder(paidOrder);
         paidOrder = await supabaseGetOrderDetails(order.id);
       }
-      console.log('[square-webhook] notification:start', { orderId: order.id });
-      await createOrderNotification(paidOrder);
-      console.log('[square-webhook] notification:finish', { orderId: order.id });
-      if (!paidOrder?.confirmation_email_sent_at) {
-        console.log('[square-webhook] confirmation_email:start', { orderId: order.id });
-        await sendOrderConfirmation(paidOrder, digitalEntitlements);
-        await supabasePatch(order.id, { confirmation_email_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-        console.log('[square-webhook] confirmation_email:finish', { orderId: order.id });
-      } else {
-        console.log('[square-webhook] confirmation_email:already_sent', { orderId: order.id });
+      const results = await Promise.allSettled([
+        sendTeamOrderAlert(paidOrder),
+        (async () => {
+          console.log('[square-webhook] notification:start', { orderId: order.id });
+          await createOrderNotification(paidOrder);
+          console.log('[square-webhook] notification:finish', { orderId: order.id });
+          if (!paidOrder?.confirmation_email_sent_at) {
+            console.log('[square-webhook] confirmation_email:start', { orderId: order.id });
+            await sendOrderConfirmation(paidOrder, digitalEntitlements);
+            await supabasePatch(order.id, { confirmation_email_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+            console.log('[square-webhook] confirmation_email:finish', { orderId: order.id });
+          } else {
+            console.log('[square-webhook] confirmation_email:already_sent', { orderId: order.id });
+          }
+        })()
+      ]);
+      for (const [index, result] of results.entries()) {
+        if (result.status === 'rejected') {
+          console.error('[square-webhook] delivery_failed', {
+            orderId: order.id,
+            channel: index === 0 ? 'team_email' : 'customer_confirmation',
+            error: result.reason?.message
+          });
+        }
+      }
+      if (results.some(result => result.status === 'rejected')) {
+        return { statusCode: 500, headers: JSON_HEADERS, body: 'Notification delivery error' };
       }
     } else {
       // Square can deliver payment.created/payment.updated events out of order.

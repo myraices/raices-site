@@ -89,3 +89,6 @@
   to = "/.netlify/functions/sitemap-collections"
   status = 200
   force = true
+
+[functions."review-email-scheduler"]
+  schedule = "15 * * * *"

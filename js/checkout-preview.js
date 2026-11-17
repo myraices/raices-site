@@ -510,6 +510,7 @@
    const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:await promotionHeaders(),body:JSON.stringify({
     items:items.map(i=>({sku:i.sku,qty:i.qty,variant:i.variant||''})),
     acceptedTerms:true,
+    orderLanguage:lang,
     promotionCode:appliedPromotion?.code||null,
     fulfillmentType:digitalOnly?'digital':selectedFulfillment,
     shippingRateId:(!digitalOnly&&selectedFulfillment==='shipping')?selectedShippingRate()?.id:null,

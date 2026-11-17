@@ -1,0 +1,19 @@
+MyRaíces 3.3.3
+Correos de pedido pagado y solicitud de reseña
+
+Orden de instalación
+
+1. En Supabase de producción, abre SQL Editor y ejecuta supabase/order_emails_3.3.3.sql una sola vez.
+2. En Netlify → MyRaíces → Project configuration → Environment variables, agrega:
+   ORDER_ALERT_EMAILS = tu correo y el de Yoly separados por coma.
+   GOOGLE_REVIEW_EMAILS_ENABLED = true
+   Configura las variables para Production y Functions. Usa la clave y el remitente de Brevo que ya tiene MyRaíces.
+3. Publica la carpeta completa raices-site mediante el flujo habitual del sitio existente que compila y publica sus Functions. Build: python3 scripts/build.py. Publish: dist.
+4. Publica el ZIP de NURAI en su sitio habitual. La documentación está en Pedidos → Info → Correos automáticos de MyRaíces.
+
+Comprobación
+
+- En el próximo pedido pagado del sitio, valida el correo interno de ambos destinatarios. En el correo del cliente, confirma que la entrega local muestra 24–48 horas.
+- En el siguiente pedido nuevo con entrega confirmada, la invitación abre https://g.page/r/CY9CP9FhFlv_EBM/review y se envía a partir de las 72 horas en la siguiente revisión horaria.
+- En Netlify, verifica que review-email-scheduler aparezca como función programada. Los registros de envío están en square-webhook y review-email-scheduler. Para confirmar el estado de entrega al buzón, consulta Transactional → Logs en Brevo.
+- Las invitaciones empiezan con los pedidos del checkout actualizado y respetan las bajas registradas. Si Brevo acepta el correo y la conexión se interrumpe antes de que se guarde el resultado, un reintento posterior puede duplicarlo.
