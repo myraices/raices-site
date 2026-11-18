@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { loadCampaign, qualifies, applyGift } = require('./combo-gift');
 const { calculateManualTax } = require('./tax-engine');
 const {loadPromotion,calculatePromotion,squareDiscounts,firstPurchaseCustomer} = require('./promotion-engine');
 
@@ -199,12 +200,56 @@ async function supabaseRequest(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+async function verifyGiftAdmin(event) {
+  const authorization = event.headers.authorization || event.headers.Authorization;
+  if (!/^Bearer [^ ]+$/.test(authorization || '')) return false;
+  const url = process.env.SUPABASE_URL || 'https://tqtnffinhqbyesjdollk.supabase.co';
+  const auth = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: authorization }
+  });
+  if (!auth.ok) return false;
+  const user = await auth.json();
+  const [admin] = await supabaseRequest(`admin_users?user_id=eq.${encodeURIComponent(user.id)}&is_active=eq.true&select=role&limit=1`);
+  return ['owner', 'admin', 'administrator'].includes(admin?.role);
+}
+
+async function giftPreview(payload, privateValidation) {
+  const campaign = await loadCampaign(supabaseRequest, privateValidation);
+  const items = (Array.isArray(payload.items) ? payload.items : []).slice(0, 100).map(item => ({
+    sku: safeText(item.sku, 60), variant: safeText(item.variant, 120),
+    qty: Math.max(1, Math.min(20, Number.parseInt(item.qty, 10) || 0))
+  }));
+  if (!qualifies(campaign, items)) return { eligible: false };
+  const map = await productMap();
+  const available = sku => {
+    const p = map.get(sku);
+    return p && p.status === 'active' && (p.stock == null || Number(p.stock) > 0) && !isDigitalProduct(p);
+  };
+  if (!qualifies(campaign, items.filter(item => available(item.sku)))) return { eligible: false };
+  const rewards = campaign.gift_skus.filter(available).map(sku => {
+    const p = map.get(sku);
+    return { sku, cents: cents(p.price), nameEs: productName(p), nameEn: p.name_en || productName(p) };
+  }).filter(reward => reward.cents > 0);
+  return { eligible: rewards.length > 0, rewards };
+}
+
 exports.handler = async (event) => {
   const origin = event.headers.origin || event.headers.Origin || '';
   if (event.httpMethod === 'OPTIONS') return response(204, {}, origin);
   if (event.httpMethod !== 'POST') return response(405, { error: 'METHOD_NOT_ALLOWED' }, origin);
 
   try {
+    const payload = JSON.parse(event.body || '{}');
+    const privateValidation = payload.giftValidationOnly === true;
+    if (privateValidation && !(await verifyGiftAdmin(event))) return response(403, { error: 'GIFT_ADMIN_REQUIRED' }, origin);
+    if (payload.giftPreview === true) {
+      try { return response(200, await giftPreview(payload, privateValidation), origin); }
+      catch (error) {
+        console.warn('[combo-gift] preview unavailable', error.message);
+        return response(200, { eligible: false }, origin);
+      }
+    }
+
     const environment = String(process.env.SQUARE_ENVIRONMENT || 'sandbox').toLowerCase();
     const salesEnabled = String(process.env.SQUARE_SALES_ENABLED || 'false').toLowerCase() === 'true';
     if (environment === 'production' && !salesEnabled) return response(503, { error: 'LIVE_SALES_DISABLED' }, origin);
@@ -213,7 +258,6 @@ exports.handler = async (event) => {
     const locationId = process.env.SQUARE_LOCATION_ID;
     if (!token || !locationId) return response(500, { error: 'SQUARE_CONFIGURATION_MISSING' }, origin);
 
-    const payload = JSON.parse(event.body || '{}');
     const customer = payload.customer || {};
     if (payload.acceptedTerms !== true) return response(400, { error: 'TERMS_NOT_ACCEPTED' }, origin);
     const items = Array.isArray(payload.items) ? payload.items : [];
@@ -331,6 +375,14 @@ exports.handler = async (event) => {
       : fulfillmentType === 'shipping'
         ? Math.max(0, carrierShippingCents - freeShippingCreditCents)
         : 0;
+    let gift = null;
+    if (payload.giftChoice || privateValidation) {
+      if (!payload.giftChoice) throw new Error('GIFT_UNAVAILABLE');
+      if (String(payload.promotionCode || '').trim()) throw new Error('GIFT_COUPON_CONFLICT');
+      const campaign = await loadCampaign(supabaseRequest, privateValidation);
+      gift = applyGift(campaign, validated, payload.giftChoice);
+    }
+
     let promotion = null, promotionCustomer=null;
     if (String(payload.promotionCode || '').trim()) {
       const {promo,used}=await loadPromotion(payload.promotionCode,supabaseRequest);
@@ -355,7 +407,9 @@ exports.handler = async (event) => {
       if (taxError.message === 'TAX_RULE_NOT_CONFIGURED') return response(503, { error: 'TAX_RULE_NOT_CONFIGURED', state: taxError.details?.state || safeText(customer.state,20) }, origin);
       throw taxError;
     }
-    const preTaxTotalCents = subtotal - (promotion?.discountCents || 0) + deliveryCents;
+    const discountCents = promotion?.discountCents || gift?.discountCents || 0;
+    const preTaxTotalCents = subtotal - discountCents + deliveryCents;
+    const giftLabel = payload.orderLanguage === 'en' ? 'Gift' : 'Regalo';
     let taxCentsExpected = Number(taxResult.taxCents || 0);
 
     console.log('[checkout] tax_calculated', { provider: taxResult.provider, taxCentsExpected, ratePercent: taxResult.ratePercent, freightTaxable: taxResult.freightTaxable });
@@ -363,6 +417,7 @@ exports.handler = async (event) => {
       fulfillment_type: fulfillmentType,
       subtotal: subtotal / 100,
       ...(promotion ? {discount_amount:promotion.discountCents/100,promotion_code:promotion.code,promotion_user_id:promotionCustomer?.id||null} : {}),
+      ...(gift ? { discount_amount: discountCents / 100 } : {}),
       delivery_amount: deliveryCents / 100,
       subtotal_cents: subtotal,
       delivery_cents: deliveryCents,
@@ -383,7 +438,7 @@ exports.handler = async (event) => {
     const pendingItemsPayload = validated.map(i => ({
       product_id: i.productId,
       sku: i.sku,
-      product_name: i.name,
+      product_name: i.isGift ? `${i.name} · ${giftLabel}` : i.name,
       variant: i.variant,
       variant_name: i.variant,
       quantity: i.qty,
@@ -397,6 +452,7 @@ exports.handler = async (event) => {
     const TAX_UID = 'RAICES-SALES-TAX';
     const appliedTax = { tax_uid: TAX_UID };
     const lineItems = validated.map((i,index) => ({
+      ...(i.isGift ? { applied_discounts: [{ discount_uid: 'COMBO-GIFT' }] } : {}),
       ...(promotion?.allocations[index] > 0 ? {applied_discounts:[{discount_uid:`PROMO-${index}`}]} : {}),
       name: i.variant ? `${i.name} · ${i.variant}` : i.name,
       quantity: String(i.qty),
@@ -424,8 +480,10 @@ exports.handler = async (event) => {
       scope: 'LINE_ITEM'
     }] : [];
 
-    const squareOrderPayload = { location_id: locationId, line_items: lineItems, ...(promotion ? {discounts:squareDiscounts(promotion)} : {}), ...(orderTaxes.length ? { taxes: orderTaxes } : {}) };
-    if (taxCentsExpected > 0 || promotion) {
+    const giftDiscount = gift ? [{ uid: 'COMBO-GIFT', name: giftLabel, type: 'FIXED_AMOUNT',
+      scope: 'LINE_ITEM', amount_money: { amount: discountCents, currency: 'USD' } }] : [];
+    const squareOrderPayload = { location_id: locationId, line_items: lineItems, ...(promotion ? {discounts:squareDiscounts(promotion)} : gift ? { discounts: giftDiscount } : {}), ...(orderTaxes.length ? { taxes: orderTaxes } : {}) };
+    if (taxCentsExpected > 0 || promotion || gift) {
       const squareBaseForCalc = environment === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com';
       const calcRes = await fetch(`${squareBaseForCalc}/v2/orders/calculate`, {
         method: 'POST',
@@ -437,6 +495,10 @@ exports.handler = async (event) => {
       try { calcData = calcText ? JSON.parse(calcText) : {}; } catch {}
       if (!calcRes.ok || !calcData.order) return response(502, { error: 'SQUARE_TAX_CALCULATION_FAILED', details: calcData.errors || [] }, origin);
       const squareTaxCents = Number(calcData.order.total_tax_money?.amount || calcData.order.net_amounts?.tax_money?.amount || 0);
+      if (gift && (Number(calcData.order.total_discount_money?.amount || 0) !== discountCents ||
+        Number(calcData.order.total_money?.amount) !== preTaxTotalCents + squareTaxCents)) {
+        return response(503, { error: 'GIFT_CALCULATION_MISMATCH' }, origin);
+      }
       if (promotion) {
         const calculatedDiscount=Number(calcData.order.total_discount_money?.amount||0);
         const calculatedTotal=Number(calcData.order.total_money?.amount||0);
@@ -448,9 +510,14 @@ exports.handler = async (event) => {
         console.error('[checkout] tax_mismatch', { taxCentsExpected, squareTaxCents });
         return response(503, { error: 'TAX_CALCULATION_MISMATCH' }, origin);
       }
+      if (gift) taxCentsExpected = squareTaxCents;
     }
 
     if (preTaxTotalCents + taxCentsExpected <= 0) return response(409,{error:'PROMO_ZERO_TOTAL'},origin);
+    if (privateValidation) return response(200, {
+      giftValidation: true, giftSku: gift.sku, giftCents: discountCents,
+      taxCents: taxCentsExpected, totalCents: preTaxTotalCents + taxCentsExpected
+    }, origin);
     const checkoutId = crypto.randomUUID();
     await supabaseRequest('checkout_sessions', {
       method: 'POST',
@@ -526,6 +593,11 @@ exports.handler = async (event) => {
     const squareOrder = squareData.related_resources?.orders?.[0] || null;
     const taxCents = Number(squareOrder?.total_tax_money?.amount || squareOrder?.net_amounts?.tax_money?.amount || 0);
     const squareTotalCents = Number(squareOrder?.total_money?.amount || squareOrder?.net_amounts?.total_money?.amount || (preTaxTotalCents + taxCents));
+    if (gift && (!squareData.payment_link.id || !squareData.payment_link.order_id || !squareOrder || taxCents !== taxCentsExpected ||
+      Number(squareOrder.total_discount_money?.amount || 0) !== discountCents ||
+      Number(squareOrder.total_money?.amount ?? squareOrder.net_amounts?.total_money?.amount) !== preTaxTotalCents + taxCentsExpected)) {
+      return response(503, { error: 'GIFT_CALCULATION_MISMATCH' }, origin);
+    }
     await supabaseRequest(`checkout_sessions?id=eq.${checkoutId}`, { method: 'PATCH', body: JSON.stringify({
       status: 'square_ready',
       square_order_id: squareData.payment_link.order_id,
@@ -533,10 +605,10 @@ exports.handler = async (event) => {
       updated_at: new Date().toISOString()
     }) });
     console.log('[checkout] finish_checkout', { checkoutId, taxCents, totalCents: squareTotalCents });
-    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, discountCents:promotion?.discountCents||0, taxCents, totalCents: squareTotalCents, fulfillmentType, shipping: selectedShipping ? { provider:selectedShipping.provider, service:selectedShipping.service, amount:deliveryCents/100, rateId:selectedShipping.rateId, shipmentId:selectedShipping.shipmentId } : null }, origin);
+    return response(200, { checkoutUrl: squareData.payment_link.url, checkoutId, environment, discountCents, taxCents, totalCents: squareTotalCents, fulfillmentType, shipping: selectedShipping ? { provider:selectedShipping.provider, service:selectedShipping.service, amount:deliveryCents/100, rateId:selectedShipping.rateId, shipmentId:selectedShipping.shipmentId } : null }, origin);
   } catch (err) {
     console.error('create-square-checkout', err);
-    const known = ['PROMO_LOGIN_REQUIRED','PROMO_NOT_FIRST_PURCHASE','PROMO_PENDING_CHECKOUT','PROMO_EMAIL_MISMATCH','PROMO_INVALID','PROMO_EXPIRED','PROMO_LIMIT_REACHED','PROMO_MINIMUM','PROMO_CHANGED','PROMO_UNAVAILABLE','PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED','SHIPPO_TOKEN_MISSING','SHIPPING_RATE_REQUIRED','SHIPPING_RATE_INVALID'];
+    const known = ['GIFT_UNAVAILABLE','GIFT_COUPON_CONFLICT','PROMO_LOGIN_REQUIRED','PROMO_NOT_FIRST_PURCHASE','PROMO_PENDING_CHECKOUT','PROMO_EMAIL_MISMATCH','PROMO_INVALID','PROMO_EXPIRED','PROMO_LIMIT_REACHED','PROMO_MINIMUM','PROMO_CHANGED','PROMO_UNAVAILABLE','PRODUCT_NOT_AVAILABLE','INSUFFICIENT_STOCK','DIGITAL_FILE_MISSING','LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART','SHIPPING_DISABLED','SHIPPING_NOT_AVAILABLE_FOR_CART','SHIPPING_PRODUCT_SETUP_INCOMPLETE','SHIPPING_DESTINATION_NOT_ALLOWED','SHIPPO_TOKEN_MISSING','SHIPPING_RATE_REQUIRED','SHIPPING_RATE_INVALID'];
     return response(known.includes(err.message) ? 409 : 500, { error: known.includes(err.message) ? err.message : 'CHECKOUT_UNAVAILABLE' }, origin);
   }
 };

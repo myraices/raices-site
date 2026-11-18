@@ -202,6 +202,57 @@
   const token=session?.data?.session?.access_token;
   return {'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})};
  }
+ const privateGiftValidation = new URLSearchParams(location.search).get('validar-regalo') === '1';
+ const giftPanel = document.createElement('section');
+ giftPanel.hidden = true;
+ giftPanel.className = 'checkout-promo';
+ itemsEl.after(giftPanel);
+ const giftMessage = document.createElement('p');
+ const giftSelect = document.createElement('select');
+ giftSelect.setAttribute('aria-label', tr('Torta de regalo', 'Gift cake'));
+ const giftLink = document.createElement('a');
+ giftLink.href = 'collections/dulces/';
+ giftLink.textContent = tr('Ver postres', 'Shop desserts');
+ giftPanel.append(giftMessage, giftSelect, giftLink);
+ let giftOptions = [], dessertGift = false;
+ const selectedGift = () => appliedPromotion ? null : giftOptions[Number(giftSelect.value) - 1] || null;
+ giftSelect.addEventListener('change', render);
+
+ async function loadGiftPreview() {
+  if (!hasPhysicalItems) return;
+  try {
+   const res = await fetch('/.netlify/functions/create-square-checkout', {
+    method: 'POST', headers: privateGiftValidation ? await promotionHeaders() : {'Content-Type':'application/json'},
+    body: JSON.stringify({giftPreview:true, giftValidationOnly:privateGiftValidation,
+     items:items.map(({sku, qty, variant}) => ({sku, qty, variant}))})
+   });
+   const preview = await res.json();
+   if (!res.ok || !preview.eligible) {
+    if (privateGiftValidation) paymentMessage(tr('Inicia sesión como administrador y agrega la combinación de prueba.','Sign in as an administrator and add the test combination.'),'error');
+    return;
+   }
+   dessertGift = preview.rewards.every(reward => reward.sku.startsWith('RA-DE-'));
+   giftLink.href = dessertGift ? 'collections/dulces/' : 'index.html';
+   giftLink.textContent = dessertGift ? tr('Ver postres', 'Shop desserts') : tr('Ver tienda', 'Shop');
+   const langName = reward => lang === 'en' ? reward.nameEn : reward.nameEs;
+   giftOptions = preview.rewards.flatMap(reward => items.filter(item => item.sku === reward.sku)
+    .map(item => ({sku:reward.sku, cents:reward.cents, variant:item.variant || '', name:langName(reward)})));
+   giftSelect.replaceChildren(new Option(tr('Sin regalo', 'No gift'), '0'), ...giftOptions.map((gift, index) =>
+    new Option(`${gift.name}${gift.variant ? ' · ' + gift.variant : ''} — $0.00`, String(index + 1))));
+   if (giftOptions.length) giftSelect.value = '1';
+   giftMessage.textContent = giftOptions.length
+    ? tr('Elige una unidad de regalo del carrito.','Choose one free item from your cart.')
+    : dessertGift
+     ? tr('Tu combinación incluye una torta de regalo. Agrega una al carrito para elegirla aquí.','Your combo includes a free cake. Add one to your cart to select it here.')
+     : tr('Tu combinación incluye un regalo. Agrega al carrito uno de los productos disponibles: ','Your combo includes a gift. Add one of the available products to your cart: ') + preview.rewards.map(langName).join(', ');
+   giftLink.hidden = giftOptions.length > 0;
+   giftSelect.hidden = giftOptions.length === 0;
+   giftPanel.hidden = false;
+   render();
+  } catch (error) {
+   if (privateGiftValidation) paymentMessage(tr('No se pudo cargar la validación.','Unable to load validation.'),'error');
+  }
+ }
  function promotionError(code){
   const messages={
    PROMO_LOGIN_REQUIRED:tr('Inicia sesión o crea tu cuenta y confirma tu correo para usar este código de primera compra.','Sign in or create an account and confirm your email to use this first-purchase code.'),
@@ -341,10 +392,15 @@
   previewSubtotal.textContent=money(subtotal);
   const feeLabel=document.getElementById('previewFulfillmentLabel');if(feeLabel)feeLabel.textContent=digitalOnly?tr('Entrega','Delivery'):(isShipping?'Shipping':tr('Delivery','Local Delivery'));
   previewDelivery.textContent=digitalOnly?tr('No aplica','N/A'):(isShipping?(rate?(shippingFree?tr('Gratis','Free'):money(delivery)):(shippingRatesLoading?tr('Calculando…','Calculating…'):'—')):(zone?(qualifies?tr('Gratis','Free'):money(delivery)):'—'));
-  const discount=Math.min(subtotal,Number(appliedPromotion?.discountCents||0)/100);
-  const discountRow=document.getElementById('checkoutDiscountRow');if(discountRow)discountRow.hidden=!appliedPromotion;
+  const gift = selectedGift();
+  giftSelect.disabled = paymentStarting || Boolean(appliedPromotion);
+  if (giftOptions.length) giftMessage.textContent = appliedPromotion
+   ? tr('El regalo no se combina con el código aplicado.','The gift cannot be combined with the applied code.')
+   : tr('Elige una unidad de regalo del carrito.','Choose one free item from your cart.');
+  const discount=Math.min(subtotal,Number(appliedPromotion?.discountCents || gift?.cents || 0)/100);
+  const discountRow=document.getElementById('checkoutDiscountRow');if(discountRow)discountRow.hidden=!appliedPromotion&&!gift;
   const discountValue=document.getElementById('previewDiscount');if(discountValue)discountValue.textContent=`−${money(discount)}`;
-  const discountLabel=document.getElementById('checkoutDiscountLabel');if(discountLabel)discountLabel.textContent=`${tr('Descuento','Discount')} ${appliedPromotion?.code||''}`;
+  const discountLabel=document.getElementById('checkoutDiscountLabel');if(discountLabel)discountLabel.textContent=gift?(dessertGift?tr('Torta de regalo','Gift cake'):tr('Regalo','Gift')):`${tr('Descuento','Discount')} ${appliedPromotion?.code||''}`;
   if(promoApply)promoApply.disabled=promotionBusy||paymentStarting;
   if(promoRemove){promoRemove.hidden=!appliedPromotion;promoRemove.disabled=paymentStarting;}
   if(promoInput)promoInput.disabled=paymentStarting;
@@ -369,9 +425,9 @@
   if(payButton){
    const shippingReady=!isShipping||(Boolean(rate)&&!shippingRatesLoading&&!shippingRateError);
    payButton.disabled=!items.length||!shippingReady||promotionBusy||paymentStarting;
-   payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
+   payButton.textContent=privateGiftValidation?tr('VALIDAR EN SQUARE','VALIDATE IN SQUARE'):tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
   }
-  summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk&&Boolean(rate):!!zone&&addressVerified),zone:isShipping?(rate?`${rate.provider} · ${rate.service}`:'Shipping'):(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,discountAmount:Number(appliedPromotion?.discountCents||0)/100,promotionCode:appliedPromotion?.code||null,total:subtotal+delivery-Number(appliedPromotion?.discountCents||0)/100,customer:data,addressVerified,estimatedDelivery:isShipping?(rate?.durationTerms||'Shipping'):eta(),shippingRate:rate||null,shippingShipmentId};
+  summary={...summary,fulfillmentType:digitalOnly?'digital':selectedFulfillment,delivery:{zip:digitalOnly?'00000':zip,valid:digitalOnly||(isShipping?shippingDestinationOk&&Boolean(rate):!!zone&&addressVerified),zone:isShipping?(rate?`${rate.provider} · ${rate.service}`:'Shipping'):(zone?.name||''),cost:delivery,digitalOnly},deliveryCost:delivery,discountAmount:discount,promotionCode:appliedPromotion?.code||null,total:subtotal+delivery-discount,customer:data,addressVerified,estimatedDelivery:isShipping?(rate?.durationTerms||'Shipping'):eta(),shippingRate:rate||null,shippingShipmentId};
   localStorage.setItem('raices_cart_summary',JSON.stringify(summary));
 
   if(isShipping&&shippingDestinationOk&&!shippingRatesLoading&&!shippingRateError&&!shippingRates.length){
@@ -487,6 +543,7 @@
  if(termsCheckbox)termsCheckbox.addEventListener('change',()=>{if(termsCheckbox.checked&&payMessage?.dataset.state==='error')payMessage.hidden=true;});
  if(payButton)payButton.addEventListener('click',async()=>{
   if(paymentStarting||promotionBusy)return;
+  if(privateGiftValidation && !selectedGift()){paymentMessage(tr('Selecciona el regalo de prueba.','Select the gift to validate.'),'error');return;}
   if(promoInput?.value.trim()&&!appliedPromotion){promoStatus(tr('Aplica el código o bórralo para continuar.','Apply the code or clear it to continue.'),'error');promoInput.focus();return;}
   const data=save();
   if(!items.length){paymentMessage(tr('Tu carrito está vacío.','Your cart is empty.'),'error');return;}
@@ -504,7 +561,7 @@
   const chosenRate=selectedShippingRate();
   if(!digitalOnly&&selectedFulfillment==='shipping'&&(!chosenRate||!shippingShipmentId)){paymentMessage(tr('Selecciona una opción de Shipping para continuar.','Select a Shipping option to continue.'),'error');return;}
   if(!termsCheckbox?.checked){paymentMessage('Debes aceptar los Términos y las políticas de compra antes de continuar al pago.','error');termsCheckbox?.focus();return;}
-  payButton.disabled=true;payButton.textContent=tr('PREPARANDO PAGO…','PREPARING PAYMENT…');paymentMessage(tr('Serás dirigido a una página de pago segura para completar tu compra.','You will be redirected to a secure payment page to complete your purchase.'),'idle');
+  payButton.disabled=true;payButton.textContent=tr('PREPARANDO PAGO…','PREPARING PAYMENT…');paymentMessage(privateGiftValidation?tr('Consultando el total con Square…','Checking the total with Square…'):tr('Serás dirigido a una página de pago segura para completar tu compra.','You will be redirected to a secure payment page to complete your purchase.'),'idle');
   paymentStarting=true;render();
   try{
    const res=await fetch('/.netlify/functions/create-square-checkout',{method:'POST',headers:await promotionHeaders(),body:JSON.stringify({
@@ -512,12 +569,22 @@
     acceptedTerms:true,
     orderLanguage:lang,
     promotionCode:appliedPromotion?.code||null,
+    giftChoice:selectedGift(),
+    giftValidationOnly:privateGiftValidation,
     fulfillmentType:digitalOnly?'digital':selectedFulfillment,
     shippingRateId:(!digitalOnly&&selectedFulfillment==='shipping')?selectedShippingRate()?.id:null,
     shippingShipmentId:(!digitalOnly&&selectedFulfillment==='shipping')?shippingShipmentId:null,
     customer:digitalOnly?{name:data.name,email:data.email,state:data.digitalState,zip:zipNorm(data.digitalZip)}:{...data,addressVerified,placeId:document.getElementById('checkoutPlaceId')?.value||data.placeId}
    })});
    const body=await res.json().catch(()=>({}));
+   if(res.ok && privateGiftValidation && body.giftValidation === true){
+    paymentStarting=false;render();
+    payButton.textContent=tr('VALIDAR EN SQUARE','VALIDATE IN SQUARE');
+    paymentMessage(tr(
+     `Square confirmó ${body.giftSku}: regalo −${money(body.giftCents)}, impuesto ${money(body.taxCents)}, total ${money(body.totalCents)}. No se creó un enlace ni se realizó un cobro.`,
+     `Square confirmed ${body.giftSku}: gift −${money(body.giftCents)}, tax ${money(body.taxCents)}, total ${money(body.totalCents)}. No link or charge was created.`),'idle');
+    return;
+   }
    if(!res.ok||!body.checkoutUrl){const detail=body.details?.[0]?.detail||body.details?.[0]?.code||'';throw new Error(detail?`${body.error||'CHECKOUT_UNAVAILABLE'}: ${detail}`:(body.error||'CHECKOUT_UNAVAILABLE'));}
    const pendingCheckout={id:body.checkoutId,checkoutId:body.checkoutId,environment:body.environment,fulfillmentType:body.fulfillmentType,createdAt:new Date().toISOString()};sessionStorage.setItem('raices_pending_order',JSON.stringify(pendingCheckout));localStorage.setItem('raices_pending_order',JSON.stringify(pendingCheckout));
    window.location.assign(body.checkoutUrl);
@@ -525,11 +592,15 @@
    console.error('Square checkout error',err);
    const code=String(err.message||'').split(':')[0];
    const messages={
+    GIFT_UNAVAILABLE:tr('El regalo cambió o ya no está disponible. Vuelve al carrito antes de pagar.','The gift changed or is no longer available. Return to your cart before paying.'),
+    GIFT_COUPON_CONFLICT:tr('Elige el regalo o el cupón.','Choose either the gift or the coupon.'),
+    GIFT_CALCULATION_MISMATCH:tr('Square no confirmó el importe del regalo. No se inició el pago.','Square could not confirm the gift amount. Payment was not started.'),
+    GIFT_ADMIN_REQUIRED:tr('Inicia sesión como administrador para validar.','Sign in as an administrator to validate.'),
     EMPTY_CART:tr('Tu carrito está vacío.','Your cart is empty.'),DELIVERY_OUTSIDE_COVERAGE:'La dirección está fuera de cobertura.',ADDRESS_NOT_VERIFIED:tr('Selecciona una dirección completa de las sugerencias de Google.','Select a complete address from Google suggestions.'),DELIVERY_DATA_INCOMPLETE:'Completa el teléfono y todos los datos de entrega.',PRODUCT_NOT_AVAILABLE:'Uno de los productos ya no está disponible.',INSUFFICIENT_STOCK:'No hay inventario suficiente.',LIVE_SALES_DISABLED:'Las ventas reales todavía no están habilitadas.',SQUARE_CONFIGURATION_MISSING:'Falta completar la configuración de Square.',DELIVERY_CONFIG_UNAVAILABLE:'No se pudo cargar la configuración de delivery. Intenta nuevamente.',LOCAL_DELIVERY_NOT_AVAILABLE_FOR_CART:'Este carrito no admite Delivery local.',SHIPPING_DISABLED:tr('Shipping todavía está desactivado en NURAI.','Shipping is still disabled in NURAI.'),SHIPPING_NOT_AVAILABLE_FOR_CART:'Uno o más productos no están habilitados para Shipping.',SHIPPING_PRODUCT_SETUP_INCOMPLETE:'Falta peso o perfil de empaque en uno de los productos.',SHIPPING_DESTINATION_NOT_ALLOWED:tr('Shipping no está habilitado para este destino.','Shipping is not available for this destination.'),SHIPPO_TOKEN_MISSING:tr('La conexión con Shippo no está disponible.','The Shippo connection is unavailable.'),SHIPPING_RATE_REQUIRED:tr('Selecciona una opción de Shipping.','Select a Shipping option.'),SHIPPING_RATE_INVALID:tr('La tarifa de Shipping expiró o cambió. Vuelve a calcularla.','The Shipping rate expired or changed. Recalculate it.'),SHIPPING_RATE_UNAVAILABLE:tr('No se pudo validar la tarifa de Shipping.','The Shipping rate could not be validated.'),TAX_RULE_NOT_CONFIGURED:'No hay una regla activa de Sales Tax para este estado. Revisa Configuración → Pagos en NURAI.',SQUARE_TAX_CALCULATION_FAILED:'Square no pudo validar el cálculo del tax. Intenta nuevamente.',TAX_CALCULATION_MISMATCH:'El cálculo fiscal no coincidió con Square y el pago fue bloqueado por seguridad.',DIGITAL_TAX_REVIEW_REQUIRED:'Este producto digital todavía está en revisión fiscal.',DIGITAL_FILE_MISSING:'Este producto digital todavía no tiene su archivo PDF cargado. Intenta nuevamente más tarde.',CHECKOUT_UNAVAILABLE:'No se pudo iniciar el pago. Intenta nuevamente.'
    };
    paymentStarting=false;render();
    if(code==='PROMO_PENDING_CHECKOUT')document.getElementById('checkoutPromoCancelPending')?.removeAttribute('hidden');
-   paymentMessage(code.startsWith('PROMO_')?promotionError(code):(messages[code]||messages.CHECKOUT_UNAVAILABLE),'error');payButton.disabled=false;payButton.textContent=tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
+   paymentMessage(code.startsWith('PROMO_')?promotionError(code):(messages[code]||messages.CHECKOUT_UNAVAILABLE),'error');payButton.disabled=false;payButton.textContent=privateGiftValidation?tr('VALIDAR EN SQUARE','VALIDATE IN SQUARE'):tr('CONTINUAR AL PAGO','CONTINUE TO PAYMENT');
   }
  });
  async function refreshLiveFulfillmentSettings(){
@@ -542,5 +613,6 @@
  window.addEventListener('pageshow',event=>{if(event.persisted)setTimeout(refreshLiveFulfillmentSettings,80)});
  window.addEventListener('focus',()=>{setTimeout(refreshLiveFulfillmentSettings,80)});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(refreshLiveFulfillmentSettings,80)});
+ loadGiftPreview();
  (async()=>{await Promise.all([loadDeliveryConfig(),loadFulfillmentOptions()]);render();hydrateFromAccount();loadDefaultAddress();if(!digitalOnly)initAddressAutocomplete();})();
 })();

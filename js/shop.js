@@ -843,6 +843,49 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     saveCart();
   }
 
+  let giftPreviewKey = '', giftPreviewTimer, giftPreviewEligible = false, giftPreviewDessert = false;
+  function showCartGiftNotice(items, checkoutButton) {
+    if (!checkoutButton) return;
+    let notice = document.getElementById('cartComboGift');
+    if (!notice) {
+      notice = document.createElement('p');
+      notice.id = 'cartComboGift';
+      notice.hidden = true;
+      notice.setAttribute('aria-live', 'polite');
+      checkoutButton.before(notice);
+    }
+    const showNotice = () => {
+      notice.textContent = giftPreviewDessert
+        ? (currentLang() === 'es' ? '¡Tu combinación incluye una torta de regalo! Agrégala al carrito y elígela al continuar al pago.' : 'Your combo includes a free cake! Add one to your cart and select it at checkout.')
+        : (currentLang() === 'es' ? '¡Tu combinación incluye un regalo! Consulta las opciones al continuar al pago.' : 'Your combo includes a gift! See your options at checkout.');
+      notice.hidden = !giftPreviewEligible;
+    };
+    const key = JSON.stringify(items.map(({sku, qty, variant}) => ({sku, qty, variant})));
+    if (giftPreviewKey === key) {
+      showNotice();
+      return;
+    }
+    giftPreviewKey = key;
+    giftPreviewEligible = false;
+    notice.hidden = true;
+    clearTimeout(giftPreviewTimer);
+    if (!items.length) return;
+    giftPreviewTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/.netlify/functions/create-square-checkout', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({giftPreview:true, items:JSON.parse(key)})
+        });
+        if (!res.ok) return;
+        const preview = await res.json();
+        if (key !== giftPreviewKey) return;
+        giftPreviewEligible = preview.eligible === true;
+        giftPreviewDessert = giftPreviewEligible && preview.rewards.every(reward => reward.sku.startsWith('RA-DE-'));
+        showNotice();
+      } catch {}
+    }, 200);
+  }
+
   function renderCart(){
     const removedNames = [];
     const validCart = cart.filter(item => {
@@ -894,6 +937,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncCatalogCount();window.addE
     if(cartDeliverySummary) cartDeliverySummary.textContent = digitalOnly ? (currentLang()==='es' ? 'No aplica' : 'Not applicable') : (deliveryState.valid ? (deliveryState.cost===0 ? (currentLang()==='es' ? 'Gratis' : 'Free') : money(deliveryState.cost)) : '—');
     if(cartTotal) cartTotal.textContent = money(total);
     const checkoutBtn = document.getElementById('checkoutSoon');
+    showCartGiftNotice(window.RAICES_CART_SUMMARY.items, checkoutBtn);
     if(checkoutBtn){
       const salesMode = window.RAICES_STORE_CONFIG?.STORE_MODE === 'SALES';
       checkoutBtn.classList.toggle('disabled', !canCheckout);
