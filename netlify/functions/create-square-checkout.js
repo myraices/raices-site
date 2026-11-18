@@ -240,6 +240,21 @@ exports.handler = async (event) => {
 
   try {
     const payload = JSON.parse(event.body || '{}');
+    if (payload.giftAnnouncement === true) {
+      try {
+        const campaign = await loadCampaign(supabaseRequest);
+        const cakeSkus = ['RA-DE-001', 'RA-DE-002', 'RA-DE-003'];
+        const matchesAnnouncement = campaign && campaign.first_qty === 1 && campaign.second_qty === 1
+          && campaign.first_skus.every(sku => /^RA-AR-00[1-8]$/.test(sku))
+          && campaign.second_skus.every(sku => /^RA-PC-00[1-5]$/.test(sku))
+          && campaign.gift_skus.every(sku => cakeSkus.includes(sku))
+          && campaign.ends_on === '2026-11-23';
+        return response(200, { showGiftAnnouncement: Boolean(matchesAnnouncement) }, origin);
+      } catch (error) {
+        console.warn('[combo-gift] announcement unavailable', error.message);
+        return response(200, { showGiftAnnouncement: false }, origin);
+      }
+    }
     const privateValidation = payload.giftValidationOnly === true;
     if (privateValidation && !(await verifyGiftAdmin(event))) return response(403, { error: 'GIFT_ADMIN_REQUIRED' }, origin);
     if (payload.giftPreview === true) {

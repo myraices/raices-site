@@ -209,6 +209,7 @@
  itemsEl.after(giftPanel);
  const giftMessage = document.createElement('p');
  const giftSelect = document.createElement('select');
+ giftSelect.className = 'checkout-gift-select';
  giftSelect.setAttribute('aria-label', tr('Torta de regalo', 'Gift cake'));
  const giftLink = document.createElement('a');
  giftLink.href = 'collections/dulces/';
@@ -581,8 +582,8 @@
     paymentStarting=false;render();
     payButton.textContent=tr('VALIDAR EN SQUARE','VALIDATE IN SQUARE');
     paymentMessage(tr(
-     `Square confirmó ${body.giftSku}: regalo −${money(body.giftCents)}, impuesto ${money(body.taxCents)}, total ${money(body.totalCents)}. No se creó un enlace ni se realizó un cobro.`,
-     `Square confirmed ${body.giftSku}: gift −${money(body.giftCents)}, tax ${money(body.taxCents)}, total ${money(body.totalCents)}. No link or charge was created.`),'idle');
+     `Square confirmó ${body.giftSku}: regalo −${money(body.giftCents / 100)}, impuesto ${money(body.taxCents / 100)}, total ${money(body.totalCents / 100)}. No se creó un enlace ni se realizó un cobro.`,
+     `Square confirmed ${body.giftSku}: gift −${money(body.giftCents / 100)}, tax ${money(body.taxCents / 100)}, total ${money(body.totalCents / 100)}. No link or charge was created.`),'idle');
     return;
    }
    if(!res.ok||!body.checkoutUrl){const detail=body.details?.[0]?.detail||body.details?.[0]?.code||'';throw new Error(detail?`${body.error||'CHECKOUT_UNAVAILABLE'}: ${detail}`:(body.error||'CHECKOUT_UNAVAILABLE'));}
